@@ -4,10 +4,13 @@ from django import forms
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.contrib.auth.forms import (
+    AdminUserCreationForm as BaseAdminUserCreationForm,
+)
+from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.models import User
 
-from .models import Module, UserInterfacePreference
+from .models import AuditLog, Module, UserInterfacePreference
 from .preferences import (get_user_interface_preference,
                           save_user_interface_preference)
 
@@ -28,6 +31,68 @@ class ModuleAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "menu_group", "app_label")
     search_fields = ("name", "slug", "permission_codename", "url_name")
     ordering = ("menu_group", "order", "name")
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    """Consulta read-only dos eventos de auditoria do sistema."""
+
+    list_display = (
+        "created_at",
+        "action",
+        "object_verbose_name",
+        "object_repr",
+        "actor_identifier_display",
+        "path",
+    )
+    list_filter = ("action", "content_type", "created_at")
+    search_fields = (
+        "object_repr",
+        "object_id",
+        "actor_identifier",
+        "path",
+    )
+    readonly_fields = (
+        "created_at",
+        "action",
+        "actor",
+        "actor_identifier",
+        "content_type",
+        "object_id",
+        "object_repr",
+        "object_verbose_name",
+        "request_method",
+        "path",
+        "ip_address",
+        "before",
+        "after",
+        "changes",
+        "metadata",
+    )
+    ordering = ("-created_at", "-id")
+
+    def has_add_permission(self, request):
+        """Impede inclusao manual de logs pelo admin."""
+
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        """Impede alteracao manual dos eventos persistidos."""
+
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Impede exclusao manual dos eventos persistidos."""
+
+        return False
+
+    @admin.display(description="Ator")
+    def actor_identifier_display(self, obj: AuditLog) -> str:
+        """Mostra o usuario autenticado ou o identificador digitado."""
+
+        if obj.actor:
+            return obj.actor.get_username()
+        return obj.actor_identifier or "-"
 
 
 def build_auto_refresh_enabled_field() -> forms.BooleanField:
@@ -79,7 +144,10 @@ class UserInterfacePreferenceAdminFieldsMixin:
         self.fields["auto_refresh_interval"].initial = preference.auto_refresh_interval
 
 
-class AdminUserCreationForm(UserInterfacePreferenceAdminFieldsMixin, UserCreationForm):
+class AdminUserCreationForm(
+    UserInterfacePreferenceAdminFieldsMixin,
+    BaseAdminUserCreationForm,
+):
     """Formulario de criacao do admin com preferencias de autoatualizacao."""
 
     auto_refresh_enabled = build_auto_refresh_enabled_field()

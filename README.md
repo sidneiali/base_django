@@ -23,7 +23,9 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 Com `uv`:
 
 ```bash
-uv sync
+uv sync --no-install-project
+# opcional: instala lint, testes e tipagem
+# uv sync --no-install-project --extra dev
 uv run python manage.py migrate
 uv run python manage.py createsuperuser
 uv run python manage.py runserver
@@ -34,9 +36,9 @@ Com `pip`:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install -e .
+python -m pip install django django-bootstrap5
 # opcional: instala lint, testes e tipagem
-# pip install -e .[dev]
+# python -m pip install pytest pytest-django ruff mypy django-stubs
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver

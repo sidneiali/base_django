@@ -8,3 +8,8 @@ class CoreConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "core"
+
+    def ready(self) -> None:
+        """Conecta os sinais que sustentam a auditoria da aplicacao."""
+
+        from . import signals  # noqa: F401

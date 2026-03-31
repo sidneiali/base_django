@@ -26,6 +26,16 @@
             </a>
 
             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a
+                class="dropdown-item"
+                href="{% url 'account_password_change' %}"
+                hx-get="{% url 'account_password_change' %}"
+                hx-target="#page-content"
+                hx-push-url="true"
+              >
+                Minha senha
+              </a>
+
               {% if perms.auth.view_user or perms.auth.view_group or request.user.is_superuser %}
                 <button
                   type="button"

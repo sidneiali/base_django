@@ -250,6 +250,80 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     background: rgba(251, 252, 254, 0.72);
 }
 
+.account-settings__card {
+    overflow: hidden;
+}
+
+.account-settings__tabs {
+    gap: 0.5rem;
+}
+
+.account-settings__tabs .nav-link {
+    margin-bottom: -1px;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+}
+
+.account-settings__sidebar,
+.account-settings__content {
+    padding: 1.75rem;
+}
+
+.account-settings__sidebar {
+    min-height: 100%;
+    background:
+        linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.94)),
+        #f8fafc;
+}
+
+.account-settings__profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.account-settings__profile .avatar {
+    background:
+        linear-gradient(160deg, rgba(47, 111, 237, 0.92), rgba(16, 27, 51, 0.94)),
+        linear-gradient(180deg, #14213d, #0f172a);
+    color: #ffffff;
+}
+
+.account-settings__menu {
+    margin-bottom: 1.5rem;
+}
+
+.account-settings__menu .list-group-item {
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+}
+
+.account-settings__sidebar-note {
+    padding-top: 1rem;
+    border-top: 1px solid #e8edf4;
+}
+
+.account-settings__section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.account-settings__content .form-control {
+    min-height: 2.85rem;
+}
+
+.account-settings__hint ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1rem;
+}
+
+.account-settings__hint li + li {
+    margin-top: 0.25rem;
+}
+
 /* widget dual list */
 .selector {
     width: 100% !important;
@@ -345,6 +419,11 @@ a[aria-expanded="true"] .nav-link-toggle::before {
 
     .app-topbar__user {
         width: 100%;
+    }
+
+    .account-settings__sidebar,
+    .account-settings__content {
+        padding: 1.25rem;
     }
 }
 

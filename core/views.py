@@ -1,10 +1,14 @@
 """Views principais do dashboard e das entradas de modulo."""
 
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 
-from .htmx import render_page
+from .htmx import htmx_location, is_htmx_request, render_page
+from .forms import SelfPasswordChangeForm
 from .models import Module
 from .services import build_modules_for_user
 
@@ -40,6 +44,34 @@ def module_entry(request, slug: str):
         "module_page.html",
         "partials/module_page_content.html",
         {"module": module},
+    )
+
+
+@login_required
+def account_password_change(request):
+    """Permite ao usuario autenticado atualizar a propria senha."""
+
+    if request.method == "POST":
+        form = SelfPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Sua senha foi atualizada com sucesso.")
+
+            if is_htmx_request(request):
+                return htmx_location(reverse("account_password_change"))
+            return redirect("account_password_change")
+    else:
+        form = SelfPasswordChangeForm(request.user)
+
+    return render_page(
+        request,
+        "account/password_change.html",
+        "partials/account_password_change_content.html",
+        {
+            "page_title": "Minha senha",
+            "form": form,
+        },
     )
 
 
