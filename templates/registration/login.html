@@ -60,6 +60,12 @@
                                 {% endif %}
                             </div>
 
+                            <div class="auth-cover-form__actions mb-3">
+                                <a href="{% url 'password_reset' %}" class="auth-cover-form__link">
+                                    Esqueci minha senha
+                                </a>
+                            </div>
+
                             {% if redirect_field_value %}
                                 <input
                                     type="hidden"

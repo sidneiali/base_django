@@ -13,5 +13,7 @@ __pycache__/
 htmlcov/
 staticfiles/
 .python-version
+.env
+.env.*
 .tmp-edge-profile*/
 login-shot*.png

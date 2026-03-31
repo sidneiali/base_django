@@ -49,6 +49,34 @@ Depois acesse:
 - `http://127.0.0.1:8000/login/`
 - `http://127.0.0.1:8000/admin/`
 
+## Recuperação de senha e e-mail
+
+O projeto já inclui o fluxo externo de recuperação de senha em:
+
+- `/recuperar-senha/`
+- `/recuperar-senha/enviado/`
+- `/recuperar-senha/confirmar/<uid>/<token>/`
+- `/recuperar-senha/concluido/`
+
+Em desenvolvimento, o envio pode continuar no console. Para usar envio real com SMTP, copie os valores de [`.env.example`](c:\Users\sidne\OneDrive\Desktop\base_django\.env.example) para as variáveis de ambiente do processo.
+
+Configuração recomendada com `Resend`:
+
+```text
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.resend.com
+EMAIL_PORT=465
+EMAIL_HOST_USER=resend
+EMAIL_HOST_PASSWORD=<sua_api_key>
+EMAIL_USE_SSL=True
+DEFAULT_FROM_EMAIL=BaseApp <no-reply@seudominio.com>
+PASSWORD_RESET_TIMEOUT=3600
+APP_FORCE_HTTPS=True
+SECURE_HSTS_SECONDS=31536000
+```
+
+Com `APP_FORCE_HTTPS=True`, a aplicação passa a marcar cookies como seguros e habilita redirecionamento SSL/HSTS, o que é importante para o reset em produção.
+
 ## Visão geral
 
 O sistema possui dois apps principais:
