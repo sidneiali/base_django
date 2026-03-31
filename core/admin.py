@@ -10,6 +10,7 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.models import User
 
+from .api_forms import ApiAccessFormMixin, API_PERMISSION_FIELD_ROWS
 from .models import AuditLog, Module, UserInterfacePreference
 from .preferences import (get_user_interface_preference,
                           save_user_interface_preference)
@@ -146,16 +147,21 @@ class UserInterfacePreferenceAdminFieldsMixin:
 
 class AdminUserCreationForm(
     UserInterfacePreferenceAdminFieldsMixin,
+    ApiAccessFormMixin,
     BaseAdminUserCreationForm,
 ):
-    """Formulario de criacao do admin com preferencias de autoatualizacao."""
+    """Formulario de criacao do admin com interface e acesso a API."""
 
     auto_refresh_enabled = build_auto_refresh_enabled_field()
     auto_refresh_interval = build_auto_refresh_interval_field()
 
 
-class AdminUserChangeForm(UserInterfacePreferenceAdminFieldsMixin, UserChangeForm):
-    """Formulario de edicao do admin com preferencias de autoatualizacao."""
+class AdminUserChangeForm(
+    UserInterfacePreferenceAdminFieldsMixin,
+    ApiAccessFormMixin,
+    UserChangeForm,
+):
+    """Formulario de edicao do admin com interface e acesso a API."""
 
     auto_refresh_enabled = build_auto_refresh_enabled_field()
     auto_refresh_interval = build_auto_refresh_interval_field()
@@ -169,7 +175,7 @@ except NotRegistered:
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Admin do usuario com preferencias globais de interface."""
+    """Admin do usuario com preferencias globais e acesso controlado a API."""
 
     add_form = AdminUserCreationForm
     form = AdminUserChangeForm
@@ -181,6 +187,12 @@ class UserAdmin(BaseUserAdmin):
                     "auto_refresh_enabled",
                     "auto_refresh_interval",
                 )
+            },
+        ),
+        (
+            "Acesso à API",
+            {
+                "fields": ("api_enabled",) + API_PERMISSION_FIELD_ROWS,
             },
         ),
     )
@@ -195,6 +207,13 @@ class UserAdmin(BaseUserAdmin):
                 ),
             },
         ),
+        (
+            "Acesso à API",
+            {
+                "classes": ("wide",),
+                "fields": ("api_enabled",) + API_PERMISSION_FIELD_ROWS,
+            },
+        ),
     )
 
     def save_model(self, request, obj, form, change):
@@ -206,3 +225,4 @@ class UserAdmin(BaseUserAdmin):
             auto_refresh_enabled=form.cleaned_data["auto_refresh_enabled"],
             auto_refresh_interval=form.cleaned_data["auto_refresh_interval"],
         )
+        form.save_api_access_settings(obj)

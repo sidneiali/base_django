@@ -19,7 +19,7 @@ from .models import AuditLog
 AUDIT_FIELD_EXCLUSIONS = {
     "auth.user": {"last_login"},
 }
-SENSITIVE_FIELD_NAMES = {"password"}
+SENSITIVE_FIELD_NAMES = {"password", "token_hash"}
 
 
 @dataclass(slots=True)

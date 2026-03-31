@@ -25,6 +25,9 @@ User = get_user_model()
 TRACKED_MODEL_LABELS = {
     "auth.user",
     "auth.group",
+    "core.apiaccessprofile",
+    "core.apiresourcepermission",
+    "core.apitoken",
     "core.module",
     "core.userinterfacepreference",
 }
@@ -104,11 +107,16 @@ def log_saved_instance(sender, instance, created, raw=False, **kwargs):
     after_state, after_comparison = build_instance_snapshot(instance)
 
     if created:
+        metadata = {}
+        if instance._meta.label_lower == "core.apitoken":
+            metadata["event"] = "api_token_issued"
+
         create_audit_log(
             AuditLog.ACTION_CREATE,
             instance=instance,
             after=after_state,
             changes=build_changes({}, after_state, {}, after_comparison),
+            metadata=metadata,
         )
         return
 
@@ -127,6 +135,11 @@ def log_saved_instance(sender, instance, created, raw=False, **kwargs):
     metadata = {}
     if instance._meta.label_lower == "auth.user" and "password" in changes:
         metadata["event"] = "password_changed"
+    if instance._meta.label_lower == "core.apitoken":
+        if "revoked_at" in changes and after_state.get("revoked_at"):
+            metadata["event"] = "api_token_revoked"
+        elif "token_hash" in changes:
+            metadata["event"] = "api_token_rotated"
 
     create_audit_log(
         AuditLog.ACTION_UPDATE,

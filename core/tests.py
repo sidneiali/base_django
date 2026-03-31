@@ -9,7 +9,8 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from .models import AuditLog, Module
+from .models import (ApiAccessProfile, ApiResourcePermission, ApiToken,
+                     AuditLog, Module)
 
 User = get_user_model()
 
@@ -116,6 +117,53 @@ class AuditLogTests(TestCase):
         self.assertEqual(failed_log.actor_identifier, user.username)
 
 
+class ApiAccessModelTests(TestCase):
+    """Valida a camada inicial de acesso e token da API."""
+
+    def test_api_token_issue_stores_only_hash_and_redacts_audit_log(self):
+        """Emitir um token deve persistir apenas o hash e mascarar o log."""
+
+        user = User.objects.create_user(username="api-user", password="senha-forte")
+        AuditLog.objects.all().delete()
+
+        token, raw_token = ApiToken.issue_for_user(user)
+
+        self.assertNotEqual(raw_token, token.token_hash)
+        self.assertEqual(token.token_prefix, raw_token[: ApiToken.PREFIX_LENGTH])
+        self.assertTrue(token.matches(raw_token))
+        self.assertTrue(token.is_active)
+
+        create_log = AuditLog.objects.get(
+            action=AuditLog.ACTION_CREATE,
+            content_type__app_label="core",
+            content_type__model="apitoken",
+            object_id=str(token.pk),
+        )
+        self.assertEqual(create_log.after["token_hash"], "[redacted]")
+        self.assertEqual(
+            create_log.changes["token_hash"]["after"],
+            "[redacted]",
+        )
+
+    def test_api_resource_permission_maps_crud_actions(self):
+        """As flags CRUD precisam refletir corretamente a autorizacao final."""
+
+        user = User.objects.create_user(username="carol", password="senha-forte")
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        permission = ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.PANEL_USERS,
+            can_read=True,
+            can_update=True,
+        )
+
+        self.assertTrue(permission.has_any_permission())
+        self.assertFalse(permission.allows("create"))
+        self.assertTrue(permission.allows("read"))
+        self.assertTrue(permission.allows("update"))
+        self.assertFalse(permission.allows("delete"))
+
+
 class UserAdminTests(TestCase):
     """Garante compatibilidade do admin customizado com o Django 6."""
 
@@ -181,6 +229,61 @@ class AccountPasswordChangeTests(TestCase):
         ]
         self.assertTrue(password_logs)
         self.assertEqual(password_logs[0].path, reverse("account_password_change"))
+
+    def test_account_page_can_issue_api_token_when_access_is_enabled(self):
+        """O usuario deve conseguir gerar o proprio token quando a API estiver habilitada."""
+
+        user = User.objects.create_user(
+            username="apiowner",
+            email="apiowner@example.com",
+            password="SenhaSegura@123",
+        )
+        ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("account_password_change"),
+            {"action": "issue_api_token"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        token = ApiToken.objects.get(user=user)
+        self.assertTrue(token.is_active)
+        self.assertContains(response, "Copie este token agora")
+        self.assertContains(response, "Copiar token")
+        self.assertContains(response, reverse("api_docs"))
+
+    def test_account_page_can_revoke_api_token(self):
+        """O usuario deve conseguir revogar o proprio token ativo."""
+
+        user = User.objects.create_user(
+            username="revoga",
+            email="revoga@example.com",
+            password="SenhaSegura@123",
+        )
+        ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        token, _raw_token = ApiToken.issue_for_user(user)
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("account_password_change"),
+            {"action": "revoke_api_token"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        token.refresh_from_db()
+        self.assertFalse(token.is_active)
+        self.assertContains(response, "Seu token da API foi revogado.")
+
+    def test_api_docs_page_is_public(self):
+        """A documentação pública da API deve abrir sem autenticação."""
+
+        response = self.client.get(reverse("api_docs"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Swagger da API")
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

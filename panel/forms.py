@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth.models import Group, Permission, User
 from django.db.models import Model
 
+from core.api_forms import ApiAccessFormMixin
 from core.models import UserInterfacePreference
 from core.preferences import (get_user_interface_preference,
                               save_user_interface_preference)
@@ -65,7 +66,7 @@ class PermissionMultipleChoiceField(forms.ModelMultipleChoiceField):
         return f"{app_name} | {model_name} | {permission_name}"
 
 
-class PanelUserForm(forms.ModelForm):
+class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
     """Formulario de criacao e edicao de usuarios nao administrativos."""
 
     password = forms.CharField(
@@ -145,6 +146,14 @@ class PanelUserForm(forms.ModelForm):
         self.fields["auto_refresh_enabled"].widget.attrs.update(
             {"class": "form-check-input"}
         )
+        self.fields["api_enabled"].widget.attrs.update(
+            {"class": "form-check-input"}
+        )
+        for row in self.get_api_permission_rows():
+            for cell in row["fields"]:
+                cell["field"].field.widget.attrs.update(
+                    {"class": "form-check-input"}
+                )
 
         if self.is_bound:
             return
@@ -191,6 +200,7 @@ class PanelUserForm(forms.ModelForm):
                 auto_refresh_enabled=self.cleaned_data["auto_refresh_enabled"],
                 auto_refresh_interval=self.cleaned_data["auto_refresh_interval"],
             )
+            self.save_api_access_settings(user)
 
         return user
 

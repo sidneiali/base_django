@@ -147,6 +147,72 @@
         });
     }
 
+    async function copyText(value) {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            return;
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.setAttribute("readonly", "readonly");
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+    }
+
+    function resolveCopyValue(button) {
+        const selector = button.dataset.copyTarget;
+        if (!selector) {
+            return button.dataset.copyText || "";
+        }
+
+        const target = document.querySelector(selector);
+        if (!target) {
+            return "";
+        }
+
+        if ("value" in target && typeof target.value === "string") {
+            return target.value;
+        }
+
+        return target.textContent?.trim() || "";
+    }
+
+    function initCopyButtons(root) {
+        root.querySelectorAll("[data-copy-target], [data-copy-text]").forEach((button) => {
+            if (button.dataset.copyInitialized === "true") {
+                return;
+            }
+
+            button.dataset.copyInitialized = "true";
+            const defaultLabel =
+                button.dataset.copyLabelDefault || button.textContent.trim();
+            const successLabel = button.dataset.copyLabelSuccess || "Copiado";
+
+            button.addEventListener("click", async function () {
+                const value = resolveCopyValue(button);
+
+                if (!value) {
+                    return;
+                }
+
+                try {
+                    await copyText(value);
+                    button.textContent = successLabel;
+                    window.setTimeout(() => {
+                        button.textContent = defaultLabel;
+                    }, 1800);
+                } catch (error) {
+                    console.error("Falha ao copiar conteúdo:", error);
+                }
+            });
+        });
+    }
+
     function syncActiveNav() {
         const path = window.location.pathname;
 
@@ -319,6 +385,7 @@
     function initPage(root) {
         initForms(root);
         initRefreshPreferenceControls(root);
+        initCopyButtons(root);
         initDualLists(root);
         syncActiveNav();
         syncPageTitle(root);

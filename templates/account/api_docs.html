@@ -1,0 +1,32 @@
+{% extends "registration/auth_external_base.html" %}
+
+{% block title %}Swagger da API{% endblock %}
+
+{% block eyebrow %}Documentação pública{% endblock %}
+
+{% block heading %}Swagger da API{% endblock %}
+
+{% block intro %}
+<p class="auth-cover-form-header__text">
+    Esta página externa vai concentrar a documentação e os testes manuais dos endpoints, sem exigir login no painel.
+</p>
+{% endblock %}
+
+{% block body %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body d-flex flex-column gap-3">
+        <div class="alert alert-primary mb-0" role="alert">
+            A documentação interativa ainda será plugada aqui na próxima etapa.
+        </div>
+
+        <div class="text-secondary">
+            Quando a autenticação Bearer dos endpoints estiver pronta, esta tela pode receber Swagger UI ou outra documentação pública equivalente.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<span>BaseApp</span>
+<span>Documentação pública da API</span>
+{% endblock %}

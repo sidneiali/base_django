@@ -93,6 +93,58 @@
                 </div>
 
                 <div class="col-12">
+                    <div class="border rounded-3 p-3">
+                        <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                            <div>
+                                <h4 class="card-title mb-1">Acesso à API</h4>
+                                <p class="text-secondary mb-0">
+                                    O admin define se o usuário pode usar token e quais operações CRUD ficam liberadas.
+                                </p>
+                            </div>
+
+                            <div class="form-check m-0">
+                                {{ form.api_enabled }}
+                                <label class="form-check-label" for="{{ form.api_enabled.id_for_label }}">
+                                    {{ form.api_enabled.label }}
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if form.api_enabled.help_text %}
+                            <small class="form-hint d-block mb-3">{{ form.api_enabled.help_text }}</small>
+                        {% endif %}
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-vcenter mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Recurso</th>
+                                        <th class="text-center">Criar</th>
+                                        <th class="text-center">Ler</th>
+                                        <th class="text-center">Editar</th>
+                                        <th class="text-center">Excluir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in api_permission_rows %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ row.label }}</td>
+                                            {% for item in row.fields %}
+                                                <td class="text-center">
+                                                    <div class="form-check d-inline-flex m-0">
+                                                        {{ item.field }}
+                                                    </div>
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
                     <label class="form-label">{{ form.groups.label }}</label>
 
                     <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list>

@@ -86,6 +86,7 @@ def user_create(request):
         {
             "page_title": "Novo usuário",
             "form": form,
+            "api_permission_rows": form.get_api_permission_rows(),
             "groups_available": available,
             "groups_chosen": chosen,
         },
@@ -115,6 +116,7 @@ def user_update(request, pk: int):
         {
             "page_title": f"Editar usuário: {user_obj.username}",
             "form": form,
+            "api_permission_rows": form.get_api_permission_rows(),
             "user_obj": user_obj,
             "groups_available": available,
             "groups_chosen": chosen,

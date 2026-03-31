@@ -1,0 +1,24 @@
+<div data-page-title="{{ page_title }}">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex flex-column gap-3">
+                <div>
+                    <h3 class="card-title mb-1">Swagger / documentação da API</h3>
+                    <p class="text-secondary mb-0">
+                        Esta área vai concentrar a exploração dos endpoints e os testes com o token do usuário.
+                    </p>
+                </div>
+
+                <div class="alert alert-primary mb-0" role="alert">
+                    A base de autenticação por token já está sendo preparada. Na próxima etapa, esta tela pode receber a documentação interativa real dos endpoints.
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <a href="{% url 'account_password_change' %}" class="btn btn-outline-secondary">
+                        Voltar para minha conta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
