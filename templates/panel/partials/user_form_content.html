@@ -1,0 +1,140 @@
+<div data-page-title="{{ page_title }}">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <form method="post" class="row g-3" id="user-form">
+                {% csrf_token %}
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.username.id_for_label }}">
+                        {{ form.username.label }}
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.email.id_for_label }}">
+                        {{ form.email.label }}
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.first_name.id_for_label }}">
+                        {{ form.first_name.label }}
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.last_name.id_for_label }}">
+                        {{ form.last_name.label }}
+                    </label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.password.id_for_label }}">
+                        {{ form.password.label }}
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.help_text %}
+                        <small class="form-hint">{{ form.password.help_text }}</small>
+                    {% endif %}
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">{{ form.groups.label }}</label>
+
+                    <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list>
+
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Disponíveis</div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm mb-2"
+                                placeholder="Filtrar grupos..."
+                                data-dual-list-filter
+                            >
+                            <select
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-available
+                            >
+                                {% for pk, label in groups_available %}
+                                    <option value="{{ pk }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-flex flex-column justify-content-center gap-2 flex-shrink-0 dual-list-actions-col">
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add>Adicionar →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove>← Remover</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all>Todos →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all>← Nenhum</button>
+                        </div>
+
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Selecionados</div>
+                            <div class="dual-list-spacer"></div>
+                            <select
+                                id="id_groups"
+                                name="groups"
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-chosen
+                            >
+                                {% for pk, label in groups_chosen %}
+                                    <option value="{{ pk }}" selected>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+
+                    {% if form.groups.errors %}
+                        <div class="invalid-feedback d-block">{{ form.groups.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-user">Salvar</button>
+                    <a href="{% url 'panel_users_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
