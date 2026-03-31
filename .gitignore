@@ -1,0 +1,15 @@
+.venv/
+.vscode/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.log
+*.sqlite3
+.coverage
+.coverage.*
+htmlcov/
+staticfiles/
+.python-version

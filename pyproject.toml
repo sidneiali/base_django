@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "base-django"
+version = "0.1.0"
+description = "Base Django com dashboard por modulos e painel interno."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.0,<7.0",
+    "django-bootstrap5>=26.2,<27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "django-stubs>=5.2",
+    "mypy>=1.11",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["config*", "core*", "panel*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["config", "core", "panel"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+exclude = ["core/migrations/"]
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
