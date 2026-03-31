@@ -1,6 +1,7 @@
 (function () {
     let autoRefreshTimer = null;
     let autoRefreshInFlight = false;
+    let shellMetricsFrame = null;
 
     function sortSelect(select) {
         Array.from(select.options)
@@ -174,6 +175,35 @@
         }
     }
 
+    function scrollPageBodyToTop() {
+        const pageBody = document.querySelector(".page-body");
+
+        if (pageBody) {
+            pageBody.scrollTop = 0;
+        }
+    }
+
+    function applyShellMetrics() {
+        const root = document.documentElement;
+        const topbar = document.querySelector(".app-topbar-shell");
+        const footer = document.querySelector(".footer-app");
+        const topbarHeight = Math.ceil(topbar?.offsetHeight || 0);
+        const footerHeight = Math.ceil(footer?.offsetHeight || 0);
+
+        if (topbarHeight > 0) {
+            root.style.setProperty("--app-topbar-height", `${topbarHeight}px`);
+        }
+
+        if (footerHeight > 0) {
+            root.style.setProperty("--app-footer-height", `${footerHeight}px`);
+        }
+    }
+
+    function syncShellMetrics() {
+        window.cancelAnimationFrame(shellMetricsFrame);
+        shellMetricsFrame = window.requestAnimationFrame(applyShellMetrics);
+    }
+
     function getAutoRefreshConfig() {
         const container = document.getElementById("page-content");
 
@@ -292,6 +322,7 @@
         initDualLists(root);
         syncActiveNav();
         syncPageTitle(root);
+        syncShellMetrics();
         scheduleAutoRefresh();
     }
 
@@ -300,10 +331,14 @@
     });
 
     document.body.addEventListener("htmx:afterSwap", function (event) {
+        if (event.detail.target?.id === "page-content") {
+            scrollPageBodyToTop();
+        }
         initPage(event.detail.target);
     });
 
     document.body.addEventListener("htmx:historyRestore", function () {
+        scrollPageBodyToTop();
         initPage(document);
     });
 
@@ -319,5 +354,9 @@
 
     window.addEventListener("online", function () {
         scheduleAutoRefresh();
+    });
+
+    window.addEventListener("resize", function () {
+        syncShellMetrics();
     });
 })();

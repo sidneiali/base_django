@@ -6,6 +6,7 @@
 
 html,
 body {
+    height: 100%;
     min-height: 100%;
 }
 
@@ -16,6 +17,9 @@ body {
 
 .layout-fluid {
     --tblr-page-padding: 1rem;
+    --app-topbar-height: 4.5rem;
+    --app-footer-height: 3rem;
+    overflow: hidden;
 }
 
 .page,
@@ -24,14 +28,24 @@ body {
     background: #f5f7fb;
 }
 
+.page {
+    min-height: 100dvh;
+    height: 100dvh;
+}
+
 .page-wrapper {
-    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .page-body {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
 }
 
 .app-sidebar {
@@ -62,7 +76,15 @@ body {
 }
 
 .page-body > .container-xl {
-    padding-bottom: 4rem;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+#page-content {
+    flex: 1 1 auto;
 }
 
 .app-sidebar .navbar-brand a {
@@ -209,6 +231,7 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     margin-top: auto;
     position: sticky;
     bottom: 0;
+    padding: 1rem 0 !important;
     z-index: 1020;
     border-top: 1px solid #edf2f7;
     background: rgba(245, 247, 251, 0.82);
