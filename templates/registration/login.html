@@ -25,9 +25,6 @@
                         <div class="auth-cover-form-header">
                             <p class="auth-cover-form-header__eyebrow">Acesso seguro</p>
                             <h2 class="auth-cover-form-header__title">Entrar na sua conta</h2>
-                            <p class="auth-cover-form-header__text">
-                                Use suas credenciais para continuar no ambiente administrativo.
-                            </p>
                         </div>
 
                         {% if form.non_field_errors %}
@@ -54,12 +51,9 @@
                             </div>
 
                             <div class="mb-2">
-                                <div class="d-flex align-items-center justify-content-between gap-3">
-                                    <label class="form-label mb-0" for="{{ form.password.id_for_label }}">
-                                        {{ form.password.label }}
-                                    </label>
-                                    <span class="auth-cover-form__hint">Acesso restrito ao sistema</span>
-                                </div>
+                                <label class="form-label" for="{{ form.password.id_for_label }}">
+                                    {{ form.password.label }}
+                                </label>
                                 {{ form.password }}
                                 {% if form.password.errors %}
                                     <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
@@ -77,11 +71,11 @@
                             <div class="auth-cover-form__meta">
                                 <span class="auth-cover-form__meta-item">
                                     <i class="ti ti-lock"></i>
-                                    Sessão autenticada pelo Django
+                                    Sessão autenticada
                                 </span>
-                                <span class="auth-cover-form__meta-item">
-                                    <i class="ti ti-bolt"></i>
-                                    Shell com Tabler local
+                                <span class="auth-cover-form__meta-item auth-cover-form__meta-item--end">
+                                    <i class="ti ti-shield-lock"></i>
+                                    Acesso restrito ao sistema
                                 </span>
                             </div>
 
@@ -91,11 +85,6 @@
                                 </button>
                             </div>
                         </form>
-
-                        <div class="auth-cover-form-footer">
-                            <span>Precisa de acesso ou suporte?</span>
-                            <span>Fale com o administrador do sistema.</span>
-                        </div>
                     </div>
                 </div>
             </main>

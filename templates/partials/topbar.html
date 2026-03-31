@@ -61,9 +61,12 @@
                 </div>
               {% endif %}
 
-              <a class="dropdown-item" href="{% url 'logout' %}">
-                Sair
-              </a>
+              <form method="post" action="{% url 'logout' %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  Sair
+                </button>
+              </form>
             </div>
           </div>
         </div>

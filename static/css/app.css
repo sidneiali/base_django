@@ -35,7 +35,9 @@ body {
 }
 
 .app-sidebar {
-    background: linear-gradient(180deg, #182433 0%, #0f1723 100%) !important;
+    background:
+        linear-gradient(160deg, rgba(47, 111, 237, 0.92), rgba(16, 27, 51, 0.94)),
+        linear-gradient(180deg, #14213d, #0f172a) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
     box-shadow: none !important;
 }
@@ -543,6 +545,10 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     font-size: 0.84rem;
 }
 
+.auth-cover-form__meta-item--end {
+    margin-left: auto;
+}
+
 .auth-cover-form .form-footer {
     margin-top: 0;
 }
@@ -607,5 +613,9 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     .auth-cover-form__meta {
         flex-direction: column;
         gap: 0.45rem;
+    }
+
+    .auth-cover-form__meta-item--end {
+        margin-left: 0;
     }
 }
