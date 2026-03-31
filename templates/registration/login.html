@@ -1,29 +1,107 @@
-{% load django_bootstrap5 static %}
+{% load static %}
 <!doctype html>
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Entrar</title>
+    <title>Entrar | BaseApp</title>
     <link href="{% static 'vendor/tabler/css/tabler.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/tabler/icons/tabler-icons.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
 </head>
-<body class="d-flex flex-column">
-<div class="page page-center">
-    <div class="container container-tight py-4">
-        <div class="card card-md">
-            <div class="card-body">
-                <h2 class="h2 text-center mb-4">Entrar no sistema</h2>
-                <form method="post">
-                    {% csrf_token %}
-                    {% bootstrap_form form %}
-                    <div class="form-footer">
-                        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+<body class="auth-cover-body">
+    <div class="auth-cover-page">
+        <div class="auth-cover-layout">
+            <aside class="auth-cover-aside d-none d-lg-flex"></aside>
+
+            <main class="auth-cover-main">
+                <div class="auth-cover-main__inner">
+                    <div class="auth-cover-form-shell">
+                        <div class="auth-cover-mobile-brand d-lg-none">
+                            <span class="auth-cover-brand__badge">BaseApp</span>
+                            <span class="auth-cover-brand__text">Painel interno com Django e Tabler</span>
+                        </div>
+
+                        <div class="auth-cover-form-header">
+                            <p class="auth-cover-form-header__eyebrow">Acesso seguro</p>
+                            <h2 class="auth-cover-form-header__title">Entrar na sua conta</h2>
+                            <p class="auth-cover-form-header__text">
+                                Use suas credenciais para continuar no ambiente administrativo.
+                            </p>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <form method="post" class="auth-cover-form" novalidate>
+                            {% csrf_token %}
+
+                            {% for hidden_field in form.hidden_fields %}
+                                {{ hidden_field }}
+                            {% endfor %}
+
+                            <div class="mb-3">
+                                <label class="form-label" for="{{ form.username.id_for_label }}">
+                                    {{ form.username.label }}
+                                </label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-2">
+                                <div class="d-flex align-items-center justify-content-between gap-3">
+                                    <label class="form-label mb-0" for="{{ form.password.id_for_label }}">
+                                        {{ form.password.label }}
+                                    </label>
+                                    <span class="auth-cover-form__hint">Acesso restrito ao sistema</span>
+                                </div>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            {% if redirect_field_value %}
+                                <input
+                                    type="hidden"
+                                    name="{{ redirect_field_name }}"
+                                    value="{{ redirect_field_value }}"
+                                >
+                            {% endif %}
+
+                            <div class="auth-cover-form__meta">
+                                <span class="auth-cover-form__meta-item">
+                                    <i class="ti ti-lock"></i>
+                                    Sessão autenticada pelo Django
+                                </span>
+                                <span class="auth-cover-form__meta-item">
+                                    <i class="ti ti-bolt"></i>
+                                    Shell com Tabler local
+                                </span>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    Entrar
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="auth-cover-form-footer">
+                            <span>Precisa de acesso ou suporte?</span>
+                            <span>Fale com o administrador do sistema.</span>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+            </main>
         </div>
     </div>
-</div>
-<script src="{% static 'vendor/tabler/js/tabler.min.js' %}"></script>
+
+    <script src="{% static 'vendor/tabler/js/tabler.min.js' %}"></script>
 </body>
 </html>

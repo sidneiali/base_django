@@ -8,6 +8,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from core.forms import LoginForm
 from core.views import forbidden_view
 
 handler403 = forbidden_view
@@ -18,7 +19,10 @@ urlpatterns = [
     path("painel/", include("panel.urls")),
     path(
         "login/",
-        auth_views.LoginView.as_view(template_name="registration/login.html"),
+        auth_views.LoginView.as_view(
+            template_name="registration/login.html",
+            authentication_form=LoginForm,
+        ),
         name="login",
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
