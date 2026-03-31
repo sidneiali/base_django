@@ -70,6 +70,28 @@
                     </div>
                 </div>
 
+                <div class="col-12 col-md-6 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.auto_refresh_enabled }}
+                        <label class="form-check-label" for="{{ form.auto_refresh_enabled.id_for_label }}">
+                            {{ form.auto_refresh_enabled.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.auto_refresh_interval.id_for_label }}">
+                        {{ form.auto_refresh_interval.label }}
+                    </label>
+                    {{ form.auto_refresh_interval }}
+                    {% if form.auto_refresh_interval.help_text %}
+                        <small class="form-hint">{{ form.auto_refresh_interval.help_text }}</small>
+                    {% endif %}
+                    {% if form.auto_refresh_interval.errors %}
+                        <div class="invalid-feedback d-block">{{ form.auto_refresh_interval.errors }}</div>
+                    {% endif %}
+                </div>
+
                 <div class="col-12">
                     <label class="form-label">{{ form.groups.label }}</label>
 

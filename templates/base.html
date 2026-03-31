@@ -25,6 +25,8 @@
                         hx-boost="true"
                         hx-target="#page-content"
                         hx-swap="innerHTML show:window:top"
+                        data-auto-refresh="{% if auto_refresh_enabled %}true{% else %}off{% endif %}"
+                        data-auto-refresh-interval="{{ auto_refresh_interval|default:30 }}"
                     >
                         {% block content %}{% endblock %}
                     </div>

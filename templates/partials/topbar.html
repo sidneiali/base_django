@@ -54,7 +54,7 @@
                   {% endif %}
 
                   {% if request.user.is_superuser %}
-                    <a class="dropdown-item topbar-settings-link" href="{% url 'admin:auth_group_changelist' %}">
+                    <a class="dropdown-item topbar-settings-link" href="{% url 'admin:auth_user_changelist' %}">
                       Super Usuário
                     </a>
                   {% endif %}

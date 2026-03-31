@@ -1,5 +1,6 @@
 """Context processors compartilhados pelo app core."""
 
+from .preferences import get_user_interface_preference_values
 from .services import build_modules_for_user
 
 
@@ -14,3 +15,9 @@ def sidebar_modules(request):
         return {"modules": {}}
 
     return {"modules": build_modules_for_user(request.user)}
+
+
+def user_interface_preferences(request):
+    """Injeta preferencias globais do shell para o usuario autenticado."""
+
+    return get_user_interface_preference_values(request.user)
