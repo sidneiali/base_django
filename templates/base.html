@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Sistema{% endblock %}</title>
+
+    <link href="{% static 'vendor/tabler/css/tabler.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/tabler/icons/tabler-icons.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="page">
+        {% include "partials/sidebar.html" %}
+        <div class="page-wrapper">
+            {% include "partials/topbar.html" %}
+
+            <div class="page-body">
+                <div class="container-xl py-4">
+                    <div
+                        id="page-content"
+                        hx-boost="true"
+                        hx-target="#page-content"
+                        hx-swap="innerHTML show:window:top"
+                    >
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+
+            <footer class="footer footer-app d-print-none">
+                <div class="container-xl">
+                    <div class="footer-app__content">
+                        <div>
+                            <div class="footer-app__brand">BaseApp</div>
+                            <div class="footer-app__text">Base Django para sistemas internos com navegação fluida.</div>
+                        </div>
+                        <div class="footer-app__meta">
+                            <span>Tabler local</span>
+                            <span>HTMX</span>
+                            <span>Django</span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="{% static 'vendor/tabler/js/tabler.min.js' %}"></script>
+    <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

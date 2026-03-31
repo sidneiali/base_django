@@ -1,0 +1,66 @@
+<aside
+  class="navbar navbar-vertical navbar-expand-lg"
+  hx-boost="true"
+  hx-target="#page-content"
+  hx-swap="innerHTML show:window:top"
+>
+  <div class="container-fluid">
+
+    <h1 class="navbar-brand navbar-brand-autodark">
+      <a href="{% url 'dashboard' %}" class="text-decoration-none">
+        BaseApp
+      </a>
+    </h1>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#sidebar-menu"
+      aria-controls="sidebar-menu"
+      aria-expanded="false"
+      aria-label="Alternar navegação"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="sidebar-menu">
+      <ul class="navbar-nav pt-lg-3">
+
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{% url 'dashboard' %}"
+            data-nav-prefix="{% url 'dashboard' %}"
+            data-nav-exact="true"
+          >
+            <span class="nav-link-title">Dashboard</span>
+          </a>
+        </li>
+
+        {% if modules %}
+          <li class="nav-item mt-3">
+            <div class="text-secondary small text-uppercase px-3">
+              Módulos
+            </div>
+          </li>
+
+          {% for group_name, group_modules in modules.items %}
+            {% for module in group_modules %}
+              <li class="nav-item">
+                <a
+                  class="nav-link {% if not module.has_access %}disabled opacity-50{% endif %}"
+                  href="{% if module.has_access %}{{ module.url }}{% else %}#{% endif %}"
+                  data-nav-prefix="{{ module.url }}"
+                >
+                  <span class="nav-link-title">{{ module.name }}</span>
+                </a>
+              </li>
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+
+      </ul>
+    </div>
+  </div>
+</aside>
