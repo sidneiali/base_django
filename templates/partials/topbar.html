@@ -1,66 +1,73 @@
-<header class="navbar navbar-expand-md d-print-none">
-  <div class="container-xl topbar-shell">
-    <div class="navbar-nav flex-row ms-auto topbar-user-menu">
+<div class="sticky-top app-topbar-shell">
+  <header class="navbar navbar-expand-md sticky-top d-print-none app-topbar">
+    <div class="container-xl">
+      <div class="app-topbar__title-block">
+        <div class="page-pretitle mb-1">BaseApp</div>
+        <h2 class="page-title m-0" data-layout-page-title>Sistema</h2>
+      </div>
+
       {% if request.user.is_authenticated %}
-        <div class="nav-item dropdown">
-          <a
-            href="#"
-            class="nav-link d-flex lh-1 text-reset p-0"
-            data-bs-toggle="dropdown"
-            data-bs-auto-close="outside"
-            aria-label="Abrir menu do usuário"
-          >
-            <span class="avatar avatar-sm">
-              {{ request.user.username|slice:":1"|upper }}
-            </span>
-            <div class="d-none d-xl-block ps-2">
-              <div>{{ request.user.username }}</div>
-              <div class="mt-1 small text-secondary">Usuário</div>
-            </div>
-          </a>
-
-          <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            {% if perms.auth.view_user or perms.auth.view_group or request.user.is_superuser %}
-              <button
-                type="button"
-                class="dropdown-item d-flex justify-content-between align-items-center topbar-settings-toggle"
-                data-bs-toggle="collapse"
-                data-bs-target="#topbar-configuracoes"
-                role="button"
-                aria-expanded="false"
-                aria-controls="topbar-configuracoes"
-              >
-                <span>Configurações</span>
-                <span class="nav-link-toggle"></span>
-              </button>
-
-              <div class="collapse topbar-settings-collapse" id="topbar-configuracoes">
-                {% if perms.auth.view_user %}
-                  <a class="dropdown-item topbar-settings-link" href="{% url 'panel_users_list' %}">
-                    Usuários
-                  </a>
-                {% endif %}
-
-                {% if perms.auth.view_group %}
-                  <a class="dropdown-item topbar-settings-link" href="{% url 'panel_groups_list' %}">
-                    Grupos
-                  </a>
-                {% endif %}
-
-                {% if request.user.is_superuser %}
-                  <a class="dropdown-item topbar-settings-link" href="{% url 'admin:auth_group_changelist' %}">
-                    Super Usuário
-                  </a>
-                {% endif %}
+        <div class="navbar-nav flex-row ms-auto align-items-center">
+          <div class="nav-item dropdown app-topbar__user">
+            <a
+              href="#"
+              class="nav-link d-flex lh-1 text-reset p-0"
+              data-bs-toggle="dropdown"
+              data-bs-auto-close="outside"
+              aria-label="Abrir menu do usuário"
+            >
+              <span class="avatar avatar-sm">
+                {{ request.user.username|slice:":1"|upper }}
+              </span>
+              <div class="d-none d-xl-block ps-2 text-start">
+                <div>{{ request.user.username }}</div>
+                <div class="mt-1 small text-secondary">Usuário</div>
               </div>
-            {% endif %}
-
-            <a class="dropdown-item" href="{% url 'logout' %}">
-              Sair
             </a>
+
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              {% if perms.auth.view_user or perms.auth.view_group or request.user.is_superuser %}
+                <button
+                  type="button"
+                  class="dropdown-item d-flex justify-content-between align-items-center topbar-settings-toggle"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#topbar-configuracoes"
+                  role="button"
+                  aria-expanded="false"
+                  aria-controls="topbar-configuracoes"
+                >
+                  <span>Configurações</span>
+                  <span class="nav-link-toggle"></span>
+                </button>
+
+                <div class="collapse topbar-settings-collapse" id="topbar-configuracoes">
+                  {% if perms.auth.view_user %}
+                    <a class="dropdown-item topbar-settings-link" href="{% url 'panel_users_list' %}">
+                      Usuários
+                    </a>
+                  {% endif %}
+
+                  {% if perms.auth.view_group %}
+                    <a class="dropdown-item topbar-settings-link" href="{% url 'panel_groups_list' %}">
+                      Grupos
+                    </a>
+                  {% endif %}
+
+                  {% if request.user.is_superuser %}
+                    <a class="dropdown-item topbar-settings-link" href="{% url 'admin:auth_group_changelist' %}">
+                      Super Usuário
+                    </a>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <a class="dropdown-item" href="{% url 'logout' %}">
+                Sair
+              </a>
+            </div>
           </div>
         </div>
       {% endif %}
     </div>
-  </div>
-</header>
+  </header>
+</div>

@@ -96,23 +96,6 @@
 
             link.classList.toggle("active", isActive);
         });
-
-        const configCollapse = document.getElementById("sidebar-configuracoes");
-        const configToggle = document.querySelector(
-            '[aria-controls="sidebar-configuracoes"]',
-        );
-        const shouldOpenConfig = path.startsWith("/painel/");
-
-        if (configCollapse) {
-            configCollapse.classList.toggle("show", shouldOpenConfig);
-        }
-
-        if (configToggle) {
-            configToggle.setAttribute(
-                "aria-expanded",
-                shouldOpenConfig ? "true" : "false",
-            );
-        }
     }
 
     function syncPageTitle(root) {
@@ -122,6 +105,12 @@
 
         if (titleSource?.dataset.pageTitle) {
             document.title = titleSource.dataset.pageTitle;
+
+            const layoutTitle = document.querySelector("[data-layout-page-title]");
+
+            if (layoutTitle) {
+                layoutTitle.textContent = titleSource.dataset.pageTitle;
+            }
         }
     }
 
