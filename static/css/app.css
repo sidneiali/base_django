@@ -280,6 +280,15 @@ a[aria-expanded="true"] .nav-link-toggle::before {
         #f5f7fb;
 }
 
+.public-docs-body .page-body {
+    margin: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.public-docs-body .page-body > .container-xl {
+    padding-bottom: 0;
+}
+
 .public-docs-topbar .container-xl {
     min-height: 4.25rem;
 }
