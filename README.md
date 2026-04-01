@@ -266,6 +266,7 @@ campos canônicos por `slug`.
 - `/painel/grupos/novo/`: criação de grupo
 - `/painel/grupos/<id>/editar/`: edição de grupo
 - `/painel/auditoria/`: trilha HTML de auditoria com filtros
+- `/painel/auditoria/<id>/`: drill-down completo de um evento de auditoria
 - `/admin/`: admin do Django
 
 ## Painel de usuários e grupos
@@ -282,6 +283,8 @@ Permissões exigidas por tela:
 - usuários: `auth.view_user`, `auth.add_user`, `auth.change_user`
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
 - auditoria: `core.view_auditlog`
+
+Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
 
 ## Arquivos importantes
 

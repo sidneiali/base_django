@@ -1,0 +1,142 @@
+<div data-page-title="Detalhe da auditoria">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h3 class="mb-1">Detalhe da auditoria</h3>
+            <p class="text-secondary mb-0">
+                Drill-down completo do evento {{ audit_log.action_label|lower }}.
+            </p>
+        </div>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">Voltar para a lista</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary small mb-1">Quando</div>
+                    <div class="fw-semibold">{{ audit_log.created_at|date:"d/m/Y H:i:s" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary small mb-1">Ação</div>
+                    <div><span class="badge bg-blue-lt">{{ audit_log.action_label }}</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary small mb-1">Ator</div>
+                    <div class="fw-semibold">{{ audit_log.actor_display }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary small mb-1">Request ID</div>
+                    <div><code>{{ audit_log.request_id|default:"-" }}</code></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Objeto</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Representação</dt>
+                        <dd class="col-sm-8">{{ audit_log.object_repr|default:"-" }}</dd>
+                        <dt class="col-sm-4">Tipo</dt>
+                        <dd class="col-sm-8">{{ audit_log.object_verbose_name|default:"-" }}</dd>
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">{{ audit_log.object_id|default:"-" }}</dd>
+                        <dt class="col-sm-4">App</dt>
+                        <dd class="col-sm-8">
+                            {% if audit_log.content_type %}
+                                {{ audit_log.content_type.app_label }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </dd>
+                        <dt class="col-sm-4">Model</dt>
+                        <dd class="col-sm-8">
+                            {% if audit_log.content_type %}
+                                {{ audit_log.content_type.model }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Requisição</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Método</dt>
+                        <dd class="col-sm-8">{{ audit_log.request_method|default:"-" }}</dd>
+                        <dt class="col-sm-4">Caminho</dt>
+                        <dd class="col-sm-8">{{ audit_log.path|default:"-" }}</dd>
+                        <dt class="col-sm-4">IP</dt>
+                        <dd class="col-sm-8">{{ audit_log.ip_address|default:"-" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Alterações</h3>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0"><code>{{ changes_json }}</code></pre>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Antes</h3>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0"><code>{{ before_json }}</code></pre>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Depois</h3>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0"><code>{{ after_json }}</code></pre>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Metadata</h3>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0"><code>{{ metadata_json }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

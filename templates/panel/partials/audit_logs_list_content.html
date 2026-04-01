@@ -63,6 +63,7 @@
                         <th>Objeto</th>
                         <th>Caminho</th>
                         <th>Request ID</th>
+                        <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,10 +88,18 @@
                                 <div class="text-secondary small">{{ audit_log.path|default:"-" }}</div>
                             </td>
                             <td><code>{{ audit_log.request_id|default:"-" }}</code></td>
+                            <td class="text-end">
+                                <a
+                                    href="{% url 'panel_audit_log_detail' audit_log.pk %}{{ current_query }}"
+                                    class="btn btn-sm btn-outline-primary"
+                                >
+                                    Detalhes
+                                </a>
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-secondary">
+                            <td colspan="7" class="text-center text-secondary">
                                 Nenhum evento encontrado para os filtros informados.
                             </td>
                         </tr>
@@ -102,9 +111,19 @@
         {% if page_obj.paginator.num_pages > 1 %}
             <div class="card-footer d-flex justify-content-between align-items-center">
                 <span class="text-secondary small">
-                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    Exibindo {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} eventos.
                 </span>
                 <div class="btn-list">
+                    {% if page_obj.has_previous %}
+                        <a
+                            href="?page=1{{ page_query }}"
+                            class="btn btn-outline-secondary btn-sm"
+                            hx-get="?page=1{{ page_query }}"
+                            hx-push-url="true"
+                        >
+                            Primeira
+                        </a>
+                    {% endif %}
                     {% if page_obj.has_previous %}
                         <a
                             href="?page={{ page_obj.previous_page_number }}{{ page_query }}"
@@ -115,6 +134,22 @@
                             Anterior
                         </a>
                     {% endif %}
+                    {% for page_number in page_numbers %}
+                        {% if page_number == page_ellipsis %}
+                            <span class="btn btn-sm btn-ghost-secondary disabled">{{ page_number }}</span>
+                        {% elif page_number == page_obj.number %}
+                            <span class="btn btn-sm btn-primary disabled">{{ page_number }}</span>
+                        {% else %}
+                            <a
+                                href="?page={{ page_number }}{{ page_query }}"
+                                class="btn btn-outline-secondary btn-sm"
+                                hx-get="?page={{ page_number }}{{ page_query }}"
+                                hx-push-url="true"
+                            >
+                                {{ page_number }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
                     {% if page_obj.has_next %}
                         <a
                             href="?page={{ page_obj.next_page_number }}{{ page_query }}"
@@ -123,6 +158,16 @@
                             hx-push-url="true"
                         >
                             Próxima
+                        </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a
+                            href="?page={{ page_obj.paginator.num_pages }}{{ page_query }}"
+                            class="btn btn-outline-secondary btn-sm"
+                            hx-get="?page={{ page_obj.paginator.num_pages }}{{ page_query }}"
+                            hx-push-url="true"
+                        >
+                            Última
                         </a>
                     {% endif %}
                 </div>
