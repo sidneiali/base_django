@@ -8,7 +8,9 @@ from functools import wraps
 from django.db import OperationalError, ProgrammingError
 from django.http import JsonResponse
 
+from .audit import create_audit_log
 from .models import ApiAccessProfile, ApiResourcePermission, ApiToken
+from .models import AuditLog
 
 API_METHOD_ACTIONS = {
     "GET": "read",
@@ -157,6 +159,39 @@ def user_has_api_permission(user, resource: str, action: str) -> bool:
         return False
 
 
+def log_api_access_denied(
+    request,
+    *,
+    result: ApiAuthenticationResult | None,
+    code: str,
+    detail: str,
+    resource: str,
+    action: str | None,
+    status: int,
+) -> None:
+    """Registra falhas de autenticação/autorização da API na auditoria."""
+
+    actor = result.user if result and getattr(result.user, "pk", None) else None
+    actor_identifier = ""
+    if actor is not None:
+        actor_identifier = actor.get_username()
+
+    create_audit_log(
+        AuditLog.ACTION_API_ACCESS_DENIED,
+        actor=actor,
+        actor_identifier=actor_identifier,
+        metadata={
+            "event": "api_access_denied",
+            "reason_code": code,
+            "detail": detail,
+            "resource": resource,
+            "action": action or "",
+            "status": status,
+        },
+        object_repr=resource,
+    )
+
+
 def require_api_permission(resource: str):
     """Protege uma view JSON via Bearer token e permissão CRUD do recurso."""
 
@@ -165,6 +200,15 @@ def require_api_permission(resource: str):
         def wrapper(request, *args, **kwargs):
             result = authenticate_api_request(request)
             if not result.is_authenticated:
+                log_api_access_denied(
+                    request,
+                    result=result,
+                    code=result.code or "api_auth_failed",
+                    detail=result.detail or "A autenticação da API falhou.",
+                    resource=resource,
+                    action=get_api_action_for_method(request.method),
+                    status=401,
+                )
                 return api_error_response(
                     result.detail or "A autenticação da API falhou.",
                     code=result.code or "api_auth_failed",
@@ -180,6 +224,15 @@ def require_api_permission(resource: str):
                 )
 
             if not user_has_api_permission(result.user, resource, action):
+                log_api_access_denied(
+                    request,
+                    result=result,
+                    code="forbidden",
+                    detail="Seu token não possui permissão para esta operação.",
+                    resource=resource,
+                    action=action,
+                    status=403,
+                )
                 return api_error_response(
                     "Seu token não possui permissão para esta operação.",
                     code="forbidden",

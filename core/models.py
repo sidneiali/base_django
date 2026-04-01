@@ -80,6 +80,8 @@ class AuditLog(models.Model):
     ACTION_LOGIN = "login"
     ACTION_LOGOUT = "logout"
     ACTION_LOGIN_FAILED = "login_failed"
+    ACTION_API_ACCESS_DENIED = "api_access_denied"
+    ACTION_RATE_LIMITED = "rate_limited"
 
     ACTION_CHOICES = [
         (ACTION_CREATE, "Criação"),
@@ -88,6 +90,8 @@ class AuditLog(models.Model):
         (ACTION_LOGIN, "Login"),
         (ACTION_LOGOUT, "Logout"),
         (ACTION_LOGIN_FAILED, "Falha de login"),
+        (ACTION_API_ACCESS_DENIED, "Acesso negado à API"),
+        (ACTION_RATE_LIMITED, "Rate limit"),
     ]
 
     actor = models.ForeignKey(
@@ -158,6 +162,7 @@ class ApiResourcePermission(models.Model):
 
     class Resource(models.TextChoices):
         PANEL_USERS = "panel.users", "Usuários"
+        CORE_API_ACCESS = "core.api_access", "Acesso à API"
         CORE_AUDIT_LOGS = "core.audit_logs", "Logs de auditoria"
 
     access_profile = models.ForeignKey(

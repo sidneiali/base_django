@@ -4,16 +4,58 @@ from __future__ import annotations
 
 from datetime import date
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 
 from .api_auth import api_error_response, require_api_permission
-from .models import AuditLog
+from .api_access import get_user_api_access_values
+from .models import ApiResourcePermission, AuditLog
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
+User = get_user_model()
+
+
+def _serialize_group(group) -> dict[str, object]:
+    """Resume grupos vinculados ao usuário autenticado."""
+
+    return {"id": group.pk, "name": group.name}
+
+
+def _serialize_api_permissions(user) -> list[dict[str, object]]:
+    """Resume a matriz de permissões efetivas da API para o usuário."""
+
+    values = get_user_api_access_values(user)
+    matrix = values["permissions"]
+    choices = dict(ApiResourcePermission.Resource.choices)
+
+    return [
+        {
+            "resource": resource,
+            "label": choices.get(resource, resource),
+            **permissions,
+        }
+        for resource, permissions in matrix.items()
+    ]
+
+
+def _serialize_current_user(user: User) -> dict[str, object]:
+    """Converte o usuário autenticado num payload simples da API."""
+
+    return {
+        "id": user.pk,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "is_active": user.is_active,
+        "groups": [_serialize_group(group) for group in user.groups.order_by("name")],
+    }
 
 
 def _serialize_actor(actor) -> dict[str, object] | None:
@@ -177,6 +219,78 @@ def _filter_audit_logs(
         queryset = queryset.filter(created_at__date__lte=date_to)
 
     return queryset, None
+
+
+def health(request: HttpRequest) -> HttpResponse:
+    """Expõe um health check público e leve para observabilidade."""
+
+    current_time = timezone.localtime(timezone.now())
+    current_timezone = timezone.get_current_timezone_name()
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "timestamp": current_time.isoformat(),
+            "timezone": current_timezone,
+            "rate_limit": {
+                "enabled": bool(getattr(settings, "API_RATE_LIMIT_ENABLED", True)),
+                "requests": int(getattr(settings, "API_RATE_LIMIT_REQUESTS", 120)),
+                "window_seconds": int(getattr(settings, "API_RATE_LIMIT_WINDOW_SECONDS", 60)),
+            },
+        }
+    )
+
+
+@csrf_exempt
+@require_api_permission("core.api_access")
+def me(request: HttpRequest) -> HttpResponse:
+    """Expõe os dados básicos da conta autenticada na API."""
+
+    if request.method != "GET":
+        return api_error_response(
+            "Método não permitido para este endpoint.",
+            code="method_not_allowed",
+            status=405,
+        )
+
+    return JsonResponse(_serialize_current_user(request.user))
+
+
+@csrf_exempt
+@require_api_permission("core.api_access")
+def token_status(request: HttpRequest) -> HttpResponse:
+    """Exibe o status do token atual e a matriz de acesso efetiva."""
+
+    if request.method != "GET":
+        return api_error_response(
+            "Método não permitido para este endpoint.",
+            code="method_not_allowed",
+            status=405,
+        )
+
+    token = request.api_token
+    if token is None:
+        return api_error_response(
+            "Token da API não encontrado na sessão autenticada.",
+            code="token_not_available",
+            status=404,
+        )
+
+    access_values = get_user_api_access_values(request.user)
+
+    return JsonResponse(
+        {
+            "api_enabled": bool(access_values["api_enabled"]),
+            "token": {
+                "token_prefix": token.token_prefix,
+                "issued_at": token.issued_at.isoformat() if token.issued_at else None,
+                "last_used_at": token.last_used_at.isoformat() if token.last_used_at else None,
+                "revoked_at": token.revoked_at.isoformat() if token.revoked_at else None,
+                "is_active": token.is_active,
+            },
+            "permissions": _serialize_api_permissions(request.user),
+        }
+    )
 
 
 @csrf_exempt

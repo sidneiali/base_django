@@ -28,6 +28,9 @@ def _build_postman_collection(request) -> dict[str, object]:
     """Monta a coleção Postman pública dos recursos disponíveis da API."""
 
     base_url = _build_public_base_url(request)
+    health_url = f"{base_url}{reverse('api_core_health')}"
+    me_url = f"{base_url}{reverse('api_core_me')}"
+    token_url = f"{base_url}{reverse('api_core_token')}"
     users_collection_url = f"{base_url}{reverse('api_panel_users_collection')}"
     user_detail_url = f"{base_url}/api/panel/users/:id/"
     audit_logs_collection_url = f"{base_url}{reverse('api_core_audit_logs_collection')}"
@@ -52,6 +55,51 @@ def _build_postman_collection(request) -> dict[str, object]:
             {"key": "audit_log_id", "value": "1"},
         ],
         "item": [
+            {
+                "name": "Operacional",
+                "item": [
+                    {
+                        "name": "Health check",
+                        "request": {
+                            "method": "GET",
+                            "url": health_url,
+                        },
+                    },
+                ],
+            },
+            {
+                "name": "Acesso à API",
+                "item": [
+                    {
+                        "name": "Minha conta",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": me_url,
+                        },
+                    },
+                    {
+                        "name": "Token atual",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": token_url,
+                        },
+                    },
+                ],
+            },
             {
                 "name": "Usuários do painel",
                 "item": [

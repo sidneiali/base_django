@@ -360,6 +360,7 @@ a[aria-expanded="true"] .nav-link-toggle::before {
 }
 
 .public-docs__example {
+    position: relative;
     scroll-margin-top: 6rem;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -369,9 +370,21 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.14);
 }
 
+.public-docs__code-wrap {
+    position: relative;
+}
+
+.public-docs__copy-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 2;
+}
+
 .public-docs__code {
     margin: 0;
     padding: 1rem 1.1rem;
+    padding-top: 3.2rem;
     overflow-x: auto;
     border-radius: 0.9rem;
     background: rgba(15, 23, 42, 0.96);

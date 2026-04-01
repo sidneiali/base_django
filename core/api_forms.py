@@ -16,6 +16,7 @@ API_ACTION_OPTIONS = (
 )
 API_RESOURCE_ALLOWED_ACTIONS = {
     ApiResourcePermission.Resource.PANEL_USERS: {"create", "read", "update", "delete"},
+    ApiResourcePermission.Resource.CORE_API_ACCESS: {"read"},
     ApiResourcePermission.Resource.CORE_AUDIT_LOGS: {"read"},
 }
 

@@ -9,7 +9,7 @@
             <div class="public-docs__eyebrow">Documentação pública</div>
             <h2 class="public-docs__title">Swagger da API</h2>
             <p class="public-docs__text">
-                Página pública para explorar e testar a API sem carregar o shell com sidebar. O acesso aos endpoints segue protegido por <code>Authorization: Bearer &lt;token&gt;</code>.
+                Página pública para explorar e testar a API sem carregar o shell com sidebar. A maior parte dos endpoints usa <code>Authorization: Bearer &lt;token&gt;</code>, com exceção do health check operacional.
             </p>
         </div>
     </div>
@@ -18,14 +18,33 @@
         <div class="col-12 col-xl-4 d-flex">
             <div class="card public-docs__card w-100">
                 <div class="card-body d-flex flex-column gap-3">
-                    <div>
-                        <div class="public-docs__section-label">Recursos</div>
-                        <h3 class="card-title mb-1">Usuários do painel</h3>
-                        <div class="text-secondary">Base URL: <code>/api/panel/users/</code></div>
-                    </div>
-
                     <div class="alert alert-primary mb-0" role="alert">
                         Gere seu token em <strong>Minha conta</strong> e envie no header Bearer.
+                    </div>
+
+                    <div>
+                        <div class="public-docs__section-label">Recursos</div>
+                        <h3 class="card-title mb-1">Operacional</h3>
+                        <div class="text-secondary">Base URL: <code>/api/core/health/</code></div>
+                    </div>
+
+                    <ul class="public-docs__endpoint-list">
+                        <li><a href="#api-health" class="public-docs__endpoint-link" data-endpoint-link="api-health"><code>GET</code> `/api/core/health/`</a></li>
+                    </ul>
+
+                    <div>
+                        <h3 class="card-title mb-1">Acesso à API</h3>
+                        <div class="text-secondary">Base URL: <code>/api/core/</code></div>
+                    </div>
+
+                    <ul class="public-docs__endpoint-list">
+                        <li><a href="#api-me" class="public-docs__endpoint-link" data-endpoint-link="api-me"><code>GET</code> `/api/core/me/`</a></li>
+                        <li><a href="#api-token" class="public-docs__endpoint-link" data-endpoint-link="api-token"><code>GET</code> `/api/core/token/`</a></li>
+                    </ul>
+
+                    <div>
+                        <h3 class="card-title mb-1">Usuários do painel</h3>
+                        <div class="text-secondary">Base URL: <code>/api/panel/users/</code></div>
                     </div>
 
                     <ul class="public-docs__endpoint-list">
@@ -84,6 +103,21 @@
                         <div class="tab-content public-docs__tab-content">
                             <div class="tab-pane active show" id="api-tabs-curl" role="tabpanel">
                                 <div class="d-flex flex-column gap-3">
+                                    <div class="public-docs__example" data-endpoint-example="api-health">
+                                        <h4 class="card-title mb-1">GET `/api/core/health/`</h4>
+                                        <pre class="public-docs__code"><code>curl {{ api_base_url }}/api/core/health/</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="api-me">
+                                        <h4 class="card-title mb-1">GET `/api/core/me/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/me/</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="api-token">
+                                        <h4 class="card-title mb-1">GET `/api/core/token/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/token/</code></pre>
+                                    </div>
+
                                     <div class="public-docs__example" data-endpoint-example="users-list">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/</code></pre>
@@ -130,6 +164,47 @@
 
                             <div class="tab-pane" id="api-tabs-python" role="tabpanel">
                                 <div class="d-flex flex-column gap-3">
+                                    <div class="public-docs__example" data-endpoint-example="api-health">
+                                        <h4 class="card-title mb-1">GET `/api/core/health/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/core/health/",
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="api-me">
+                                        <h4 class="card-title mb-1">GET `/api/core/me/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/core/me/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="api-token">
+                                        <h4 class="card-title mb-1">GET `/api/core/token/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/core/token/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
                                     <div class="public-docs__example" data-endpoint-example="users-list">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>import requests
@@ -254,11 +329,63 @@ print(response.json())</code></pre>
 <script>
     (() => {
         const endpointLinks = document.querySelectorAll("[data-endpoint-link]");
-        if (!endpointLinks.length) {
-            return;
-        }
-
         let highlightedExample = null;
+
+        const copyText = async (value) => {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+                return;
+            }
+
+            const textarea = document.createElement("textarea");
+            textarea.value = value;
+            textarea.setAttribute("readonly", "readonly");
+            textarea.style.position = "absolute";
+            textarea.style.left = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+        };
+
+        const initCodeCopyButtons = () => {
+            document.querySelectorAll(".public-docs__code").forEach((codeBlock) => {
+                if (codeBlock.parentElement?.classList.contains("public-docs__code-wrap")) {
+                    return;
+                }
+
+                const wrapper = document.createElement("div");
+                wrapper.className = "public-docs__code-wrap";
+
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "btn btn-sm btn-outline-light public-docs__copy-btn";
+                button.textContent = "Copiar";
+
+                button.addEventListener("click", async () => {
+                    const code = codeBlock.querySelector("code");
+                    const value = code?.textContent?.trim() || codeBlock.textContent?.trim() || "";
+
+                    if (!value) {
+                        return;
+                    }
+
+                    try {
+                        await copyText(value);
+                        button.textContent = "Copiado";
+                        window.setTimeout(() => {
+                            button.textContent = "Copiar";
+                        }, 1800);
+                    } catch (error) {
+                        console.error("Falha ao copiar exemplo da API:", error);
+                    }
+                });
+
+                codeBlock.parentNode.insertBefore(wrapper, codeBlock);
+                wrapper.appendChild(button);
+                wrapper.appendChild(codeBlock);
+            });
+        };
 
         const clearHighlight = () => {
             if (!highlightedExample) {
@@ -300,6 +427,8 @@ print(response.json())</code></pre>
                 scrollToEndpointExample(link.dataset.endpointLink);
             });
         });
+
+        initCodeCopyButtons();
     })();
 </script>
 {% endblock %}

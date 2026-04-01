@@ -30,6 +30,10 @@ class PanelUserFormTests(TestCase):
                 "auto_refresh_enabled": "on",
                 "auto_refresh_interval": "30",
                 "api_enabled": "on",
+                "api_core_api_access_create": "on",
+                "api_core_api_access_read": "on",
+                "api_core_api_access_update": "on",
+                "api_core_api_access_delete": "on",
                 "api_panel_users_read": "on",
                 "api_panel_users_update": "on",
                 "api_core_audit_logs_create": "on",
@@ -53,6 +57,15 @@ class PanelUserFormTests(TestCase):
         self.assertTrue(users_permission.can_update)
         self.assertFalse(users_permission.can_create)
         self.assertFalse(users_permission.can_delete)
+
+        api_access_permission = ApiResourcePermission.objects.get(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_API_ACCESS,
+        )
+        self.assertTrue(api_access_permission.can_read)
+        self.assertFalse(api_access_permission.can_create)
+        self.assertFalse(api_access_permission.can_update)
+        self.assertFalse(api_access_permission.can_delete)
 
         audit_logs_permission = ApiResourcePermission.objects.get(
             access_profile=access_profile,

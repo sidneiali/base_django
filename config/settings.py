@@ -79,6 +79,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.ApiTokenAuthenticationMiddleware',
     'core.middleware.AuditContextMiddleware',
+    'core.middleware.ApiRateLimitMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -181,6 +182,10 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "resend")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", True)
+
+API_RATE_LIMIT_ENABLED = env_bool("API_RATE_LIMIT_ENABLED", True)
+API_RATE_LIMIT_REQUESTS = env_int("API_RATE_LIMIT_REQUESTS", 120)
+API_RATE_LIMIT_WINDOW_SECONDS = env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
 
 APP_FORCE_HTTPS = env_bool("APP_FORCE_HTTPS", False)
 SESSION_COOKIE_SECURE = APP_FORCE_HTTPS

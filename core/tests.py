@@ -5,6 +5,7 @@ import json
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 from django.core import mail
 from django.utils import timezone
 from django.test import TestCase, override_settings
@@ -182,6 +183,7 @@ class ApiAccessModelTests(TestCase):
 
         self.assertTrue(values["api_enabled"])
         self.assertIn(ApiResourcePermission.Resource.PANEL_USERS, values["permissions"])
+        self.assertIn(ApiResourcePermission.Resource.CORE_API_ACCESS, values["permissions"])
         self.assertIn(
             ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
             values["permissions"],
@@ -312,8 +314,13 @@ class AccountPasswordChangeTests(TestCase):
         self.assertContains(response, "Python")
         self.assertNotContains(response, ">Postman<", html=False)
         self.assertContains(response, reverse("api_docs_postman"))
+        self.assertContains(response, "/api/core/health/")
+        self.assertContains(response, "/api/core/me/")
+        self.assertContains(response, "/api/core/token/")
         self.assertContains(response, "/api/panel/users/&lt;id&gt;/")
         self.assertContains(response, "/api/core/audit-logs/&lt;id&gt;/")
+        self.assertContains(response, 'data-endpoint-link="api-health"', html=False)
+        self.assertContains(response, 'data-endpoint-link="api-me"', html=False)
         self.assertContains(response, 'data-endpoint-link="users-list"', html=False)
 
     def test_api_docs_postman_download_is_public(self):
@@ -329,7 +336,9 @@ class AccountPasswordChangeTests(TestCase):
         self.assertEqual(collection["info"]["name"], "BaseApp API")
         self.assertEqual(collection["variable"][1]["key"], "token")
         self.assertEqual(collection["variable"][3]["key"], "audit_log_id")
-        self.assertEqual(collection["item"][1]["name"], "Logs de auditoria")
+        self.assertEqual(collection["item"][0]["name"], "Operacional")
+        self.assertEqual(collection["item"][1]["name"], "Acesso à API")
+        self.assertEqual(collection["item"][3]["name"], "Logs de auditoria")
 
 
 class AuditLogApiTests(TestCase):
@@ -440,6 +449,177 @@ class AuditLogApiTests(TestCase):
         self.assertEqual(payload["before"]["email"], "antes@example.com")
         self.assertEqual(payload["after"]["email"], "depois@example.com")
         self.assertEqual(payload["metadata"]["event"], "manual_update")
+
+
+class ApiAccessEndpointsTests(TestCase):
+    """Valida os endpoints de introspecção da conta e do token atuais."""
+
+    def _issue_token(self, *, can_read: bool = True) -> tuple[User, str]:
+        """Cria um usuário com acesso habilitado ao recurso de introspecção."""
+
+        user = User.objects.create_user(
+            username="self-api",
+            email="self-api@example.com",
+            password="SenhaSegura@123",
+            first_name="Self",
+            last_name="Api",
+        )
+        group = Group.objects.create(name="Integrações")
+        user.groups.add(group)
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_API_ACCESS,
+            can_read=can_read,
+        )
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            can_read=True,
+        )
+        _token, raw_token = ApiToken.issue_for_user(user)
+        return user, raw_token
+
+    def test_me_requires_api_access_permission(self):
+        """A conta atual também precisa respeitar a permissão de leitura."""
+
+        _user, raw_token = self._issue_token(can_read=False)
+
+        response = self.client.get(
+            reverse("api_core_me"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "forbidden")
+
+    def test_me_returns_authenticated_user_payload(self):
+        """O endpoint /me deve devolver a identidade do usuário autenticado."""
+
+        user, raw_token = self._issue_token()
+
+        response = self.client.get(
+            reverse("api_core_me"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["id"], user.pk)
+        self.assertEqual(payload["username"], user.username)
+        self.assertEqual(payload["email"], user.email)
+        self.assertEqual(payload["groups"][0]["name"], "Integrações")
+
+    def test_token_status_returns_current_token_and_permissions(self):
+        """O endpoint /token deve expor o status do token atual e os acessos."""
+
+        user, raw_token = self._issue_token()
+
+        response = self.client.get(
+            reverse("api_core_token"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["api_enabled"])
+        self.assertEqual(
+            payload["token"]["token_prefix"],
+            raw_token[: ApiToken.PREFIX_LENGTH],
+        )
+        permissions = {item["resource"]: item for item in payload["permissions"]}
+        self.assertTrue(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_read"])
+        self.assertFalse(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_create"])
+        self.assertEqual(user.username, "self-api")
+
+
+@override_settings(API_RATE_LIMIT_REQUESTS=1, API_RATE_LIMIT_WINDOW_SECONDS=60)
+class ApiOperationalSecurityTests(TestCase):
+    """Valida health check, rate limit e trilha de falhas da API."""
+
+    def setUp(self):
+        """Limpa o cache antes de cada cenário de rate limit."""
+
+        super().setUp()
+        cache.clear()
+
+    def tearDown(self):
+        """Evita que buckets de teste vazem para outros cenários."""
+
+        cache.clear()
+        super().tearDown()
+
+    def _issue_token(self) -> str:
+        """Cria um token com leitura do recurso de introspecção."""
+
+        user = User.objects.create_user(
+            username="operacao-api",
+            email="operacao-api@example.com",
+            password="SenhaSegura@123",
+        )
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_API_ACCESS,
+            can_read=True,
+        )
+        _token, raw_token = ApiToken.issue_for_user(user)
+        return raw_token
+
+    def test_health_endpoint_is_public(self):
+        """O health check deve responder sem autenticação."""
+
+        response = self.client.get(reverse("api_core_health"))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["timestamp"].endswith("-03:00"))
+        self.assertTrue(payload["rate_limit"]["enabled"])
+
+    def test_invalid_token_attempt_is_logged(self):
+        """Token inválido deve gerar 401 e log de acesso negado."""
+
+        AuditLog.objects.all().delete()
+
+        response = self.client.get(
+            reverse("api_core_me"),
+            HTTP_AUTHORIZATION="Bearer token-invalido",
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "invalid_token")
+
+        log = AuditLog.objects.filter(action=AuditLog.ACTION_API_ACCESS_DENIED).first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.metadata["reason_code"], "invalid_token")
+        self.assertEqual(log.metadata["resource"], "core.api_access")
+
+    def test_rate_limit_blocks_second_request_and_logs_event(self):
+        """A segunda chamada no mesmo bucket deve retornar 429."""
+
+        raw_token = self._issue_token()
+        AuditLog.objects.all().delete()
+
+        first_response = self.client.get(
+            reverse("api_core_me"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+        second_response = self.client.get(
+            reverse("api_core_me"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 429)
+        self.assertEqual(second_response.json()["code"], "rate_limited")
+        self.assertEqual(second_response["Retry-After"], "60")
+        self.assertEqual(second_response["X-RateLimit-Limit"], "1")
+
+        log = AuditLog.objects.filter(action=AuditLog.ACTION_RATE_LIMITED).first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.metadata["event"], "api_rate_limited")
+        self.assertEqual(log.metadata["path"], reverse("api_core_me"))
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
