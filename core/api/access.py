@@ -6,7 +6,7 @@ from typing import Any
 
 from django.db import OperationalError, ProgrammingError
 
-from .models import ApiAccessProfile, ApiResourcePermission, ApiToken
+from ..models import ApiAccessProfile, ApiResourcePermission, ApiToken
 
 API_CRUD_FLAGS = (
     ("create", "can_create"),

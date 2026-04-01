@@ -10,14 +10,14 @@ from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from core.api_auth import require_api_permission
-from core.api_queries import (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, build_filters_meta,
+from core.api.auth import require_api_permission
+from core.api.queries import (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, build_filters_meta,
                               paginate_queryset, parse_bool_filter,
                               parse_ordering, parse_positive_int)
-from core.api_responses import (api_collection_response, api_error_response,
+from core.api.responses import (api_collection_response, api_error_response,
                                 api_success_response)
 
-from .api_forms import ApiUserWriteForm
+from .forms import ApiUserWriteForm
 
 USER_ORDERING_FIELDS = {
     "username": "username",

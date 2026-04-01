@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from .api_views import (
+from .views import (
     audit_log_detail,
     audit_logs_collection,
     health,

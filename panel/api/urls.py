@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from .api_views import user_detail, users_collection
+from .views import user_detail, users_collection
 
 urlpatterns = [
     path("users/", users_collection, name="api_panel_users_collection"),

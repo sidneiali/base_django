@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from django import forms
 
-from .api_access import get_user_api_access_values, save_user_api_access
-from .models import ApiResourcePermission
+from .access import get_user_api_access_values, save_user_api_access
+from ..models import ApiResourcePermission
 
 API_RESOURCE_OPTIONS = tuple(ApiResourcePermission.Resource.choices)
 API_ACTION_OPTIONS = (

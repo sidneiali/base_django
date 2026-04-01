@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from .api_access import get_user_api_access_values
+from .api.access import get_user_api_access_values
 from .models import (ApiAccessProfile, ApiResourcePermission, ApiToken,
                      AuditLog, Module)
 

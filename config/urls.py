@@ -19,10 +19,10 @@ urlpatterns = [
     path("painel/", include("panel.urls")),
     path("api/openapi.json", api_openapi, name="api_openapi"),
     path("api/v1/openapi.json", api_openapi, name="api_v1_openapi"),
-    path("api/core/", include("core.api_urls")),
-    path("api/panel/", include("panel.api_urls")),
-    path("api/v1/core/", include("core.api_urls_v1")),
-    path("api/v1/panel/", include("panel.api_urls_v1")),
+    path("api/core/", include("core.api.urls")),
+    path("api/panel/", include("panel.api.urls")),
+    path("api/v1/core/", include("core.api.urls_v1")),
+    path("api/v1/panel/", include("panel.api.urls_v1")),
     path(
         "login/",
         auth_views.LoginView.as_view(

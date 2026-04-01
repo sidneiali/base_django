@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.models import Group, User
 
-from .constants import PROTECTED_GROUP_NAMES
+from ..constants import PROTECTED_GROUP_NAMES
 
 
 class ApiUserWriteForm(forms.ModelForm):

@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from .api_views import audit_log_detail, audit_logs_collection, health, me, token_status
+from .views import audit_log_detail, audit_logs_collection, health, me, token_status
 
 urlpatterns = [
     path("health/", health, name="api_v1_core_health"),

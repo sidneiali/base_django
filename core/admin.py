@@ -10,7 +10,7 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.models import User
 
-from .api_forms import ApiAccessFormMixin, API_PERMISSION_FIELD_ROWS
+from .api.forms import ApiAccessFormMixin, API_PERMISSION_FIELD_ROWS
 from .models import AuditLog, Module, UserInterfacePreference
 from .preferences import (get_user_interface_preference,
                           save_user_interface_preference)

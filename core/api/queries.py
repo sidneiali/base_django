@@ -7,7 +7,7 @@ from datetime import date
 from django.http import JsonResponse
 from django.utils.dateparse import parse_date
 
-from .api_responses import api_error_response, build_pagination_meta
+from .responses import api_error_response, build_pagination_meta
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100

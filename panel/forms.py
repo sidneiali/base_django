@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.models import Group, Permission, User
 from django.db.models import Model
 
-from core.api_forms import ApiAccessFormMixin
+from core.api.forms import ApiAccessFormMixin
 from core.models import UserInterfacePreference
 from core.preferences import (get_user_interface_preference,
                               save_user_interface_preference)

@@ -10,12 +10,13 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from .api_access import (get_user_api_token_summary, issue_user_api_token,
+from .api.access import (get_user_api_token_summary, issue_user_api_token,
                          revoke_user_api_token)
 from .htmx import htmx_location, is_htmx_request, render_page
 from .forms import SelfPasswordChangeForm
 from .models import Module
-from .openapi import build_docs_sections, build_openapi_schema, build_public_base_url
+from .api.openapi import (build_docs_sections, build_openapi_schema,
+                          build_public_base_url)
 from .services import build_modules_for_user
 
 

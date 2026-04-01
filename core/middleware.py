@@ -8,7 +8,7 @@ import uuid
 from django.conf import settings
 from django.core.cache import cache
 
-from .api_auth import api_error_response, authenticate_api_request
+from .api.auth import api_error_response, authenticate_api_request
 from .audit import create_audit_log, reset_audit_context, set_audit_context
 from .models import AuditLog
 
