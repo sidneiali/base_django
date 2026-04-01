@@ -18,7 +18,8 @@ class SeedInitialModulesCommandTests(TestCase):
 
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 4)
+        self.assertEqual(Module.objects.count(), 5)
+        self.assertTrue(Module.objects.filter(slug="modulos").exists())
         self.assertTrue(Module.objects.filter(slug="usuarios").exists())
         self.assertTrue(Module.objects.filter(slug="grupos").exists())
         self.assertTrue(Module.objects.filter(slug="auditoria").exists())
@@ -37,10 +38,10 @@ class SeedInitialModulesCommandTests(TestCase):
         stdout = StringIO()
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 4)
+        self.assertEqual(Module.objects.count(), 5)
 
         users_module = Module.objects.get(slug="usuarios")
         self.assertEqual(users_module.description, "Gestão de usuários do sistema")
         self.assertEqual(users_module.menu_group, "Configurações")
         self.assertEqual(users_module.order, 10)
-        self.assertIn("0 criado(s), 4 atualizado(s)", stdout.getvalue())
+        self.assertIn("0 criado(s), 5 atualizado(s)", stdout.getvalue())

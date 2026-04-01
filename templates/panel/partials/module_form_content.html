@@ -1,0 +1,147 @@
+<div data-page-title="{{ page_title }}">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <form method="post" class="row g-3" id="module-form">
+                {% csrf_token %}
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.name.id_for_label }}">
+                        {{ form.name.label }}
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.slug.id_for_label }}">
+                        {{ form.slug.label }}
+                    </label>
+                    {{ form.slug }}
+                    {% if form.slug.errors %}
+                        <div class="invalid-feedback d-block">{{ form.slug.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">
+                        {{ form.description.label }}
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.icon.id_for_label }}">
+                        {{ form.icon.label }}
+                    </label>
+                    {{ form.icon }}
+                    {% if form.icon.help_text %}
+                        <small class="form-hint">{{ form.icon.help_text }}</small>
+                    {% endif %}
+                    {% if form.icon.errors %}
+                        <div class="invalid-feedback d-block">{{ form.icon.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.menu_group.id_for_label }}">
+                        {{ form.menu_group.label }}
+                    </label>
+                    {{ form.menu_group }}
+                    {% if form.menu_group.help_text %}
+                        <small class="form-hint">{{ form.menu_group.help_text }}</small>
+                    {% endif %}
+                    {% if form.menu_group.errors %}
+                        <div class="invalid-feedback d-block">{{ form.menu_group.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-8">
+                    <label class="form-label" for="{{ form.url_name.id_for_label }}">
+                        {{ form.url_name.label }}
+                    </label>
+                    {{ form.url_name }}
+                    {% if form.url_name.help_text %}
+                        <small class="form-hint">{{ form.url_name.help_text }}</small>
+                    {% endif %}
+                    {% if form.url_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.url_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label" for="{{ form.order.id_for_label }}">
+                        {{ form.order.label }}
+                    </label>
+                    {{ form.order }}
+                    {% if form.order.errors %}
+                        <div class="invalid-feedback d-block">{{ form.order.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.permission.id_for_label }}">
+                        {{ form.permission.label }}
+                    </label>
+                    {{ form.permission }}
+                    {% if form.permission.help_text %}
+                        <small class="form-hint">{{ form.permission.help_text }}</small>
+                    {% endif %}
+                    {% if form.permission.errors %}
+                        <div class="invalid-feedback d-block">{{ form.permission.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
+                    <div class="border rounded-3 p-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                            <div>
+                                <h4 class="card-title mb-1">Comportamento da navegação</h4>
+                                <p class="text-secondary mb-0">
+                                    Use <code>module_entry</code> quando a área ainda estiver em construção.
+                                    Para páginas prontas, informe a rota final do destino.
+                                </p>
+                            </div>
+                            {% if module %}
+                                <div>
+                                    <div class="text-secondary small">URL atual do módulo</div>
+                                    <a href="{{ module.get_absolute_url }}" class="fw-semibold">
+                                        {{ module.get_absolute_url }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-module">Salvar</button>
+                    <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -41,6 +41,17 @@ INITIAL_MODULES: tuple[ModuleSeedDefinition, ...] = (
         order=10,
     ),
     ModuleSeedDefinition(
+        name="Módulos",
+        slug="modulos",
+        description="Gestão dos módulos exibidos no dashboard e no sidebar",
+        icon="ti ti-layout-grid",
+        url_name="panel_modules_list",
+        app_label="core",
+        permission_codename="view_module",
+        menu_group="Configurações",
+        order=20,
+    ),
+    ModuleSeedDefinition(
         name="Grupos",
         slug="grupos",
         description="Gestão de grupos e permissões",

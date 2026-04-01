@@ -1,0 +1,88 @@
+<div data-page-title="Módulos">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Módulos</h3>
+            <a href="{% url 'panel_module_create' %}" class="btn btn-primary">Novo módulo</a>
+        </div>
+
+        <div class="card-body border-bottom">
+            <form method="get" class="row g-2" hx-push-url="true">
+                <div class="col-md-4">
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ query }}"
+                        class="form-control"
+                        placeholder="Pesquisar módulo"
+                    >
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary">Pesquisar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th>Módulo</th>
+                        <th>Grupo</th>
+                        <th>Destino</th>
+                        <th>Permissão</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for module in modules %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-sm">
+                                        <i class="{{ module.icon|default:'ti ti-layout-grid' }}"></i>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">{{ module.name }}</div>
+                                        <div class="text-secondary small">{{ module.slug }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ module.menu_group }}</td>
+                            <td>
+                                <code>{{ module.url_name }}</code>
+                                {% if module.uses_generic_entry %}
+                                    <span class="badge bg-azure-lt ms-1">Entrada genérica</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ module.permission_label }}</td>
+                            <td>
+                                {% if module.is_active %}
+                                    <span class="badge bg-success-lt">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger-lt">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-list justify-content-end">
+                                    <a href="{% url 'panel_module_update' module.pk %}" class="btn btn-sm btn-primary">
+                                        Editar
+                                    </a>
+                                    <a href="{{ module.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
+                                        Abrir
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary">
+                                Nenhum módulo encontrado.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

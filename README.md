@@ -176,7 +176,7 @@ O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop
 O sistema possui dois apps principais:
 
 - `core`: dashboard, cadastro de módulos, montagem de acesso por permissão e páginas base
-- `panel`: gestão de usuários e grupos sem depender diretamente do admin do Django
+- `panel`: gestão de usuários, grupos, módulos e superfícies operacionais sem depender diretamente do admin do Django
 
 Fluxo principal:
 
@@ -251,6 +251,7 @@ uv run python manage.py seed_initial_modules
 
 Hoje o seed cria o conjunto mínimo de módulos internos:
 
+- `Módulos`
 - `Usuários`
 - `Grupos`
 - `Auditoria`
@@ -268,6 +269,9 @@ campos canônicos por `slug`.
 - `/painel/usuarios/`: listagem de usuários
 - `/painel/usuarios/novo/`: criação de usuário
 - `/painel/usuarios/<id>/editar/`: edição de usuário
+- `/painel/modulos/`: listagem de módulos do dashboard
+- `/painel/modulos/novo/`: criação de módulo
+- `/painel/modulos/<id>/editar/`: edição de módulo
 - `/painel/grupos/`: listagem de grupos
 - `/painel/grupos/novo/`: criação de grupo
 - `/painel/grupos/<id>/editar/`: edição de grupo
@@ -275,17 +279,19 @@ campos canônicos por `slug`.
 - `/painel/auditoria/<id>/`: drill-down completo de um evento de auditoria
 - `/admin/`: admin do Django
 
-## Painel de usuários e grupos
+## Painel interno
 
 O app [`panel`](c:\Users\sidne\OneDrive\Desktop\base_django\panel) oferece uma camada mais amigável para administração:
 
 - usuários comuns podem ser criados e editados sem virar `staff` ou `superuser`
+- módulos do dashboard podem ser cadastrados, editados e publicados sem depender do admin
 - grupos protegidos não aparecem para edição: `Superadmin`, `Root` e `Infra`
 - permissões de apps internos do Django como `admin`, `contenttypes` e `sessions` não são exibidas no formulário de grupos
 - os nomes de permissões são traduzidos para uma leitura mais amigável em português
 
 Permissões exigidas por tela:
 
+- módulos: `core.view_module`, `core.add_module`, `core.change_module`
 - usuários: `auth.view_user`, `auth.add_user`, `auth.change_user`
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
 - auditoria: `core.view_auditlog`
@@ -309,6 +315,7 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) continua genérica, mas agora já exibe metadados úteis do módulo enquanto a área final ainda está em preparação
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
+- o painel agora já possui CRUD HTML para módulos, mas ainda não cobre exclusão nem API JSON equivalente
 - a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
 
 ## Próximos passos sugeridos
