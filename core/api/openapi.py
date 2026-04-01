@@ -12,6 +12,7 @@ TAG_ORDER = [
     "Acesso à API",
     "Usuários do painel",
     "Grupos do painel",
+    "Módulos do painel",
     "Logs de auditoria",
 ]
 
@@ -770,6 +771,310 @@ def build_openapi_schema(request) -> dict[str, object]:
                     },
                 },
             },
+            "/api/v1/panel/modules/": {
+                "get": {
+                    "tags": ["Módulos do painel"],
+                    "summary": "Listar módulos",
+                    "description": "Lista módulos do dashboard com filtros por grupo, status e permissão.",
+                    "operationId": "api_modules_list",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/modules/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f'curl -H "Authorization: Bearer SEU_TOKEN" {full_url("/api/v1/panel/modules/")}'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.get(\n"
+                                f'    "{full_url("/api/v1/panel/modules/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "search", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "slug", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "menu_group", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "is_active", "in": "query", "required": False, "schema": {"type": "boolean"}},
+                        {"name": "permission_id", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "ordering", "in": "query", "required": False, "schema": {"type": "string", "enum": ["name", "-name", "slug", "-slug", "menu_group", "-menu_group", "order", "-order", "id", "-id"]}},
+                        {"name": "page", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "page_size", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 100}},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Lista de módulos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelModuleListEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Filtro, paginação ou ordenação inválidos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "post": {
+                    "tags": ["Módulos do painel"],
+                    "summary": "Criar módulo",
+                    "description": "Cria um módulo do dashboard com rota e permissão opcionais.",
+                    "operationId": "api_modules_create",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/modules/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X POST {full_url('/api/v1/panel/modules/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
+                                '  -H "Content-Type: application/json" \\\n'
+                                '  -d "{\\"name\\":\\"Módulo API\\",\\"slug\\":\\"modulo-api\\",\\"url_name\\":\\"module_entry\\"}"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "payload = {\n"
+                                '    "name": "Módulo API",\n'
+                                '    "slug": "modulo-api",\n'
+                                '    "url_name": "module_entry",\n'
+                                "}\n\n"
+                                "response = requests.post(\n"
+                                f'    "{full_url("/api/v1/panel/modules/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    json=payload,\n"
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PanelModuleWriteInput"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "Módulo criado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelModuleEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Payload inválido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ValidationErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+            },
+            "/api/v1/panel/modules/{id}/": {
+                "get": {
+                    "tags": ["Módulos do painel"],
+                    "summary": "Detalhar módulo",
+                    "description": "Retorna um módulo do dashboard com metadados operacionais.",
+                    "operationId": "api_modules_detail",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/modules/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f'curl -H "Authorization: Bearer SEU_TOKEN" {full_url("/api/v1/panel/modules/1/")}'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.get(\n"
+                                f'    "{full_url("/api/v1/panel/modules/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Módulo encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelModuleEnvelope"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Módulo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "patch": {
+                    "tags": ["Módulos do painel"],
+                    "summary": "Atualizar módulo",
+                    "description": "Atualiza um módulo do dashboard, incluindo permissão e estado de publicação.",
+                    "operationId": "api_modules_update",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/modules/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X PATCH {full_url('/api/v1/panel/modules/1/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
+                                '  -H "Content-Type: application/json" \\\n'
+                                '  -d "{\\"description\\":\\"Módulo ajustado via API\\",\\"is_active\\":false}"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "payload = {\n"
+                                '    "description": "Módulo ajustado via API",\n'
+                                '    "is_active": False,\n'
+                                "}\n\n"
+                                "response = requests.patch(\n"
+                                f'    "{full_url("/api/v1/panel/modules/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    json=payload,\n"
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PanelModuleWritePartialInput"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Módulo atualizado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelModuleEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Payload inválido ou exclusão não permitida.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ValidationErrorResponse"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Módulo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "delete": {
+                    "tags": ["Módulos do painel"],
+                    "summary": "Excluir módulo",
+                    "description": "Remove um módulo customizado e inativo do dashboard.",
+                    "operationId": "api_modules_delete",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/modules/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X DELETE {full_url('/api/v1/panel/modules/1/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.delete(\n"
+                                f'    "{full_url("/api/v1/panel/modules/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "responses": {
+                        "204": {"description": "Módulo removido."},
+                        "400": {
+                            "description": "Exclusão não permitida pelo ciclo de vida do módulo.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Módulo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+            },
             "/api/v1/core/audit-logs/": {
                 "get": {
                     "tags": ["Logs de auditoria"],
@@ -895,7 +1200,7 @@ def build_openapi_schema(request) -> dict[str, object]:
             "version": "1.0.0",
             "description": (
                 "API versionada da BaseApp para introspecção da conta, gestão de usuários "
-                "e grupos do painel, além da leitura dos logs de auditoria."
+                "grupos e módulos do painel, além da leitura dos logs de auditoria."
             ),
         },
         "servers": [
@@ -1080,6 +1385,88 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "permissions": {"type": "array", "items": {"type": "integer"}},
                     },
                 },
+                "ModulePermissionSummary": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "codename": {"type": "string"},
+                        "name": {"type": "string"},
+                        "app_label": {"type": "string"},
+                        "model": {"type": "string"},
+                    },
+                },
+                "PanelModule": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "slug": {"type": "string"},
+                        "description": {"type": "string"},
+                        "icon": {"type": "string"},
+                        "url_name": {"type": "string"},
+                        "menu_group": {"type": "string"},
+                        "order": {"type": "integer"},
+                        "is_active": {"type": "boolean"},
+                        "uses_generic_entry": {"type": "boolean"},
+                        "resolved_url": {"type": "string"},
+                        "full_permission": {"type": "string"},
+                        "permission_label": {"type": "string"},
+                        "permission": {
+                            "$ref": "#/components/schemas/ModulePermissionSummary"
+                        },
+                        "is_initial_module": {"type": "boolean"},
+                        "can_delete": {"type": "boolean"},
+                        "delete_block_reason": {"type": "string"},
+                    },
+                    "required": [
+                        "id",
+                        "name",
+                        "slug",
+                        "description",
+                        "icon",
+                        "url_name",
+                        "menu_group",
+                        "order",
+                        "is_active",
+                        "uses_generic_entry",
+                        "resolved_url",
+                        "full_permission",
+                        "permission_label",
+                        "permission",
+                        "is_initial_module",
+                        "can_delete",
+                        "delete_block_reason",
+                    ],
+                },
+                "PanelModuleWriteInput": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "slug": {"type": "string"},
+                        "description": {"type": "string"},
+                        "icon": {"type": "string"},
+                        "url_name": {"type": "string"},
+                        "menu_group": {"type": "string"},
+                        "order": {"type": "integer"},
+                        "is_active": {"type": "boolean"},
+                        "permission": {"type": ["integer", "null"]},
+                    },
+                    "required": ["name", "slug", "url_name"],
+                },
+                "PanelModuleWritePartialInput": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "slug": {"type": "string"},
+                        "description": {"type": "string"},
+                        "icon": {"type": "string"},
+                        "url_name": {"type": "string"},
+                        "menu_group": {"type": "string"},
+                        "order": {"type": "integer"},
+                        "is_active": {"type": "boolean"},
+                        "permission": {"type": ["integer", "null"]},
+                    },
+                },
                 "AuditActor": {
                     "type": ["object", "null"],
                     "properties": {"id": {"type": "integer"}, "username": {"type": "string"}},
@@ -1250,6 +1637,25 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "data": {
                             "type": "array",
                             "items": {"$ref": "#/components/schemas/PanelGroup"},
+                        },
+                        "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "PanelModuleEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/PanelModule"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "PanelModuleListEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/PanelModule"},
                         },
                         "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
                     },

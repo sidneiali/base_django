@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth.models import Group, Permission, User
 
 from ..constants import BLOCKED_PERMISSION_APP_LABELS, PROTECTED_GROUP_NAMES
+from ..modules.forms import PanelModuleForm
 
 
 class ApiUserWriteForm(forms.ModelForm):
@@ -87,3 +88,7 @@ class ApiGroupWriteForm(forms.ModelForm):
         if name in PROTECTED_GROUP_NAMES:
             raise forms.ValidationError("Esse grupo é protegido.")
         return name
+
+
+class ApiModuleWriteForm(PanelModuleForm):
+    """Reaproveita a validação de módulos para payloads JSON da API."""

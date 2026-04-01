@@ -24,6 +24,8 @@ def _build_postman_collection(request) -> dict[str, object]:
     user_detail_url = f"{base_url}/api/v1/panel/users/:id/"
     groups_collection_url = f"{base_url}{reverse('api_v1_panel_groups_collection')}"
     group_detail_url = f"{base_url}/api/v1/panel/groups/:id/"
+    modules_collection_url = f"{base_url}{reverse('api_v1_panel_modules_collection')}"
+    module_detail_url = f"{base_url}/api/v1/panel/modules/:id/"
     audit_logs_collection_url = f"{base_url}{reverse('api_v1_core_audit_logs_collection')}"
     audit_log_detail_url = f"{base_url}/api/v1/core/audit-logs/:id/"
 
@@ -32,7 +34,7 @@ def _build_postman_collection(request) -> dict[str, object]:
             "name": "BaseApp API",
             "description": (
                 "Coleção pública da API protegida por Bearer token para usuários, "
-                "grupos do painel e logs de auditoria."
+                "grupos, módulos do painel e logs de auditoria."
             ),
             "schema": (
                 "https://schema.getpostman.com/json/collection/v2.1.0/"
@@ -44,6 +46,7 @@ def _build_postman_collection(request) -> dict[str, object]:
             {"key": "token", "value": "SEU_TOKEN"},
             {"key": "user_id", "value": "1"},
             {"key": "group_id", "value": "1"},
+            {"key": "module_id", "value": "1"},
             {"key": "audit_log_id", "value": "1"},
         ],
         "item": [
@@ -206,6 +209,86 @@ def _build_postman_collection(request) -> dict[str, object]:
                             "method": "DELETE",
                             "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
                             "url": group_detail_url.replace(":id", "{{group_id}}"),
+                        },
+                    },
+                ],
+            },
+            {
+                "name": "Módulos do painel",
+                "item": [
+                    {
+                        "name": "Listar módulos",
+                        "request": {
+                            "method": "GET",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": modules_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Criar módulo",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {"key": "Authorization", "value": "Bearer {{token}}", "type": "text"},
+                                {"key": "Content-Type", "value": "application/json", "type": "text"},
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {
+                                        "name": "Módulo API",
+                                        "slug": "modulo-api",
+                                        "description": "Módulo criado pela API",
+                                        "icon": "ti ti-layout-grid",
+                                        "url_name": "module_entry",
+                                        "menu_group": "Integrações",
+                                        "order": 50,
+                                        "is_active": True,
+                                    },
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": modules_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Detalhar módulo",
+                        "request": {
+                            "method": "GET",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": module_detail_url,
+                        },
+                    },
+                    {
+                        "name": "Atualizar módulo",
+                        "request": {
+                            "method": "PATCH",
+                            "header": [
+                                {"key": "Authorization", "value": "Bearer {{token}}", "type": "text"},
+                                {"key": "Content-Type", "value": "application/json", "type": "text"},
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {
+                                        "name": "Módulo API Atualizado",
+                                        "description": "Módulo ajustado via API",
+                                        "is_active": False,
+                                    },
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": module_detail_url.replace(":id", "{{module_id}}"),
+                        },
+                    },
+                    {
+                        "name": "Excluir módulo",
+                        "request": {
+                            "method": "DELETE",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": module_detail_url.replace(":id", "{{module_id}}"),
                         },
                     },
                 ],

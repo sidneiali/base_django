@@ -71,6 +71,7 @@ class ApiAccessModelTests(TestCase):
         self.assertTrue(values["api_enabled"])
         self.assertIn(ApiResourcePermission.Resource.PANEL_USERS, values["permissions"])
         self.assertIn(ApiResourcePermission.Resource.PANEL_GROUPS, values["permissions"])
+        self.assertIn(ApiResourcePermission.Resource.PANEL_MODULES, values["permissions"])
         self.assertIn(ApiResourcePermission.Resource.CORE_API_ACCESS, values["permissions"])
         self.assertIn(
             ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
