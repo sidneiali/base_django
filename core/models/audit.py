@@ -65,4 +65,10 @@ class AuditLog(models.Model):
         """Resume o evento para listagens administrativas."""
 
         target = self.object_repr or self.object_verbose_name or "evento"
-        return f"{self.get_action_display()} em {target}"
+        return f"{self.action_label} em {target}"
+
+    @property
+    def action_label(self) -> str:
+        """Retorna o label legível da ação armazenada."""
+
+        return str(dict(self.ACTION_CHOICES).get(self.action, self.action))

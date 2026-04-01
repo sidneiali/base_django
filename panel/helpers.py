@@ -1,7 +1,29 @@
 """Helpers compartilhados do painel administrativo."""
 
+from collections.abc import Iterable
+from typing import TypeAlias, cast
 
-def build_dual_list_choices(form, field_name: str) -> tuple[list, list]:
+from django import forms
+
+DualListChoice: TypeAlias = tuple[object, object]
+
+
+def _normalize_bound_values(value: object) -> list[object]:
+    """Normaliza o valor atual do campo para uma lista estável de ids."""
+
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, Iterable):
+        return list(value)
+    return [value]
+
+
+def build_dual_list_choices(
+    form: forms.BaseForm,
+    field_name: str,
+) -> tuple[list[DualListChoice], list[DualListChoice]]:
     """
     Separa as opcoes disponiveis e selecionadas de um campo multiplo.
 
@@ -9,12 +31,15 @@ def build_dual_list_choices(form, field_name: str) -> tuple[list, list]:
     renderizacao customizada de widgets dual-list nos templates.
     """
 
-    field = form.fields[field_name]
-    current_ids = {str(v) for v in (form[field_name].value() or [])}
+    field = cast(forms.ChoiceField, form.fields[field_name])
+    choices = cast(Iterable[DualListChoice], field.choices)
+    current_ids = {
+        str(item) for item in _normalize_bound_values(form[field_name].value())
+    }
 
-    available: list[tuple] = []
-    chosen: list[tuple] = []
-    for pk, label in field.choices:
+    available: list[DualListChoice] = []
+    chosen: list[DualListChoice] = []
+    for pk, label in choices:
         if not pk:
             continue
         (chosen if str(pk) in current_ids else available).append((pk, label))

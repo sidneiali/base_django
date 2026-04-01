@@ -108,10 +108,10 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
         self.fields["auto_refresh_enabled"].initial = preference.auto_refresh_enabled
         self.fields["auto_refresh_interval"].initial = preference.auto_refresh_interval
 
-    def clean(self) -> dict:
+    def clean(self) -> dict[str, object]:
         """Exige senha na criacao e permite troca opcional na edicao."""
 
-        cleaned_data = super().clean()
+        cleaned_data = super().clean() or {}
         password = cleaned_data.get("password")
 
         if not self.instance.pk and not password:

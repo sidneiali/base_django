@@ -2,19 +2,33 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from django import forms
+from django.utils.text import format_lazy
 
 from ..models import ApiResourcePermission
 from .access import get_user_api_access_values, save_user_api_access
+from .types import (
+    ApiAccessValues,
+    ApiActionOption,
+    ApiPermissionFlags,
+    ApiPermissionMatrix,
+    ApiResourceOption,
+    DisplayLabel,
+)
 
-API_RESOURCE_OPTIONS = tuple(ApiResourcePermission.Resource.choices)
-API_ACTION_OPTIONS = (
+API_RESOURCE_OPTIONS = cast(
+    tuple[ApiResourceOption, ...],
+    tuple(ApiResourcePermission.Resource.choices),
+)
+API_ACTION_OPTIONS: tuple[ApiActionOption, ...] = (
     ("create", "Criar", "can_create"),
     ("read", "Ler", "can_read"),
     ("update", "Editar", "can_update"),
     ("delete", "Excluir", "can_delete"),
 )
-API_RESOURCE_ALLOWED_ACTIONS = {
+API_RESOURCE_ALLOWED_ACTIONS: dict[str, set[str]] = {
     ApiResourcePermission.Resource.PANEL_USERS: {"create", "read", "update", "delete"},
     ApiResourcePermission.Resource.CORE_API_ACCESS: {"read"},
     ApiResourcePermission.Resource.CORE_AUDIT_LOGS: {"read"},
@@ -32,14 +46,14 @@ def build_api_enabled_field() -> forms.BooleanField:
 
 
 def build_api_permission_field(
-    resource_label: str,
-    action_label: str,
+    resource_label: DisplayLabel,
+    action_label: DisplayLabel,
 ) -> forms.BooleanField:
     """Cria um checkbox para uma combinacao recurso x acao CRUD."""
 
     return forms.BooleanField(
         required=False,
-        label=f"{resource_label}: {action_label}",
+        label=format_lazy("{}: {}", resource_label, action_label),
     )
 
 
@@ -126,27 +140,40 @@ class ApiAccessFormMixin(forms.Form):
                 fields.append(
                     {
                         "label": action_label,
-                        "field": self[build_api_permission_field_name(resource, action)],
+                        "field": self[
+                            build_api_permission_field_name(resource, action)
+                        ],
                         "is_supported": resource_supports_action(resource, action),
                     }
                 )
             rows.append({"label": resource_label, "fields": fields})
         return rows
 
-    def build_api_access_payload(self) -> dict[str, object]:
+    def build_api_access_payload(self) -> ApiAccessValues:
         """Converte os campos do formulario no payload persistido em banco."""
 
-        permissions: dict[str, dict[str, bool]] = {}
+        permissions: ApiPermissionMatrix = {}
         for resource, _ in API_RESOURCE_OPTIONS:
-            permissions[resource] = {}
+            resource_permissions: ApiPermissionFlags = {
+                "can_create": False,
+                "can_read": False,
+                "can_update": False,
+                "can_delete": False,
+            }
             for action, _action_label, permission_key in API_ACTION_OPTIONS:
                 field_name = build_api_permission_field_name(resource, action)
                 if not resource_supports_action(resource, action):
-                    permissions[resource][permission_key] = False
                     continue
-                permissions[resource][permission_key] = bool(
-                    self.cleaned_data.get(field_name, False)
-                )
+                is_allowed = bool(self.cleaned_data.get(field_name, False))
+                if permission_key == "can_create":
+                    resource_permissions["can_create"] = is_allowed
+                elif permission_key == "can_read":
+                    resource_permissions["can_read"] = is_allowed
+                elif permission_key == "can_update":
+                    resource_permissions["can_update"] = is_allowed
+                elif permission_key == "can_delete":
+                    resource_permissions["can_delete"] = is_allowed
+            permissions[resource] = resource_permissions
 
         return {
             "api_enabled": bool(self.cleaned_data.get("api_enabled", False)),

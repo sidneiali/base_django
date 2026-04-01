@@ -6,6 +6,8 @@ from math import ceil
 
 from django.http import JsonResponse
 
+from .types import PaginationMeta
+
 API_VERSION = "v1"
 
 
@@ -23,7 +25,12 @@ def build_api_meta(request, extra: dict[str, object] | None = None) -> dict[str,
     return meta
 
 
-def build_pagination_meta(*, page: int, page_size: int, total_items: int) -> dict[str, object]:
+def build_pagination_meta(
+    *,
+    page: int,
+    page_size: int,
+    total_items: int,
+) -> PaginationMeta:
     """Resume o estado atual da paginação da resposta."""
 
     total_pages = ceil(total_items / page_size) if total_items else 0
@@ -67,7 +74,7 @@ def api_collection_response(
     page: int | None = None,
     page_size: int | None = None,
     total_items: int | None = None,
-    pagination: dict[str, object] | None = None,
+    pagination: PaginationMeta | None = None,
     ordering: str | None = None,
     filters: dict[str, object] | None = None,
     status: int = 200,

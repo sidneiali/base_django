@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import wraps
+from typing import Any
 
 from django.db import OperationalError, ProgrammingError
 
 from ..audit import create_audit_log
 from ..models import ApiAccessProfile, ApiResourcePermission, ApiToken, AuditLog
 from .responses import api_error_response
+from .types import ApiHttpRequest
 
 API_METHOD_ACTIONS = {
     "GET": "read",
@@ -36,7 +38,24 @@ class ApiAuthenticationResult:
         """Indica se a autenticacao da requisicao foi concluida com sucesso."""
 
         return self.user is not None and self.token is not None and not self.code
-def extract_bearer_token(request) -> tuple[str | None, str | None, str | None]:
+
+
+def _resolve_username(actor: object | None) -> str:
+    """Extrai o username de um ator autenticado sem depender do tipo concreto."""
+
+    if actor is None or not getattr(actor, "is_authenticated", False):
+        return ""
+
+    get_username = getattr(actor, "get_username", None)
+    if not callable(get_username):
+        return ""
+
+    return str(get_username())
+
+
+def extract_bearer_token(
+    request: ApiHttpRequest,
+) -> tuple[str | None, str | None, str | None]:
     """Extrai o token Bearer do header Authorization."""
 
     header = request.META.get("HTTP_AUTHORIZATION", "").strip()
@@ -56,7 +75,7 @@ def get_api_action_for_method(method: str) -> str | None:
     return API_METHOD_ACTIONS.get(method.upper())
 
 
-def authenticate_api_request(request) -> ApiAuthenticationResult:
+def authenticate_api_request(request: ApiHttpRequest) -> ApiAuthenticationResult:
     """Valida o token Bearer da requisição e retorna o usuário autenticado."""
 
     cached_result = getattr(request, "api_auth_result", None)
@@ -131,17 +150,18 @@ def authenticate_api_request(request) -> ApiAuthenticationResult:
     return result
 
 
-def user_has_api_permission(user, resource: str, action: str) -> bool:
+def user_has_api_permission(user: object | None, resource: str, action: str) -> bool:
     """Indica se o usuário tem a permissão CRUD para o recurso informado."""
 
-    if action not in {"create", "read", "update", "delete"}:
+    if user is None or action not in {"create", "read", "update", "delete"}:
         return False
 
     permission_field = f"can_{action}"
+    user_lookup: Any = user
 
     try:
         return ApiResourcePermission.objects.filter(
-            access_profile__user=user,
+            access_profile__user=user_lookup,
             access_profile__api_enabled=True,
             resource=resource,
             **{permission_field: True},
@@ -151,7 +171,7 @@ def user_has_api_permission(user, resource: str, action: str) -> bool:
 
 
 def log_api_access_denied(
-    request,
+    request: ApiHttpRequest,
     *,
     result: ApiAuthenticationResult | None,
     code: str,
@@ -163,9 +183,7 @@ def log_api_access_denied(
     """Registra falhas de autenticação/autorização da API na auditoria."""
 
     actor = result.user if result and getattr(result.user, "pk", None) else None
-    actor_identifier = ""
-    if actor is not None:
-        actor_identifier = actor.get_username()
+    actor_identifier = _resolve_username(actor)
 
     create_audit_log(
         AuditLog.ACTION_API_ACCESS_DENIED,
@@ -188,16 +206,17 @@ def require_api_permission(resource: str):
 
     def decorator(view_func):
         @wraps(view_func)
-        def wrapper(request, *args, **kwargs):
+        def wrapper(request: ApiHttpRequest, *args: Any, **kwargs: Any):
             result = authenticate_api_request(request)
             if not result.is_authenticated:
+                request_method = request.method or ""
                 log_api_access_denied(
                     request,
                     result=result,
                     code=result.code or "api_auth_failed",
                     detail=result.detail or "A autenticação da API falhou.",
                     resource=resource,
-                    action=get_api_action_for_method(request.method),
+                    action=get_api_action_for_method(request_method),
                     status=401,
                 )
                 return api_error_response(
@@ -207,7 +226,7 @@ def require_api_permission(resource: str):
                     request=request,
                 )
 
-            action = get_api_action_for_method(request.method)
+            action = get_api_action_for_method(request.method or "")
             if action is None:
                 return api_error_response(
                     "Método não permitido para este endpoint.",

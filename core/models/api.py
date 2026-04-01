@@ -67,7 +67,13 @@ class ApiResourcePermission(models.Model):
     def __str__(self) -> str:
         """Resume o recurso configurado para o usuario no admin."""
 
-        return f"{self.access_profile.user} · {self.get_resource_display()}"
+        return f"{self.access_profile.user} · {self.resource_label}"
+
+    @property
+    def resource_label(self) -> str:
+        """Retorna o label legível do recurso configurado."""
+
+        return str(dict(self.Resource.choices).get(self.resource, self.resource))
 
     def has_any_permission(self) -> bool:
         """Indica se ao menos uma operacao CRUD foi liberada."""

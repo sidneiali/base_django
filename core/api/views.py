@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
@@ -24,8 +25,7 @@ from .queries import (
     parse_positive_int,
 )
 from .responses import api_collection_response, api_error_response, api_success_response
-
-User = get_user_model()
+from .types import ApiHttpRequest
 
 AUDIT_LOG_ORDERING_FIELDS = {
     "created_at": "created_at",
@@ -41,13 +41,13 @@ AUDIT_LOG_ORDERING_FIELDS = {
 }
 
 
-def _serialize_group(group) -> dict[str, object]:
+def _serialize_group(group: Any) -> dict[str, object]:
     """Resume grupos vinculados ao usuário autenticado."""
 
     return {"id": group.pk, "name": group.name}
 
 
-def _serialize_api_permissions(user) -> list[dict[str, object]]:
+def _serialize_api_permissions(user: Any) -> list[dict[str, object]]:
     """Resume a matriz de permissões efetivas da API para o usuário."""
 
     values = get_user_api_access_values(user)
@@ -64,7 +64,7 @@ def _serialize_api_permissions(user) -> list[dict[str, object]]:
     ]
 
 
-def _serialize_current_user(user: User) -> dict[str, object]:
+def _serialize_current_user(user: AbstractUser) -> dict[str, object]:
     """Converte o usuário autenticado num payload simples da API."""
 
     return {
@@ -78,7 +78,7 @@ def _serialize_current_user(user: User) -> dict[str, object]:
     }
 
 
-def _serialize_actor(actor) -> dict[str, object] | None:
+def _serialize_actor(actor: Any) -> dict[str, object] | None:
     """Resume o ator autenticado associado ao evento de auditoria."""
 
     if actor is None:
@@ -101,7 +101,7 @@ def _serialize_audit_log(
         "id": audit_log.pk,
         "created_at": audit_log.created_at.isoformat(),
         "action": audit_log.action,
-        "action_label": audit_log.get_action_display(),
+        "action_label": audit_log.action_label,
         "actor": _serialize_actor(audit_log.actor),
         "actor_identifier": audit_log.actor_identifier,
         "app_label": audit_log.content_type.app_label if audit_log.content_type else "",
@@ -251,7 +251,7 @@ def health(request: HttpRequest) -> HttpResponse:
 
 @csrf_exempt
 @require_api_permission("core.api_access")
-def me(request: HttpRequest) -> HttpResponse:
+def me(request: ApiHttpRequest) -> HttpResponse:
     """Expõe os dados básicos da conta autenticada na API."""
 
     if request.method != "GET":
@@ -268,7 +268,7 @@ def me(request: HttpRequest) -> HttpResponse:
 
 @csrf_exempt
 @require_api_permission("core.api_access")
-def token_status(request: HttpRequest) -> HttpResponse:
+def token_status(request: ApiHttpRequest) -> HttpResponse:
     """Exibe o status do token atual e a matriz de acesso efetiva."""
 
     if request.method != "GET":

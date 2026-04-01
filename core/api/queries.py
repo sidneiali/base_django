@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TypeVar
 
+from django.db.models import Model, QuerySet
 from django.http import JsonResponse
 from django.utils.dateparse import parse_date
 
 from .responses import api_error_response, build_pagination_meta
+from .types import PaginationMeta
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 TRUE_VALUES = {"1", "true", "yes", "on"}
 FALSE_VALUES = {"0", "false", "no", "off"}
+_ModelT = TypeVar("_ModelT", bound=Model)
 
 
 def build_filters_meta(filters: dict[str, object]) -> dict[str, object]:
@@ -150,12 +154,12 @@ def parse_ordering(
 
 
 def paginate_queryset(
-    queryset,
+    queryset: QuerySet[_ModelT],
     *,
     request,
     page: int,
     page_size: int,
-) -> tuple[object, dict[str, object], JsonResponse | None]:
+) -> tuple[QuerySet[_ModelT], PaginationMeta, JsonResponse | None]:
     """Aplica paginação ao queryset e valida páginas fora do intervalo."""
 
     total_items = queryset.count()

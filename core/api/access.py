@@ -7,6 +7,7 @@ from typing import Any
 from django.db import OperationalError, ProgrammingError
 
 from ..models import ApiAccessProfile, ApiResourcePermission, ApiToken
+from .types import ApiAccessValues, ApiPermissionMatrix
 
 API_CRUD_FLAGS = (
     ("create", "can_create"),
@@ -16,7 +17,7 @@ API_CRUD_FLAGS = (
 )
 
 
-def build_default_api_permission_matrix() -> dict[str, dict[str, bool]]:
+def build_default_api_permission_matrix() -> ApiPermissionMatrix:
     """Retorna a matriz CRUD padrao para todos os recursos conhecidos."""
 
     return {
@@ -44,7 +45,7 @@ def get_user_api_access_profile(user: Any) -> ApiAccessProfile:
     return profile or ApiAccessProfile(user=user)
 
 
-def get_user_api_access_values(user: Any) -> dict[str, object]:
+def get_user_api_access_values(user: Any) -> ApiAccessValues:
     """Retorna o estado da API do usuario com fallback seguro."""
 
     profile = get_user_api_access_profile(user)
@@ -84,7 +85,7 @@ def save_user_api_access(
     user: Any,
     *,
     api_enabled: bool,
-    permissions: dict[str, dict[str, bool]],
+    permissions: ApiPermissionMatrix,
 ) -> bool:
     """Salva o acesso a API e a matriz CRUD sem derrubar o fluxo principal."""
 
@@ -106,12 +107,12 @@ def save_user_api_access(
         ).delete()
 
         for resource, _ in ApiResourcePermission.Resource.choices:
-            resource_values = permissions.get(resource, {})
+            resource_values = permissions.get(resource)
             defaults = {
-                "can_create": bool(resource_values.get("can_create", False)),
-                "can_read": bool(resource_values.get("can_read", False)),
-                "can_update": bool(resource_values.get("can_update", False)),
-                "can_delete": bool(resource_values.get("can_delete", False)),
+                "can_create": bool(resource_values.get("can_create", False) if resource_values else False),
+                "can_read": bool(resource_values.get("can_read", False) if resource_values else False),
+                "can_update": bool(resource_values.get("can_update", False) if resource_values else False),
+                "can_delete": bool(resource_values.get("can_delete", False) if resource_values else False),
             }
 
             if any(defaults.values()):

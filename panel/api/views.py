@@ -21,7 +21,7 @@ from core.api.responses import (
     api_success_response,
 )
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -39,7 +39,9 @@ USER_ORDERING_FIELDS = {
 }
 
 
-def _parse_json_body(request: HttpRequest) -> tuple[dict, JsonResponse | None]:
+def _parse_json_body(
+    request: HttpRequest,
+) -> tuple[dict[str, object], JsonResponse | None]:
     """Converte o corpo JSON da requisição em dicionário Python."""
 
     if not request.body:
@@ -95,7 +97,11 @@ def _json_form_errors(request: HttpRequest, form: ApiUserWriteForm) -> JsonRespo
     )
 
 
-def _build_user_form_data(payload: dict, *, instance: User | None = None) -> dict[str, object]:
+def _build_user_form_data(
+    payload: dict[str, object],
+    *,
+    instance: User | None = None,
+) -> dict[str, object]:
     """Normaliza o payload da API em dados compatíveis com o formulário."""
 
     existing_groups = []
@@ -115,8 +121,8 @@ def _build_user_form_data(payload: dict, *, instance: User | None = None) -> dic
 
 def _filter_users(
     request: HttpRequest,
-    queryset,
-) -> tuple[object, dict[str, object], JsonResponse | None]:
+    queryset: QuerySet[User],
+) -> tuple[QuerySet[User], dict[str, object], JsonResponse | None]:
     """Aplica filtros explícitos à coleção de usuários."""
 
     search = request.GET.get("search", "").strip() or request.GET.get("q", "").strip()

@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from collections import OrderedDict
 
+from .types import DocsOperation, DocsSection
+
 TAG_ORDER = [
     "Operacional",
     "Acesso à API",
@@ -952,10 +954,10 @@ def build_openapi_schema(request) -> dict[str, object]:
     }
 
 
-def build_docs_sections(schema: dict[str, object]) -> list[dict[str, object]]:
+def build_docs_sections(schema: dict[str, object]) -> list[DocsSection]:
     """Converte a spec OpenAPI em seções simples para a documentação HTML."""
 
-    sections_map: OrderedDict[str, dict[str, object]] = OrderedDict(
+    sections_map: OrderedDict[str, DocsSection] = OrderedDict(
         (
             tag,
             {
@@ -968,9 +970,23 @@ def build_docs_sections(schema: dict[str, object]) -> list[dict[str, object]]:
         for tag in TAG_ORDER
     )
 
-    for path, methods in schema["paths"].items():
+    paths = schema.get("paths", {})
+    if not isinstance(paths, dict):
+        return []
+
+    for path, methods in paths.items():
+        if not isinstance(path, str) or not isinstance(methods, dict):
+            continue
+
         for method, operation in methods.items():
-            tag = operation["tags"][0]
+            if not isinstance(method, str) or not isinstance(operation, dict):
+                continue
+
+            tags = operation.get("tags", [])
+            if not isinstance(tags, list) or not tags or not isinstance(tags[0], str):
+                continue
+
+            tag = tags[0]
             section = sections_map.setdefault(
                 tag,
                 {
@@ -981,21 +997,37 @@ def build_docs_sections(schema: dict[str, object]) -> list[dict[str, object]]:
                 },
             )
             if not section["base_url"]:
-                section["base_url"] = operation.get("x-base-url", path)
+                base_url = operation.get("x-base-url", path)
+                section["base_url"] = base_url if isinstance(base_url, str) else path
 
-            code_samples = {
-                sample["lang"].lower(): sample["source"]
-                for sample in operation.get("x-codeSamples", [])
+            code_samples: dict[str, str] = {}
+            raw_samples = operation.get("x-codeSamples", [])
+            if isinstance(raw_samples, list):
+                for sample in raw_samples:
+                    if not isinstance(sample, dict):
+                        continue
+                    lang = sample.get("lang")
+                    source = sample.get("source")
+                    if isinstance(lang, str) and isinstance(source, str):
+                        code_samples[lang.lower()] = source
+
+            operation_id = operation.get("operationId")
+            if not isinstance(operation_id, str):
+                operation_id = f"{method}_{path}"
+
+            summary = operation.get("summary", "")
+            if not isinstance(summary, str):
+                summary = ""
+
+            docs_operation: DocsOperation = {
+                "id": operation_id.replace("_", "-"),
+                "method": method.upper(),
+                "path": path,
+                "summary": summary,
+                "code_samples": code_samples,
             }
-
             section["operations"].append(
-                {
-                    "id": operation["operationId"].replace("_", "-"),
-                    "method": method.upper(),
-                    "path": path,
-                    "summary": operation.get("summary", ""),
-                    "code_samples": code_samples,
-                }
+                docs_operation
             )
 
     return [section for section in sections_map.values() if section["operations"]]
