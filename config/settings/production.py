@@ -23,7 +23,18 @@ if not ALLOWED_HOSTS:
         "ALLOWED_HOSTS deve ser definido quando APP_ENV=production.",
     )
 
-DATABASES = base_settings.build_database_config(base_settings.BASE_DIR / "db.sqlite3")
+CSRF_TRUSTED_ORIGINS: list[str] = base_settings.env_list("CSRF_TRUSTED_ORIGINS", [])
+
+DATABASES = base_settings.build_database_config(
+    "app",
+    default_engine="django.db.backends.postgresql",
+    require_non_sqlite_fields=(
+        "DATABASE_NAME",
+        "DATABASE_USER",
+        "DATABASE_PASSWORD",
+        "DATABASE_HOST",
+    ),
+)
 STATIC_ROOT = base_settings.env_str(
     "STATIC_ROOT",
     str(base_settings.BASE_DIR / "staticfiles"),

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 
@@ -15,7 +15,7 @@ User = get_user_model()
 class PanelViewTests(TestCase):
     """Valida permissões e fluxos HTMX do painel interno."""
 
-    def _login_with_permissions(self, *codenames: str) -> User:
+    def _login_with_permissions(self, *codenames: str) -> AbstractUser:
         """Autentica um operador com o conjunto informado de permissões."""
 
         user = User.objects.create_user(

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Ruff
+        run: uv run ruff check config core panel
+
+      - name: Pytest
+        run: uv run pytest
+
+      - name: Django check
+        run: uv run python manage.py check
+
+      - name: Production deploy check
+        env:
+          APP_ENV: production
+          SECRET_KEY: ci-secret-key
+          ALLOWED_HOSTS: example.com
+          CSRF_TRUSTED_ORIGINS: https://example.com
+          DATABASE_NAME: app
+          DATABASE_USER: app
+          DATABASE_PASSWORD: secret
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+        run: uv run python manage.py check --deploy
+
+      - name: Production collectstatic smoke
+        env:
+          APP_ENV: production
+          SECRET_KEY: ci-secret-key
+          ALLOWED_HOSTS: example.com
+          CSRF_TRUSTED_ORIGINS: https://example.com
+          DATABASE_NAME: app
+          DATABASE_USER: app
+          DATABASE_PASSWORD: secret
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+          STATIC_ROOT: /tmp/base-django-staticfiles
+        run: uv run python manage.py collectstatic --noinput

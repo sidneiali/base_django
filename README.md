@@ -16,6 +16,8 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 - Django
 - django-bootstrap5
 - SQLite em desenvolvimento
+- PostgreSQL em produção
+- GitHub Actions para CI
 - Tabler vendorizado em `static/vendor/tabler`
 
 ## Como rodar
@@ -36,7 +38,7 @@ Com `pip`:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-python -m pip install django django-bootstrap5
+python -m pip install django django-bootstrap5 "psycopg[binary]"
 # opcional: instala lint, testes e tipagem
 # python -m pip install pytest pytest-django ruff mypy django-stubs
 python manage.py migrate
@@ -70,7 +72,7 @@ de ambiente com base em `APP_ENV`.
 Perfis disponíveis:
 
 - `APP_ENV=development`: defaults locais, `DEBUG=True`, static por `STATICFILES_DIRS` e e-mail no console por padrão
-- `APP_ENV=production`: `DEBUG=False` por padrão, exige `SECRET_KEY` e `ALLOWED_HOSTS`, usa `STATIC_ROOT` e SMTP por padrão
+- `APP_ENV=production`: `DEBUG=False` por padrão, exige `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` e `DATABASE_HOST`, usa PostgreSQL por padrão, `STATIC_ROOT` e SMTP por padrão
 
 Arquivos principais:
 
@@ -85,8 +87,16 @@ Exemplo de produção:
 APP_ENV=production
 SECRET_KEY=<chave_forte>
 ALLOWED_HOSTS=seudominio.com,www.seudominio.com
-DATABASE_ENGINE=django.db.backends.sqlite3
-DATABASE_NAME=/var/app/db.sqlite3
+CSRF_TRUSTED_ORIGINS=https://seudominio.com,https://www.seudominio.com
+DATABASE_ENGINE=django.db.backends.postgresql
+DATABASE_NAME=base_django
+DATABASE_USER=base_django
+DATABASE_PASSWORD=<senha_forte>
+DATABASE_HOST=127.0.0.1
+DATABASE_PORT=5432
+DATABASE_CONN_MAX_AGE=60
+DATABASE_CONN_HEALTH_CHECKS=True
+DATABASE_SSLMODE=require
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 APP_FORCE_HTTPS=True
 STATIC_ROOT=/var/app/staticfiles
@@ -109,6 +119,56 @@ SECURE_HSTS_SECONDS=31536000
 
 Com `APP_FORCE_HTTPS=True`, a aplicação passa a marcar cookies como seguros e habilita redirecionamento SSL/HSTS, o que é importante para o reset em produção.
 
+## Deploy de produção
+
+Fluxo mínimo recomendado:
+
+1. provisionar as variáveis de ambiente de produção, com PostgreSQL e HTTPS
+2. validar a configuração:
+
+```bash
+uv run python manage.py check --deploy
+```
+
+3. aplicar migrations:
+
+```bash
+uv run python manage.py migrate
+```
+
+4. publicar os arquivos estáticos:
+
+```bash
+uv run python manage.py collectstatic --noinput
+```
+
+5. subir a aplicação via servidor WSGI/ASGI da sua infraestrutura
+
+## Healthcheck operacional
+
+O projeto já expõe um healthcheck público e leve em:
+
+- `/api/core/health/`
+- `/api/v1/core/health/`
+
+Exemplo:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/core/health/
+```
+
+Esse endpoint responde com `status`, `timestamp`, `timezone`, dados básicos de rate limit e `request_id`, o que já atende monitoramento simples e smoke checks de plataforma.
+
+## CI
+
+O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop\base_django\.github\workflows\ci.yml) com:
+
+- `uv run ruff check config core panel`
+- `uv run pytest`
+- `uv run python manage.py check`
+- `uv run python manage.py check --deploy`
+- `uv run python manage.py collectstatic --noinput`
+
 ## Visão geral
 
 O sistema possui dois apps principais:
@@ -128,15 +188,15 @@ Fluxo principal:
 
 ```text
 config/     configuração global, settings e rotas principais
-core/       model Module, dashboard, serviços e admin de módulos
-panel/      formulários e telas para usuários e grupos
+core/       módulos centrais, dashboard, API, auditoria e shell autenticado
+panel/      telas e endpoints internos para usuários e grupos
 templates/  layout base, login, dashboard, páginas e partials
 static/     CSS customizado
 ```
 
 ## Modelo central: Module
 
-O model [`core/models.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models.py) define os módulos exibidos no dashboard.
+O model [`core/models/modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models\modules.py) define os módulos exibidos no dashboard.
 
 Campos principais:
 
@@ -226,17 +286,21 @@ Permissões exigidas por tela:
 - [`config/settings/production.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\settings\production.py): defaults de produção
 - [`config/urls.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\urls.py): composição das rotas do projeto
 - [`core/services.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\services.py): monta os módulos visíveis para o usuário
-- [`panel/forms.py`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\forms.py): regras de formulário e tradução das permissões
+- [`core/models/audit.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models\audit.py): trilha de auditoria do sistema
+- [`panel/forms.py`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\forms.py): fachada compatível para os formulários do painel
 - [`templates/base.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\base.html): layout principal
+- [`.github/workflows/ci.yml`](c:\Users\sidne\OneDrive\Desktop\base_django\.github\workflows\ci.yml): pipeline de validação contínua
 
 ## Estado atual e limitações
 
-- o `README` agora descreve a base, mas o projeto ainda está em fase inicial
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) é genérica e serve como placeholder até cada app ter sua própria área
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py)
-- os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas a cobertura ainda é parcial
-- a separação entre desenvolvimento e produção existe, mas o banco padrão ainda continua em `sqlite3` até a infraestrutura final ser definida
+- os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
+- a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
+- a auditoria já existe em model e API, mas ainda não possui uma tela HTML própria no painel
 
 ## Próximos passos sugeridos
 
-- evoluir o banco e a estratégia de deploy de produção além do `sqlite3`
+- criar tela HTML de auditoria no painel
+- evoluir os módulos iniciais além de `Usuários` e `Grupos`
+- ampliar a cobertura para erros de validação, `403`, redirects e fluxos de edição

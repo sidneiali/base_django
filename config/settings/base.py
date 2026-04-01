@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
 
@@ -45,21 +46,46 @@ def env_str(name: str, default: str = "") -> str:
     return os.getenv(name, default)
 
 
-def build_database_config(default_name: Path) -> dict[str, dict[str, str]]:
+def build_database_config(
+    default_name: Path | str,
+    *,
+    default_engine: str = "django.db.backends.sqlite3",
+    require_non_sqlite_fields: tuple[str, ...] = (),
+) -> dict[str, dict[str, object]]:
     """Monta a configuracao do banco a partir de variaveis de ambiente."""
 
-    engine = env_str("DATABASE_ENGINE", "django.db.backends.sqlite3")
+    engine = env_str("DATABASE_ENGINE", default_engine)
     name = env_str("DATABASE_NAME", str(default_name))
-    database = {"ENGINE": engine, "NAME": name}
+    database: dict[str, object] = {"ENGINE": engine, "NAME": name}
 
-    if engine != "django.db.backends.sqlite3":
-        database.update(
-            {
-                "USER": env_str("DATABASE_USER"),
-                "PASSWORD": env_str("DATABASE_PASSWORD"),
-                "HOST": env_str("DATABASE_HOST"),
-                "PORT": env_str("DATABASE_PORT"),
-            }
+    if engine == "django.db.backends.sqlite3":
+        return {"default": database}
+
+    database.update(
+        {
+            "USER": env_str("DATABASE_USER"),
+            "PASSWORD": env_str("DATABASE_PASSWORD"),
+            "HOST": env_str("DATABASE_HOST"),
+            "PORT": env_str("DATABASE_PORT", "5432"),
+            "CONN_MAX_AGE": env_int("DATABASE_CONN_MAX_AGE", 60),
+            "CONN_HEALTH_CHECKS": env_bool("DATABASE_CONN_HEALTH_CHECKS", True),
+        }
+    )
+
+    sslmode = env_str("DATABASE_SSLMODE")
+    if sslmode:
+        database["OPTIONS"] = {"sslmode": sslmode}
+
+    missing_fields = [
+        env_name
+        for env_name in require_non_sqlite_fields
+        if not str(database.get(env_name.replace("DATABASE_", ""), "")).strip()
+    ]
+    if missing_fields:
+        missing_list = ", ".join(missing_fields)
+        raise ImproperlyConfigured(
+            "As seguintes variaveis devem ser definidas para banco nao-sqlite: "
+            f"{missing_list}.",
         )
 
     return {"default": database}
