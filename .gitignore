@@ -16,5 +16,7 @@ staticfiles/
 .python-version
 .env
 .env.*
+!scripts/.env.example
+main.py
 .tmp-edge-profile*/
 login-shot*.png
