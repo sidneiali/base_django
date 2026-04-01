@@ -1,32 +1,203 @@
-{% extends "registration/auth_external_base.html" %}
+{% extends "public_api_base.html" %}
 
 {% block title %}Swagger da API{% endblock %}
 
-{% block eyebrow %}Documentação pública{% endblock %}
+{% block content %}
+<div class="public-docs">
+    <div class="public-docs__hero card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="public-docs__eyebrow">Documentação pública</div>
+            <h2 class="public-docs__title">Swagger da API</h2>
+            <p class="public-docs__text">
+                Página pública para explorar e testar a API sem carregar o shell com sidebar. O acesso aos endpoints segue protegido por <code>Authorization: Bearer &lt;token&gt;</code>.
+            </p>
+        </div>
+    </div>
 
-{% block heading %}Swagger da API{% endblock %}
+    <div class="row g-4">
+        <div class="col-12 col-xl-4 d-flex">
+            <div class="card public-docs__card w-100">
+                <div class="card-body d-flex flex-column gap-3">
+                    <div>
+                        <div class="public-docs__section-label">Recurso</div>
+                        <h3 class="card-title mb-1">Usuários do painel</h3>
+                        <div class="text-secondary">Base URL: <code>/api/panel/users/</code></div>
+                    </div>
 
-{% block intro %}
-<p class="auth-cover-form-header__text">
-    Esta página externa vai concentrar a documentação e os testes manuais dos endpoints, sem exigir login no painel.
-</p>
-{% endblock %}
+                    <div class="alert alert-primary mb-0" role="alert">
+                        Gere seu token em <strong>Minha conta</strong> e envie no header Bearer.
+                    </div>
 
-{% block body %}
-<div class="card border-0 shadow-sm">
-    <div class="card-body d-flex flex-column gap-3">
-        <div class="alert alert-primary mb-0" role="alert">
-            A documentação interativa ainda será plugada aqui na próxima etapa.
+                    <ul class="public-docs__endpoint-list">
+                        <li><code>GET</code> `/api/panel/users/`</li>
+                        <li><code>POST</code> `/api/panel/users/`</li>
+                        <li><code>GET</code> `/api/panel/users/&lt;id&gt;/`</li>
+                        <li><code>PATCH</code> `/api/panel/users/&lt;id&gt;/`</li>
+                        <li><code>DELETE</code> `/api/panel/users/&lt;id&gt;/`</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
-        <div class="text-secondary">
-            Quando a autenticação Bearer dos endpoints estiver pronta, esta tela pode receber Swagger UI ou outra documentação pública equivalente.
+        <div class="col-12 col-xl-8 d-flex">
+            <div class="card public-docs__card w-100">
+                <div class="card-body d-flex flex-column gap-4">
+                    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+                        <div>
+                            <div class="public-docs__section-label">Exemplos rápidos</div>
+                            <h3 class="card-title mb-1">Chamadas com Bearer token</h3>
+                            <div class="text-secondary">
+                                Estes exemplos já funcionam com o primeiro recurso protegido da API.
+                            </div>
+                        </div>
+
+                        <a
+                            href="{{ postman_download_url }}"
+                            class="btn btn-primary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Baixar Postman JSON
+                        </a>
+                    </div>
+
+                    <div>
+                        <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <a href="#api-tabs-curl" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">curl</a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a href="#api-tabs-python" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab">Python</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content public-docs__tab-content">
+                            <div class="tab-pane active show" id="api-tabs-curl" role="tabpanel">
+                                <div class="d-flex flex-column gap-3">
+                                    <div>
+                                        <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
+                                        <pre class="public-docs__code"><code>curl -X POST {{ api_base_url }}/api/panel/users/ \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"api-user\",\"email\":\"api@example.com\",\"password\":\"SenhaSegura@123\",\"is_active\":true}"</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/1/</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>curl -X PATCH {{ api_base_url }}/api/panel/users/1/ \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"alterado@example.com\"}"</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>curl -X DELETE {{ api_base_url }}/api/panel/users/1/ \
+  -H "Authorization: Bearer SEU_TOKEN"</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane" id="api-tabs-python" role="tabpanel">
+                                <div class="d-flex flex-column gap-3">
+                                    <div>
+                                        <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/panel/users/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+payload = {
+    "username": "api-user",
+    "email": "api@example.com",
+    "password": "SenhaSegura@123",
+    "is_active": True,
+}
+
+response = requests.post(
+    "{{ api_base_url }}/api/panel/users/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    json=payload,
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/panel/users/1/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+payload = {
+    "email": "alterado@example.com",
+}
+
+response = requests.patch(
+    "{{ api_base_url }}/api/panel/users/1/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    json=payload,
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.delete(
+    "{{ api_base_url }}/api/panel/users/1/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block footer %}
-<span>BaseApp</span>
-<span>Documentação pública da API</span>
 {% endblock %}

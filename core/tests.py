@@ -1,5 +1,7 @@
 """Testes principais do app core e da infraestrutura de auditoria."""
 
+import json
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.tokens import default_token_generator
@@ -284,6 +286,24 @@ class AccountPasswordChangeTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Swagger da API")
+        self.assertContains(response, "curl")
+        self.assertContains(response, "Python")
+        self.assertNotContains(response, ">Postman<", html=False)
+        self.assertContains(response, reverse("api_docs_postman"))
+        self.assertContains(response, "/api/panel/users/&lt;id&gt;/")
+
+    def test_api_docs_postman_download_is_public(self):
+        """A coleção Postman deve estar disponível para download público."""
+
+        response = self.client.get(reverse("api_docs_postman"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("application/json", response["Content-Type"])
+        self.assertIn("attachment;", response["Content-Disposition"])
+
+        collection = json.loads(response.content)
+        self.assertEqual(collection["info"]["name"], "BaseApp API")
+        self.assertEqual(collection["variable"][1]["key"], "token")
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

@@ -17,6 +17,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("painel/", include("panel.urls")),
+    path("api/panel/", include("panel.api_urls")),
     path(
         "login/",
         auth_views.LoginView.as_view(

@@ -1,9 +1,12 @@
-"""Views principais do dashboard e das entradas de modulo."""
+"""Views principais do dashboard, conta e documentação pública da API."""
+
+import json
 
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -13,6 +16,147 @@ from .htmx import htmx_location, is_htmx_request, render_page
 from .forms import SelfPasswordChangeForm
 from .models import Module
 from .services import build_modules_for_user
+
+
+def _build_public_base_url(request) -> str:
+    """Retorna a URL base absoluta da instância atual sem barra final."""
+
+    return request.build_absolute_uri("/").rstrip("/")
+
+
+def _build_postman_collection(request) -> dict[str, object]:
+    """Monta a coleção Postman pública do primeiro recurso da API."""
+
+    base_url = _build_public_base_url(request)
+    users_collection_url = f"{base_url}{reverse('api_panel_users_collection')}"
+    user_detail_url = f"{base_url}/api/panel/users/:id/"
+
+    return {
+        "info": {
+            "name": "BaseApp API",
+            "description": (
+                "Coleção inicial da API protegida por Bearer token para o recurso "
+                "de usuários do painel."
+            ),
+            "schema": (
+                "https://schema.getpostman.com/json/collection/v2.1.0/"
+                "collection.json"
+            ),
+        },
+        "variable": [
+            {"key": "base_url", "value": base_url},
+            {"key": "token", "value": "SEU_TOKEN"},
+            {"key": "user_id", "value": "1"},
+        ],
+        "item": [
+            {
+                "name": "Usuários do painel",
+                "item": [
+                    {
+                        "name": "Listar usuários",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": users_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Criar usuário",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json",
+                                    "type": "text",
+                                },
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {
+                                        "username": "api-user",
+                                        "email": "api@example.com",
+                                        "password": "SenhaSegura@123",
+                                        "is_active": True,
+                                    },
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": users_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Detalhar usuário",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": user_detail_url,
+                        },
+                    },
+                    {
+                        "name": "Atualizar usuário",
+                        "request": {
+                            "method": "PATCH",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json",
+                                    "type": "text",
+                                },
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {"email": "alterado@example.com"},
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": user_detail_url.replace(":id", "{{user_id}}"),
+                        },
+                    },
+                    {
+                        "name": "Excluir usuário",
+                        "request": {
+                            "method": "DELETE",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": user_detail_url.replace(":id", "{{user_id}}"),
+                        },
+                    },
+                ],
+            }
+        ],
+    }
 
 
 @login_required
@@ -122,8 +266,24 @@ def api_docs(request):
         "account/api_docs.html",
         {
             "page_title": "Swagger da API",
+            "api_base_url": _build_public_base_url(request),
+            "postman_download_url": reverse("api_docs_postman"),
         },
     )
+
+
+def api_docs_postman(request):
+    """Entrega a coleção Postman pública da API para download."""
+
+    collection = _build_postman_collection(request)
+    response = HttpResponse(
+        json.dumps(collection, ensure_ascii=False, indent=2),
+        content_type="application/json",
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="baseapp-api-postman-collection.json"'
+    )
+    return response
 
 
 def forbidden_view(request, exception=None):

@@ -286,8 +286,13 @@ class ApiToken(models.Model):
     def mark_used(self) -> None:
         """Registra o instante do ultimo uso bem-sucedido do token."""
 
-        self.last_used_at = timezone.now()
-        self.save(update_fields=["last_used_at", "updated_at"])
+        timestamp = timezone.now()
+        self.last_used_at = timestamp
+        self.updated_at = timestamp
+        type(self).objects.filter(pk=self.pk).update(
+            last_used_at=timestamp,
+            updated_at=timestamp,
+        )
 
     def revoke(self) -> None:
         """Invalida o token atual sem apagar o historico do registro."""

@@ -1,0 +1,61 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}BaseApp{% endblock %}</title>
+    <link href="{% static 'vendor/tabler/css/tabler.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/tabler/icons/tabler-icons.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="layout-fluid public-docs-body">
+    <div class="page">
+        <div class="page-wrapper">
+            <div class="sticky-top app-topbar-shell">
+                <header class="navbar navbar-expand-md sticky-top d-print-none app-topbar public-docs-topbar">
+                    <div class="container-xl">
+                        <div class="app-topbar__title-block">
+                            <div class="page-pretitle mb-1">BaseApp</div>
+                            <h1 class="page-title m-0">{% block navbar_title %}Swagger da API{% endblock %}</h1>
+                        </div>
+
+                        <div class="navbar-nav flex-row ms-auto align-items-center">
+                            {% if request.user.is_authenticated %}
+                                <a href="{% url 'account_password_change' %}" class="btn btn-outline-secondary">
+                                    Minha conta
+                                </a>
+                            {% else %}
+                                <a href="{% url 'login' %}" class="btn btn-primary">
+                                    Entrar
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </header>
+            </div>
+
+            <div class="page-body">
+                <div class="container-xl">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+
+            <footer class="footer footer-transparent footer-app d-print-none">
+                <div class="container-xl">
+                    <div class="footer-app__content">
+                        <div>
+                            <div class="footer-app__brand">BaseApp</div>
+                            <div class="footer-app__text">Documentação pública e testes manuais da API.</div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="{% static 'vendor/tabler/js/tabler.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
