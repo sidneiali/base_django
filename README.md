@@ -292,7 +292,7 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 - [`config/settings/development.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\settings\development.py): defaults locais
 - [`config/settings/production.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\settings\production.py): defaults de produção
 - [`config/urls.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\urls.py): composição das rotas do projeto
-- [`core/services.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\services.py): monta os módulos visíveis para o usuário
+- [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py): monta e reaproveita a navegação do dashboard e do sidebar por request
 - [`core/models/audit.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models\audit.py): trilha de auditoria do sistema
 - [`panel/forms.py`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\forms.py): fachada compatível para os formulários do painel
 - [`templates/base.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\base.html): layout principal
@@ -301,7 +301,7 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 ## Estado atual e limitações
 
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) é genérica e serve como placeholder até cada app ter sua própria área
-- o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py)
+- o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
 - o painel agora já possui uma tela HTML de auditoria, mas ela ainda não entrou no seed inicial de módulos do dashboard
 - a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON

@@ -1,10 +1,13 @@
 """Testes da navegação autenticada do shell principal."""
 
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 
+from core import navigation
 from core.models import Module
 
 User = get_user_model()
@@ -61,3 +64,35 @@ class SidebarNavigationTests(TestCase):
         self.assertContains(response, 'aria-disabled="true"', html=False)
         self.assertContains(response, "Grupos")
         self.assertContains(response, 'data-topbar-close-menu="true"', html=False)
+
+    def test_dashboard_and_sidebar_share_request_scoped_module_cache(self) -> None:
+        """O dashboard e o sidebar devem reutilizar a mesma montagem por request."""
+
+        user = User.objects.create_user(
+            username="cacheado",
+            email="cacheado@example.com",
+            password="SenhaSegura@123",
+        )
+        self.client.force_login(user)
+
+        Module.objects.create(
+            name="Usuários",
+            slug="usuarios",
+            description="Gestão de usuários",
+            icon="ti ti-users",
+            url_name="panel_users_list",
+            app_label="auth",
+            permission_codename="view_user",
+            menu_group="Configurações",
+            order=10,
+            is_active=True,
+        )
+
+        with patch(
+            "core.navigation.build_modules_for_user",
+            wraps=navigation.build_modules_for_user,
+        ) as mocked_builder:
+            response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mocked_builder.call_count, 1)
