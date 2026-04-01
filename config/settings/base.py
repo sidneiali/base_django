@@ -1,9 +1,6 @@
-"""Configuracoes centrais da base Django.
+"""Configuracoes compartilhadas entre todos os ambientes do projeto."""
 
-Este modulo define os apps instalados, templates, banco SQLite, idioma
-pt-BR, arquivos estaticos e regras de autenticacao usadas pela base com
-dashboard por modulos e painel interno de usuarios e grupos.
-"""
+from __future__ import annotations
 
 import os
 from pathlib import Path
@@ -42,20 +39,60 @@ def env_list(name: str, default: list[str] | None = None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def env_str(name: str, default: str = "") -> str:
+    """Retorna uma variavel de ambiente textual com fallback simples."""
+
+    return os.getenv(name, default)
+
+
+def build_database_config(default_name: Path) -> dict[str, dict[str, str]]:
+    """Monta a configuracao do banco a partir de variaveis de ambiente."""
+
+    engine = env_str("DATABASE_ENGINE", "django.db.backends.sqlite3")
+    name = env_str("DATABASE_NAME", str(default_name))
+    database = {"ENGINE": engine, "NAME": name}
+
+    if engine != "django.db.backends.sqlite3":
+        database.update(
+            {
+                "USER": env_str("DATABASE_USER"),
+                "PASSWORD": env_str("DATABASE_PASSWORD"),
+                "HOST": env_str("DATABASE_HOST"),
+                "PORT": env_str("DATABASE_PORT"),
+            }
+        )
+
+    return {"default": database}
+
+
+def build_https_settings(force_https: bool) -> dict[str, object]:
+    """Deriva as flags de seguranca com base no modo HTTPS."""
+
+    settings: dict[str, object] = {
+        "SESSION_COOKIE_SECURE": force_https,
+        "CSRF_COOKIE_SECURE": force_https,
+        "SECURE_SSL_REDIRECT": force_https,
+        "SECURE_HSTS_SECONDS": env_int(
+            "SECURE_HSTS_SECONDS",
+            31536000 if force_https else 0,
+        ),
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": force_https,
+        "SECURE_HSTS_PRELOAD": force_https,
+        "SECURE_CONTENT_TYPE_NOSNIFF": True,
+        "SECURE_REFERRER_POLICY": "same-origin",
+    }
+
+    if force_https:
+        settings["SECURE_PROXY_SSL_HEADER"] = (
+            "HTTP_X_FORWARDED_PROTO",
+            "https",
+        )
+
+    return settings
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR: Path = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bska#4w*3i$h88)c=*xq%8ldvti1h#k!#+z5tip$+huv8l%vjk'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_bool("DEBUG", True)
-
-ALLOWED_HOSTS: list[str] = env_list("ALLOWED_HOSTS", [])
+BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
 
 # Application definition
@@ -108,17 +145,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -162,7 +188,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -170,37 +195,15 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
 PASSWORD_RESET_TIMEOUT = env_int("PASSWORD_RESET_TIMEOUT", 3600)
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@baseapp.local")
+DEFAULT_FROM_EMAIL = env_str("DEFAULT_FROM_EMAIL", "no-reply@baseapp.local")
 
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend"
-    if DEBUG
-    else "django.core.mail.backends.smtp.EmailBackend",
-)
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.resend.com")
+EMAIL_HOST = env_str("EMAIL_HOST", "smtp.resend.com")
 EMAIL_PORT = env_int("EMAIL_PORT", 465)
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "resend")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_USER = env_str("EMAIL_HOST_USER", "resend")
+EMAIL_HOST_PASSWORD = env_str("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", True)
 
 API_RATE_LIMIT_ENABLED = env_bool("API_RATE_LIMIT_ENABLED", True)
 API_RATE_LIMIT_REQUESTS = env_int("API_RATE_LIMIT_REQUESTS", 120)
 API_RATE_LIMIT_WINDOW_SECONDS = env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
-
-APP_FORCE_HTTPS = env_bool("APP_FORCE_HTTPS", False)
-SESSION_COOKIE_SECURE = APP_FORCE_HTTPS
-CSRF_COOKIE_SECURE = APP_FORCE_HTTPS
-SECURE_SSL_REDIRECT = APP_FORCE_HTTPS
-SECURE_HSTS_SECONDS = env_int(
-    "SECURE_HSTS_SECONDS",
-    31536000 if APP_FORCE_HTTPS else 0,
-)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = APP_FORCE_HTTPS
-SECURE_HSTS_PRELOAD = APP_FORCE_HTTPS
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "same-origin"
-
-if APP_FORCE_HTTPS:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
