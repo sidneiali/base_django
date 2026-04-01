@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 import re
-
+from collections import OrderedDict
 
 TAG_ORDER = [
     "Operacional",

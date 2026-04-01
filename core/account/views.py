@@ -6,8 +6,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from core.api.access import (get_user_api_token_summary, issue_user_api_token,
-                             revoke_user_api_token)
+from core.api.access import (
+    get_user_api_token_summary,
+    issue_user_api_token,
+    revoke_user_api_token,
+)
 from core.htmx import htmx_location, is_htmx_request, render_page
 
 from .forms import SelfPasswordChangeForm

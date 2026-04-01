@@ -1,6 +1,10 @@
 """Formulários do fluxo público de autenticação."""
 
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 
 
 class LoginForm(AuthenticationForm):

@@ -22,6 +22,14 @@ Estado atual da arquitetura:
 - a API já está organizada em:
   - `core/api/`
   - `panel/api/`
+- os testes já foram separados em pacote:
+  - `core/tests/`
+  - `panel/tests/`
+- o admin do `core` já foi separado em pacote:
+  - `core/admin/__init__.py`
+  - `core/admin/modules.py`
+  - `core/admin/audit.py`
+  - `core/admin/users.py`
 
 ## Últimos Commits Relevantes
 
@@ -33,40 +41,54 @@ Estado atual da arquitetura:
 
 ## Última Validação
 
-Executado após a separação de `core/models.py`:
+Executado após a separação de `core/tests.py`, `panel/tests.py` e `core/admin.py`:
 
-- `python manage.py check`
-- `python manage.py test core.tests panel.tests`
+- `uv run --extra dev ruff check config core panel`
+- `.\.venv\Scripts\python.exe manage.py check`
+- `.\.venv\Scripts\python.exe manage.py test core.tests panel.tests`
 
 Resultado:
 
+- `ruff` ok
 - `check` ok
 - `36` testes passando
+- discovery funcionando com:
+  - `core/tests/test_account.py`
+  - `core/tests/test_admin.py`
+  - `core/tests/test_api_access.py`
+  - `core/tests/test_api_operational.py`
+  - `core/tests/test_audit.py`
+  - `core/tests/test_auth.py`
+  - `core/tests/test_models.py`
+  - `panel/tests/test_api.py`
+  - `panel/tests/test_forms.py`
 
 ## Worktree Atual
 
-- o único arquivo local fora do Git é este `CONTINUACAO.md`
+Alterações locais esperadas desta etapa:
+
+- `core/tests.py` removido
+- `panel/tests.py` removido
+- `core/admin.py` removido
+- `core/tests/` criado
+- `panel/tests/` criado
+- `core/admin/` criado
+- `CONTINUACAO.md` atualizado
+
+Observação:
+
+- existe uma alteração local em `.gitignore` que não faz parte desta etapa; tratar com cuidado antes de qualquer commit
 
 ## Próximo Passo
 
-Separar os testes conforme convenção:
+Próximo corte recomendado em `core/`:
 
-- `core/tests.py` -> `core/tests/`
-- `panel/tests.py` -> `panel/tests/`
+- dividir `core/audit.py`
+  - separar contexto de request/auditoria
+  - separar snapshot e sanitização
+  - separar criação de log e helpers de serialização
 
-Estrutura sugerida:
-
-- `core/tests/test_account.py`
-- `core/tests/test_admin.py`
-- `core/tests/test_audit.py`
-- `core/tests/test_api_access.py`
-- `core/tests/test_api_operational.py`
-- `core/tests/test_auth.py`
-- `core/tests/test_models.py`
-- `panel/tests/test_api.py`
-- `panel/tests/test_forms.py`
-
-Depois disso, validar com:
+Validação mínima depois desse corte:
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
@@ -77,10 +99,8 @@ Depois disso, validar com:
 
 ### Core
 
-Arquivos da raiz que ainda valem refactor depois da pasta `tests/`:
+Arquivos da raiz que ainda valem refactor depois da pasta `tests/` e `admin/`:
 
-- `core/admin.py`
-  - dividir em admin de módulo, auditoria e usuário
 - `core/audit.py`
   - dividir contexto, snapshot/sanitização e criação de log
 - `core/middleware.py`
@@ -120,5 +140,6 @@ Observação sobre `panel/helpers.py`:
 ## Observações
 
 - `core/models.py` não está mais pendente
-- o próximo trabalho confirmado é a separação dos testes em pasta `tests/`
+- `core/tests.py`, `panel/tests.py` e `core/admin.py` não existem mais; a convenção agora é por pacote
+- o próximo trabalho sugerido é a separação de `core/audit.py`
 - o SQLite dentro do OneDrive já apresentou `disk I/O error` em etapas anteriores de migration; se isso voltar, revisar o uso do banco dentro da pasta sincronizada

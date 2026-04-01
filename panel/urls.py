@@ -2,8 +2,14 @@
 
 from django.urls import path
 
-from .views import (group_create, group_update, groups_list, user_create,
-                    user_update, users_list)
+from .views import (
+                    group_create,
+                    group_update,
+                    groups_list,
+                    user_create,
+                    user_update,
+                    users_list,
+)
 
 urlpatterns = [
     path("usuarios/", users_list, name="panel_users_list"),

@@ -4,12 +4,11 @@ Centraliza as rotas do admin, autenticacao, dashboard, painel de gestao
 e o handler customizado para erro 403.
 """
 
+from core.forms import LoginForm, PasswordRecoveryConfirmForm, PasswordRecoveryForm
+from core.views import api_openapi, forbidden_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
-
-from core.forms import LoginForm, PasswordRecoveryConfirmForm, PasswordRecoveryForm
-from core.views import api_openapi, forbidden_view
 
 handler403 = forbidden_view
 

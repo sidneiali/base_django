@@ -2,8 +2,13 @@
 
 from django.urls import path
 
-from .views import (account_password_change, api_docs, api_docs_postman,
-                    dashboard, module_entry)
+from .views import (
+                    account_password_change,
+                    api_docs,
+                    api_docs_postman,
+                    dashboard,
+                    module_entry,
+)
 
 urlpatterns = [
     path("", dashboard, name="dashboard"),

@@ -1,12 +1,13 @@
 """Formulário de usuários do painel."""
 
-from django import forms
-from django.contrib.auth.models import Group, User
-
 from core.api.forms import ApiAccessFormMixin
 from core.models import UserInterfacePreference
-from core.preferences import (get_user_interface_preference,
-                              save_user_interface_preference)
+from core.preferences import (
+    get_user_interface_preference,
+    save_user_interface_preference,
+)
+from django import forms
+from django.contrib.auth.models import Group, User
 
 from ..constants import PROTECTED_GROUP_NAMES
 

@@ -41,8 +41,9 @@ def env_list(name: str, default: list[str] | None = None) -> list[str]:
         return default or []
     return [item.strip() for item in value.split(",") if item.strip()]
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production

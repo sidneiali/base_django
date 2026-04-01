@@ -1,12 +1,11 @@
 """Views do domínio de usuários do painel."""
 
+from core.htmx import htmx_location, is_htmx_request, render_page
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-
-from core.htmx import htmx_location, is_htmx_request, render_page
 
 from ..helpers import build_dual_list_choices
 from .forms import PanelUserForm

@@ -6,8 +6,11 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
-from core.api.openapi import (build_docs_sections, build_openapi_schema,
-                              build_public_base_url)
+from core.api.openapi import (
+    build_docs_sections,
+    build_openapi_schema,
+    build_public_base_url,
+)
 
 
 def _build_postman_collection(request) -> dict[str, object]:

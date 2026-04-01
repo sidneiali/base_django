@@ -6,8 +6,11 @@ from django import forms
 from django.contrib.auth.models import Group, Permission
 from django.db.models import Model
 
-from ..constants import (APP_LABEL_TRANSLATIONS, BLOCKED_PERMISSION_APP_LABELS,
-                         PROTECTED_GROUP_NAMES)
+from ..constants import (
+    APP_LABEL_TRANSLATIONS,
+    BLOCKED_PERMISSION_APP_LABELS,
+    PROTECTED_GROUP_NAMES,
+)
 
 MODEL_NAME_TRANSLATIONS = {
     "group": "Grupo",

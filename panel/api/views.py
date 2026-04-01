@@ -5,17 +5,25 @@ from __future__ import annotations
 import json
 from json import JSONDecodeError
 
+from core.api.auth import require_api_permission
+from core.api.queries import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    build_filters_meta,
+    paginate_queryset,
+    parse_bool_filter,
+    parse_ordering,
+    parse_positive_int,
+)
+from core.api.responses import (
+    api_collection_response,
+    api_error_response,
+    api_success_response,
+)
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
-from core.api.auth import require_api_permission
-from core.api.queries import (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, build_filters_meta,
-                              paginate_queryset, parse_bool_filter,
-                              parse_ordering, parse_positive_int)
-from core.api.responses import (api_collection_response, api_error_response,
-                                api_success_response)
 
 from .forms import ApiUserWriteForm
 
