@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
@@ -17,9 +18,19 @@ def _is_json_api_request(path: str) -> bool:
 
     if path.startswith("/api/docs/"):
         return False
-    if path == "/api/docs/" or path == "/api/docs/postman.json":
+    if path in {
+        "/api/docs/",
+        "/api/docs/postman.json",
+        "/api/openapi.json",
+        "/api/v1/openapi.json",
+    }:
         return False
-    return path.startswith("/api/core/") or path.startswith("/api/panel/")
+    return (
+        path.startswith("/api/core/")
+        or path.startswith("/api/panel/")
+        or path.startswith("/api/v1/core/")
+        or path.startswith("/api/v1/panel/")
+    )
 
 
 def _is_rate_limited_path(path: str) -> bool:
@@ -27,7 +38,19 @@ def _is_rate_limited_path(path: str) -> bool:
 
     if not _is_json_api_request(path):
         return False
-    return path != "/api/core/health/"
+    return path not in {"/api/core/health/", "/api/v1/core/health/"}
+
+
+def _build_request_id(request) -> str:
+    """Gera um identificador seguro para rastrear a requisição atual."""
+
+    incoming = str(request.META.get("HTTP_X_REQUEST_ID", "")).strip()
+    if incoming and len(incoming) <= 128:
+        allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_:.")
+        if all(char in allowed for char in incoming):
+            return incoming
+
+    return str(uuid.uuid4())
 
 
 def _build_rate_limit_identifier(request) -> str:
@@ -95,11 +118,7 @@ class ApiTokenAuthenticationMiddleware:
         request.api_token = None
         request.api_auth_result = None
 
-        if (
-            request.path.startswith("/api/")
-            and not request.path.startswith("/api/docs/")
-            and request.path != "/api/core/health/"
-        ):
+        if _is_json_api_request(request.path):
             auth_result = authenticate_api_request(request)
             request.api_auth_result = auth_result
             request.api_token = auth_result.token
@@ -127,6 +146,23 @@ class AuditContextMiddleware:
             return self.get_response(request)
         finally:
             reset_audit_context(token)
+
+
+class RequestIdMiddleware:
+    """Anexa um X-Request-ID estável às respostas da aplicação."""
+
+    def __init__(self, get_response):
+        """Armazena o próximo callable da cadeia de middlewares."""
+
+        self.get_response = get_response
+
+    def __call__(self, request):
+        """Gera ou reaproveita o request id e o devolve no response header."""
+
+        request.request_id = _build_request_id(request)
+        response = self.get_response(request)
+        response["X-Request-ID"] = request.request_id
+        return response
 
 
 class ApiRateLimitMiddleware:

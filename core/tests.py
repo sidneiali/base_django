@@ -314,14 +314,30 @@ class AccountPasswordChangeTests(TestCase):
         self.assertContains(response, "Python")
         self.assertNotContains(response, ">Postman<", html=False)
         self.assertContains(response, reverse("api_docs_postman"))
-        self.assertContains(response, "/api/core/health/")
-        self.assertContains(response, "/api/core/me/")
-        self.assertContains(response, "/api/core/token/")
-        self.assertContains(response, "/api/panel/users/&lt;id&gt;/")
-        self.assertContains(response, "/api/core/audit-logs/&lt;id&gt;/")
+        self.assertContains(response, reverse("api_v1_openapi"))
+        self.assertContains(response, "/api/v1/core/health/")
+        self.assertContains(response, "/api/v1/core/me/")
+        self.assertContains(response, "/api/v1/core/token/")
+        self.assertContains(response, "/api/v1/panel/users/{id}/")
+        self.assertContains(response, "/api/v1/core/audit-logs/{id}/")
         self.assertContains(response, 'data-endpoint-link="api-health"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-me"', html=False)
-        self.assertContains(response, 'data-endpoint-link="users-list"', html=False)
+        self.assertContains(response, 'data-endpoint-link="api-users-list"', html=False)
+
+    def test_openapi_json_is_public_and_versioned(self):
+        """A spec pública deve expor os paths versionados da API."""
+
+        response = self.client.get(reverse("api_openapi"))
+
+        self.assertEqual(response.status_code, 200)
+        schema = json.loads(response.content)
+        self.assertEqual(schema["openapi"], "3.1.0")
+        self.assertEqual(schema["info"]["title"], "BaseApp API")
+        self.assertIn("/api/v1/core/health/", schema["paths"])
+        self.assertIn("/api/v1/core/me/", schema["paths"])
+        self.assertIn("/api/v1/panel/users/", schema["paths"])
+        self.assertIn("/api/v1/core/audit-logs/{id}/", schema["paths"])
+        self.assertEqual(schema["servers"][0]["url"], "http://testserver")
 
     def test_api_docs_postman_download_is_public(self):
         """A coleção Postman deve estar disponível para download público."""
@@ -572,6 +588,7 @@ class ApiOperationalSecurityTests(TestCase):
         response = self.client.get(reverse("api_core_health"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn("X-Request-ID", response)
         payload = response.json()
         self.assertEqual(payload["status"], "ok")
         self.assertTrue(payload["timestamp"].endswith("-03:00"))
@@ -589,11 +606,13 @@ class ApiOperationalSecurityTests(TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["code"], "invalid_token")
+        self.assertIn("X-Request-ID", response)
 
         log = AuditLog.objects.filter(action=AuditLog.ACTION_API_ACCESS_DENIED).first()
         self.assertIsNotNone(log)
         self.assertEqual(log.metadata["reason_code"], "invalid_token")
         self.assertEqual(log.metadata["resource"], "core.api_access")
+        self.assertEqual(log.metadata["request_id"], response["X-Request-ID"])
 
     def test_rate_limit_blocks_second_request_and_logs_event(self):
         """A segunda chamada no mesmo bucket deve retornar 429."""
@@ -615,11 +634,13 @@ class ApiOperationalSecurityTests(TestCase):
         self.assertEqual(second_response.json()["code"], "rate_limited")
         self.assertEqual(second_response["Retry-After"], "60")
         self.assertEqual(second_response["X-RateLimit-Limit"], "1")
+        self.assertIn("X-Request-ID", second_response)
 
         log = AuditLog.objects.filter(action=AuditLog.ACTION_RATE_LIMITED).first()
         self.assertIsNotNone(log)
         self.assertEqual(log.metadata["event"], "api_rate_limited")
         self.assertEqual(log.metadata["path"], reverse("api_core_me"))
+        self.assertEqual(log.metadata["request_id"], second_response["X-Request-ID"])
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

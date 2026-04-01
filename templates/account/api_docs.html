@@ -16,306 +16,140 @@
 
     <div class="row g-4">
         <div class="col-12 col-xl-4 d-flex">
-            <div class="card public-docs__card w-100">
-                <div class="card-body d-flex flex-column gap-3">
+            <div class="card public-docs__card public-docs__sidebar-card w-100">
+                <div class="card-body public-docs__card-body public-docs__card-body--sidebar d-flex flex-column gap-3">
                     <div class="alert alert-primary mb-0" role="alert">
                         Gere seu token em <strong>Minha conta</strong> e envie no header Bearer.
                     </div>
 
-                    <div>
-                        <div class="public-docs__section-label">Recursos</div>
-                        <h3 class="card-title mb-1">Operacional</h3>
-                        <div class="text-secondary">Base URL: <code>/api/core/health/</code></div>
+                    <div class="public-docs__section-label">Recursos</div>
+                    <div class="public-docs__sidebar">
+                        <nav id="api-docs-nav" class="nav nav-pills flex-column public-docs__spy-nav">
+                            {% for section in docs_sections %}
+                                <div class="public-docs__spy-item">
+                                    <a
+                                        href="#{{ section.id }}"
+                                        class="nav-link public-docs__spy-link"
+                                        data-section-link="{{ section.id }}"
+                                    >
+                                        {{ section.label }}
+                                    </a>
+                                    <div class="public-docs__spy-meta">
+                                        Base URL: <code>{{ section.base_url }}</code>
+                                    </div>
+
+                                    <ul class="public-docs__endpoint-list">
+                                        {% for operation in section.operations %}
+                                            <li>
+                                                <a
+                                                    href="#{{ operation.id }}"
+                                                    class="public-docs__endpoint-link"
+                                                    data-endpoint-link="{{ operation.id }}"
+                                                >
+                                                    <code>{{ operation.method }}</code> `{{ operation.path }}`
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </nav>
                     </div>
-
-                    <ul class="public-docs__endpoint-list">
-                        <li><a href="#api-health" class="public-docs__endpoint-link" data-endpoint-link="api-health"><code>GET</code> `/api/core/health/`</a></li>
-                    </ul>
-
-                    <div>
-                        <h3 class="card-title mb-1">Acesso à API</h3>
-                        <div class="text-secondary">Base URL: <code>/api/core/</code></div>
-                    </div>
-
-                    <ul class="public-docs__endpoint-list">
-                        <li><a href="#api-me" class="public-docs__endpoint-link" data-endpoint-link="api-me"><code>GET</code> `/api/core/me/`</a></li>
-                        <li><a href="#api-token" class="public-docs__endpoint-link" data-endpoint-link="api-token"><code>GET</code> `/api/core/token/`</a></li>
-                    </ul>
-
-                    <div>
-                        <h3 class="card-title mb-1">Usuários do painel</h3>
-                        <div class="text-secondary">Base URL: <code>/api/panel/users/</code></div>
-                    </div>
-
-                    <ul class="public-docs__endpoint-list">
-                        <li><a href="#users-list" class="public-docs__endpoint-link" data-endpoint-link="users-list"><code>GET</code> `/api/panel/users/`</a></li>
-                        <li><a href="#users-create" class="public-docs__endpoint-link" data-endpoint-link="users-create"><code>POST</code> `/api/panel/users/`</a></li>
-                        <li><a href="#users-detail" class="public-docs__endpoint-link" data-endpoint-link="users-detail"><code>GET</code> `/api/panel/users/&lt;id&gt;/`</a></li>
-                        <li><a href="#users-update" class="public-docs__endpoint-link" data-endpoint-link="users-update"><code>PATCH</code> `/api/panel/users/&lt;id&gt;/`</a></li>
-                        <li><a href="#users-delete" class="public-docs__endpoint-link" data-endpoint-link="users-delete"><code>DELETE</code> `/api/panel/users/&lt;id&gt;/`</a></li>
-                    </ul>
-
-                    <div>
-                        <h3 class="card-title mb-1">Logs de auditoria</h3>
-                        <div class="text-secondary">Base URL: <code>/api/core/audit-logs/</code></div>
-                    </div>
-
-                    <ul class="public-docs__endpoint-list">
-                        <li><a href="#audit-logs-list" class="public-docs__endpoint-link" data-endpoint-link="audit-logs-list"><code>GET</code> `/api/core/audit-logs/`</a></li>
-                        <li><a href="#audit-logs-detail" class="public-docs__endpoint-link" data-endpoint-link="audit-logs-detail"><code>GET</code> `/api/core/audit-logs/&lt;id&gt;/`</a></li>
-                    </ul>
                 </div>
             </div>
         </div>
 
         <div class="col-12 col-xl-8 d-flex">
-            <div class="card public-docs__card w-100">
-                <div class="card-body d-flex flex-column gap-4">
+            <div class="card public-docs__card public-docs__content-card w-100">
+                <div class="card-body public-docs__card-body public-docs__card-body--content d-flex flex-column gap-4">
                     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                         <div>
                             <div class="public-docs__section-label">Exemplos rápidos</div>
-                            <h3 class="card-title mb-1">Chamadas com Bearer token</h3>
+                            <h3 class="card-title mb-1">Chamadas da OpenAPI v1</h3>
                             <div class="text-secondary">
-                                Estes exemplos cobrem os recursos de usuários do painel e logs de auditoria.
+                                Esta página é montada a partir da especificação OpenAPI pública da aplicação.
                             </div>
                         </div>
 
-                        <a
-                            href="{{ postman_download_url }}"
-                            class="btn btn-primary"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Baixar Postman JSON
-                        </a>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a
+                                href="{{ openapi_download_url }}"
+                                class="btn btn-outline-secondary"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Baixar OpenAPI JSON
+                            </a>
+                            <a
+                                href="{{ postman_download_url }}"
+                                class="btn btn-primary"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Baixar Postman JSON
+                            </a>
+                        </div>
                     </div>
 
-                    <div>
-                        <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
+                    <div class="public-docs__language-shell">
+                        <ul class="nav nav-tabs" role="tablist" aria-label="Linguagem dos exemplos">
                             <li class="nav-item" role="presentation">
-                                <a href="#api-tabs-curl" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">curl</a>
+                                <button
+                                    type="button"
+                                    class="nav-link active"
+                                    aria-selected="true"
+                                    data-code-lang="curl"
+                                >
+                                    curl
+                                </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <a href="#api-tabs-python" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab">Python</a>
+                                <button
+                                    type="button"
+                                    class="nav-link"
+                                    aria-selected="false"
+                                    data-code-lang="python"
+                                >
+                                    Python
+                                </button>
                             </li>
                         </ul>
 
-                        <div class="tab-content public-docs__tab-content">
-                            <div class="tab-pane active show" id="api-tabs-curl" role="tabpanel">
-                                <div class="d-flex flex-column gap-3">
-                                    <div class="public-docs__example" data-endpoint-example="api-health">
-                                        <h4 class="card-title mb-1">GET `/api/core/health/`</h4>
-                                        <pre class="public-docs__code"><code>curl {{ api_base_url }}/api/core/health/</code></pre>
+                        <div class="public-docs__sections">
+                            {% for section in docs_sections %}
+                                <section id="{{ section.id }}" class="public-docs__docs-section">
+                                    <div class="public-docs__docs-section-head">
+                                        <div class="public-docs__section-label mb-2">{{ section.label }}</div>
+                                        <h4 class="card-title mb-1">Base URL: <code>{{ section.base_url }}</code></h4>
                                     </div>
 
-                                    <div class="public-docs__example" data-endpoint-example="api-me">
-                                        <h4 class="card-title mb-1">GET `/api/core/me/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/me/</code></pre>
+                                    <div class="d-flex flex-column gap-3">
+                                        {% for operation in section.operations %}
+                                            <article
+                                                id="{{ operation.id }}"
+                                                class="public-docs__example"
+                                                data-endpoint-example="{{ operation.id }}"
+                                            >
+                                                <h4 class="card-title mb-1">{{ operation.method }} `{{ operation.path }}`</h4>
+                                                {% if operation.summary %}
+                                                    <p class="public-docs__example-summary">{{ operation.summary }}</p>
+                                                {% endif %}
+                                                <div class="public-docs__code-panel">
+                                                    <pre
+                                                        class="public-docs__code"
+                                                        data-code-sample="curl"
+                                                    ><code>{{ operation.code_samples.curl }}</code></pre>
+                                                    <pre
+                                                        class="public-docs__code"
+                                                        data-code-sample="python"
+                                                        hidden
+                                                    ><code>{{ operation.code_samples.python }}</code></pre>
+                                                </div>
+                                            </article>
+                                        {% endfor %}
                                     </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="api-token">
-                                        <h4 class="card-title mb-1">GET `/api/core/token/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/token/</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-list">
-                                        <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-create">
-                                        <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
-                                        <pre class="public-docs__code"><code>curl -X POST {{ api_base_url }}/api/panel/users/ \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"username\":\"api-user\",\"email\":\"api@example.com\",\"password\":\"SenhaSegura@123\",\"is_active\":true}"</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-detail">
-                                        <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/1/</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-update">
-                                        <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>curl -X PATCH {{ api_base_url }}/api/panel/users/1/ \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"alterado@example.com\"}"</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-delete">
-                                        <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>curl -X DELETE {{ api_base_url }}/api/panel/users/1/ \
-  -H "Authorization: Bearer SEU_TOKEN"</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="audit-logs-list">
-                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/audit-logs/</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="audit-logs-detail">
-                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/audit-logs/1/</code></pre>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="tab-pane" id="api-tabs-python" role="tabpanel">
-                                <div class="d-flex flex-column gap-3">
-                                    <div class="public-docs__example" data-endpoint-example="api-health">
-                                        <h4 class="card-title mb-1">GET `/api/core/health/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/core/health/",
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="api-me">
-                                        <h4 class="card-title mb-1">GET `/api/core/me/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/core/me/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="api-token">
-                                        <h4 class="card-title mb-1">GET `/api/core/token/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/core/token/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-list">
-                                        <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/panel/users/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-create">
-                                        <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-payload = {
-    "username": "api-user",
-    "email": "api@example.com",
-    "password": "SenhaSegura@123",
-    "is_active": True,
-}
-
-response = requests.post(
-    "{{ api_base_url }}/api/panel/users/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    json=payload,
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-detail">
-                                        <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/panel/users/1/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-update">
-                                        <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-payload = {
-    "email": "alterado@example.com",
-}
-
-response = requests.patch(
-    "{{ api_base_url }}/api/panel/users/1/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    json=payload,
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="users-delete">
-                                        <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.delete(
-    "{{ api_base_url }}/api/panel/users/1/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="audit-logs-list">
-                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/core/audit-logs/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-
-                                    <div class="public-docs__example" data-endpoint-example="audit-logs-detail">
-                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/&lt;id&gt;/`</h4>
-                                        <pre class="public-docs__code"><code>import requests
-
-response = requests.get(
-    "{{ api_base_url }}/api/core/audit-logs/1/",
-    headers={"Authorization": "Bearer SEU_TOKEN"},
-    timeout=30,
-)
-
-print(response.status_code)
-print(response.json())</code></pre>
-                                    </div>
-                                </div>
-                            </div>
+                                </section>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -328,8 +162,13 @@ print(response.json())</code></pre>
 {% block extra_js %}
 <script>
     (() => {
+        const docsSections = document.querySelector(".public-docs__sections");
+        const sectionLinks = document.querySelectorAll("[data-section-link]");
         const endpointLinks = document.querySelectorAll("[data-endpoint-link]");
+        const languageButtons = document.querySelectorAll("[data-code-lang]");
         let highlightedExample = null;
+        let currentLanguage = "curl";
+        let scrollSpy = null;
 
         const copyText = async (value) => {
             if (navigator.clipboard?.writeText) {
@@ -348,9 +187,14 @@ print(response.json())</code></pre>
             document.body.removeChild(textarea);
         };
 
+        const getVisibleCodeBlock = (panel) => (
+            panel.querySelector(`[data-code-sample="${currentLanguage}"]`)
+            || panel.querySelector("[data-code-sample]:not([hidden])")
+        );
+
         const initCodeCopyButtons = () => {
-            document.querySelectorAll(".public-docs__code").forEach((codeBlock) => {
-                if (codeBlock.parentElement?.classList.contains("public-docs__code-wrap")) {
+            document.querySelectorAll(".public-docs__code-panel").forEach((panel) => {
+                if (panel.classList.contains("public-docs__code-wrap")) {
                     return;
                 }
 
@@ -363,7 +207,8 @@ print(response.json())</code></pre>
                 button.textContent = "Copiar";
 
                 button.addEventListener("click", async () => {
-                    const code = codeBlock.querySelector("code");
+                    const codeBlock = getVisibleCodeBlock(wrapper);
+                    const code = codeBlock?.querySelector("code");
                     const value = code?.textContent?.trim() || codeBlock.textContent?.trim() || "";
 
                     if (!value) {
@@ -381,10 +226,29 @@ print(response.json())</code></pre>
                     }
                 });
 
-                codeBlock.parentNode.insertBefore(wrapper, codeBlock);
+                panel.parentNode.insertBefore(wrapper, panel);
                 wrapper.appendChild(button);
-                wrapper.appendChild(codeBlock);
+                wrapper.appendChild(panel);
             });
+        };
+
+        const setActiveLanguage = (language) => {
+            currentLanguage = language;
+
+            languageButtons.forEach((button) => {
+                const isActive = button.dataset.codeLang === language;
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+
+            document.querySelectorAll("[data-code-sample]").forEach((codeBlock) => {
+                const isVisible = codeBlock.dataset.codeSample === language;
+                codeBlock.hidden = !isVisible;
+            });
+
+            if (scrollSpy?.refresh) {
+                scrollSpy.refresh();
+            }
         };
 
         const clearHighlight = () => {
@@ -396,30 +260,47 @@ print(response.json())</code></pre>
             highlightedExample = null;
         };
 
-        const getActivePane = () => (
-            document.querySelector(".public-docs .tab-pane.active.show")
-            || document.querySelector(".public-docs .tab-pane.active")
-        );
-
-        const scrollToEndpointExample = (endpointKey) => {
-            const activePane = getActivePane();
-            if (!activePane) {
+        const scrollToTarget = (targetId) => {
+            const target = document.getElementById(targetId);
+            if (!target) {
                 return;
             }
 
-            const example = activePane.querySelector(
-                `[data-endpoint-example="${endpointKey}"]`
-            );
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+
+        const scrollToEndpointExample = (endpointKey) => {
+            const example = document.querySelector(`[data-endpoint-example="${endpointKey}"]`);
             if (!example) {
                 return;
             }
 
+            scrollToTarget(endpointKey);
             clearHighlight();
             highlightedExample = example;
             example.classList.add("is-highlighted");
-            example.scrollIntoView({ behavior: "smooth", block: "start" });
             window.setTimeout(clearHighlight, 1800);
         };
+
+        const initScrollSpy = () => {
+            if (!docsSections || !window.bootstrap?.ScrollSpy) {
+                return;
+            }
+
+            scrollSpy = new window.bootstrap.ScrollSpy(docsSections, {
+                target: "#api-docs-nav",
+                smoothScroll: true,
+                offset: 24,
+            });
+            scrollSpy.refresh();
+        };
+
+        sectionLinks.forEach((link) => {
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                scrollToTarget(link.dataset.sectionLink);
+            });
+        });
 
         endpointLinks.forEach((link) => {
             link.addEventListener("click", (event) => {
@@ -428,7 +309,15 @@ print(response.json())</code></pre>
             });
         });
 
+        languageButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setActiveLanguage(button.dataset.codeLang);
+            });
+        });
+
         initCodeCopyButtons();
+        initScrollSpy();
+        setActiveLanguage(currentLanguage);
     })();
 </script>
 {% endblock %}

@@ -15,26 +15,21 @@ from .api_access import (get_user_api_token_summary, issue_user_api_token,
 from .htmx import htmx_location, is_htmx_request, render_page
 from .forms import SelfPasswordChangeForm
 from .models import Module
+from .openapi import build_docs_sections, build_openapi_schema, build_public_base_url
 from .services import build_modules_for_user
-
-
-def _build_public_base_url(request) -> str:
-    """Retorna a URL base absoluta da instância atual sem barra final."""
-
-    return request.build_absolute_uri("/").rstrip("/")
 
 
 def _build_postman_collection(request) -> dict[str, object]:
     """Monta a coleção Postman pública dos recursos disponíveis da API."""
 
-    base_url = _build_public_base_url(request)
-    health_url = f"{base_url}{reverse('api_core_health')}"
-    me_url = f"{base_url}{reverse('api_core_me')}"
-    token_url = f"{base_url}{reverse('api_core_token')}"
-    users_collection_url = f"{base_url}{reverse('api_panel_users_collection')}"
-    user_detail_url = f"{base_url}/api/panel/users/:id/"
-    audit_logs_collection_url = f"{base_url}{reverse('api_core_audit_logs_collection')}"
-    audit_log_detail_url = f"{base_url}/api/core/audit-logs/:id/"
+    base_url = build_public_base_url(request)
+    health_url = f"{base_url}{reverse('api_v1_core_health')}"
+    me_url = f"{base_url}{reverse('api_v1_core_me')}"
+    token_url = f"{base_url}{reverse('api_v1_core_token')}"
+    users_collection_url = f"{base_url}{reverse('api_v1_panel_users_collection')}"
+    user_detail_url = f"{base_url}/api/v1/panel/users/:id/"
+    audit_logs_collection_url = f"{base_url}{reverse('api_v1_core_audit_logs_collection')}"
+    audit_log_detail_url = f"{base_url}/api/v1/core/audit-logs/:id/"
 
     return {
         "info": {
@@ -345,14 +340,28 @@ def account_password_change(request):
 def api_docs(request):
     """Exibe a pagina publica de documentação/testes da API."""
 
+    openapi_schema = build_openapi_schema(request)
+
     return render(
         request,
         "account/api_docs.html",
         {
             "page_title": "Swagger da API",
-            "api_base_url": _build_public_base_url(request),
+            "api_base_url": build_public_base_url(request),
+            "docs_sections": build_docs_sections(openapi_schema),
+            "openapi_download_url": reverse("api_v1_openapi"),
             "postman_download_url": reverse("api_docs_postman"),
         },
+    )
+
+
+def api_openapi(request):
+    """Entrega a especificação OpenAPI pública da API versionada."""
+
+    schema = build_openapi_schema(request)
+    return HttpResponse(
+        json.dumps(schema, ensure_ascii=False, indent=2),
+        content_type="application/json",
     )
 
 

@@ -44,6 +44,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         "object_verbose_name",
         "object_repr",
         "actor_identifier_display",
+        "request_id_display",
         "path",
     )
     list_filter = ("action", "content_type", "created_at")
@@ -94,6 +95,12 @@ class AuditLogAdmin(admin.ModelAdmin):
         if obj.actor:
             return obj.actor.get_username()
         return obj.actor_identifier or "-"
+
+    @admin.display(description="Request ID")
+    def request_id_display(self, obj: AuditLog) -> str:
+        """Mostra o identificador da requisição que originou o evento."""
+
+        return str(obj.metadata.get("request_id", "") or "-")
 
 
 def build_auto_refresh_enabled_field() -> forms.BooleanField:

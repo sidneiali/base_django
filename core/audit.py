@@ -31,6 +31,7 @@ class AuditContext:
     request_method: str = ""
     path: str = ""
     ip_address: str | None = None
+    request_id: str = ""
 
 
 _audit_context: ContextVar[AuditContext] = ContextVar(
@@ -62,6 +63,7 @@ def set_audit_context(request: HttpRequest) -> Token[AuditContext]:
         request_method=request.method,
         path=request.path,
         ip_address=get_client_ip(request),
+        request_id=getattr(request, "request_id", ""),
     )
     return _audit_context.set(context)
 
@@ -199,6 +201,10 @@ def create_audit_log(
                 for_concrete_model=False,
             )
 
+        payload_metadata = dict(metadata or {})
+        if context.request_id and "request_id" not in payload_metadata:
+            payload_metadata["request_id"] = context.request_id
+
         return AuditLog.objects.create(
             actor=actor if getattr(actor, "pk", None) else None,
             actor_identifier=actor_identifier,
@@ -217,7 +223,7 @@ def create_audit_log(
             before=before or {},
             after=after or {},
             changes=changes or {},
-            metadata=metadata or {},
+            metadata=payload_metadata,
         )
     except (OperationalError, ProgrammingError):
         return None

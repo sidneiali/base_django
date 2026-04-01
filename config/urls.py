@@ -9,7 +9,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from core.forms import LoginForm, PasswordRecoveryConfirmForm, PasswordRecoveryForm
-from core.views import forbidden_view
+from core.views import api_openapi, forbidden_view
 
 handler403 = forbidden_view
 
@@ -17,8 +17,12 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("painel/", include("panel.urls")),
+    path("api/openapi.json", api_openapi, name="api_openapi"),
+    path("api/v1/openapi.json", api_openapi, name="api_v1_openapi"),
     path("api/core/", include("core.api_urls")),
     path("api/panel/", include("panel.api_urls")),
+    path("api/v1/core/", include("core.api_urls_v1")),
+    path("api/v1/panel/", include("panel.api_urls_v1")),
     path(
         "login/",
         auth_views.LoginView.as_view(

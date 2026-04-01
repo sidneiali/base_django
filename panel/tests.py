@@ -147,6 +147,19 @@ class PanelApiTests(TestCase):
         token = ApiToken.objects.get(user=api_user)
         self.assertIsNotNone(token.last_used_at)
 
+    def test_versioned_users_collection_alias_works(self):
+        """A rota versionada deve responder com o mesmo recurso de usuários."""
+
+        _api_user, raw_token = self._issue_token(can_read=True)
+
+        response = self.client.get(
+            reverse("api_v1_panel_users_collection"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("results", response.json())
+
     def test_users_collection_creates_user_with_create_permission(self):
         """POST deve criar usuário quando o token tiver permissão de criação."""
 
