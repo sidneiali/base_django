@@ -43,6 +43,23 @@ class ApiOperationalSecurityTests(TestCase):
         _token, raw_token = ApiToken.issue_for_user(user)
         return raw_token
 
+    def _issue_audit_token(self, *, can_read: bool) -> str:
+        """Cria um token com acesso configurável ao recurso de auditoria."""
+
+        user = User.objects.create_user(
+            username="operacao-audit",
+            email="operacao-audit@example.com",
+            password="SenhaSegura@123",
+        )
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            can_read=can_read,
+        )
+        _token, raw_token = ApiToken.issue_for_user(user)
+        return raw_token
+
     def test_health_endpoint_is_public(self):
         """O health check deve responder sem autenticação."""
 
@@ -103,3 +120,24 @@ class ApiOperationalSecurityTests(TestCase):
         self.assertEqual(log.metadata["event"], "api_rate_limited")
         self.assertEqual(log.metadata["path"], reverse("api_core_me"))
         self.assertEqual(log.metadata["request_id"], second_response["X-Request-ID"])
+
+    def test_forbidden_audit_logs_attempt_is_logged(self):
+        """Acesso negado ao recurso de auditoria deve gerar trilha própria."""
+
+        raw_token = self._issue_audit_token(can_read=False)
+        AuditLog.objects.all().delete()
+
+        response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["error"]["code"], "forbidden")
+
+        log = AuditLog.objects.filter(action=AuditLog.ACTION_API_ACCESS_DENIED).first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.metadata["reason_code"], "forbidden")
+        self.assertEqual(log.metadata["resource"], "core.audit_logs")
+        self.assertEqual(log.metadata["action"], "read")
+        self.assertEqual(log.metadata["status"], 403)

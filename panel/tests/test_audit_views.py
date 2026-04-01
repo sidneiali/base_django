@@ -77,6 +77,30 @@ class PanelAuditViewTests(TestCase):
             status_code=403,
         )
 
+    def test_audit_detail_requires_view_permission(self) -> None:
+        """Usuário sem permissão também não pode abrir o drill-down."""
+
+        audit_log = AuditLog.objects.create(
+            action=AuditLog.ACTION_LOGIN,
+            actor_identifier="sem-permissao",
+            object_repr="Login bloqueado",
+        )
+        user = User.objects.create_user(
+            username="sem-permissao",
+            email="sem-permissao@example.com",
+            password="SenhaSegura@123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("panel_audit_log_detail", args=[audit_log.pk]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(
+            response,
+            "Você não tem permissão para acessar este recurso.",
+            status_code=403,
+        )
+
     def test_audit_list_filters_results_and_renders_partial_for_htmx(self) -> None:
         """A listagem deve combinar filtros e responder com partial no HTMX."""
 
@@ -182,6 +206,38 @@ class PanelAuditViewTests(TestCase):
             reverse("panel_audit_logs_list") + "?actor=operador-auditoria&amp;page=2",
             html=False,
         )
+
+    def test_audit_detail_returns_partial_for_htmx(self) -> None:
+        """O detalhe deve devolver só o conteúdo central quando for HTMX."""
+
+        actor = self._login_with_audit_permission()
+        audit_log = self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento HTMX",
+            request_id="req-htmx",
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(
+            reverse("panel_audit_log_detail", args=[audit_log.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-page-title="Detalhe da auditoria"', html=False)
+        self.assertContains(response, "Evento HTMX")
+        self.assertNotContains(response, "<!doctype html>", html=False)
+
+    def test_audit_detail_returns_404_for_unknown_event(self) -> None:
+        """A abertura de um log inexistente deve responder 404."""
+
+        self._login_with_audit_permission()
+
+        response = self.client.get(reverse("panel_audit_log_detail", args=[999999]))
+
+        self.assertEqual(response.status_code, 404)
 
     def test_audit_list_shows_richer_pagination_controls(self) -> None:
         """A listagem deve mostrar contagem e paginação numerada quando houver mais páginas."""

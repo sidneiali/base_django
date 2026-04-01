@@ -208,6 +208,37 @@ class AuditLogApiTests(TestCase):
             "page_out_of_range",
         )
 
+    def test_audit_logs_collection_rejects_invalid_action_and_date_range(self):
+        """A coleção deve validar ação inválida e intervalo de datas inconsistente."""
+
+        raw_token = self._issue_token()
+
+        invalid_action_response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            {"action": "desconhecida"},
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+        self.assertEqual(invalid_action_response.status_code, 400)
+        self.assertEqual(
+            invalid_action_response.json()["error"]["code"],
+            "invalid_query_parameter",
+        )
+
+        invalid_range_response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            {"date_from": "2026-04-10", "date_to": "2026-04-01"},
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+        self.assertEqual(invalid_range_response.status_code, 400)
+        self.assertEqual(
+            invalid_range_response.json()["error"]["code"],
+            "invalid_query_parameter",
+        )
+        self.assertEqual(
+            invalid_range_response.json()["error"]["parameter"],
+            "date_range",
+        )
+
     def test_audit_log_detail_returns_full_payload(self):
         """O detalhe deve expor os campos before/after/changes/metadata."""
 
@@ -237,6 +268,19 @@ class AuditLogApiTests(TestCase):
         self.assertEqual(payload["data"]["before"]["email"], "antes@example.com")
         self.assertEqual(payload["data"]["after"]["email"], "depois@example.com")
         self.assertEqual(payload["data"]["metadata"]["event"], "manual_update")
+
+    def test_audit_log_detail_returns_404_for_unknown_event(self):
+        """O detalhe deve responder 404 quando o log não existir."""
+
+        raw_token = self._issue_token()
+
+        response = self.client.get(
+            reverse("api_core_audit_log_detail", args=[999999]),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["error"]["code"], "not_found")
 
 
 class ApiAccessEndpointsTests(TestCase):
