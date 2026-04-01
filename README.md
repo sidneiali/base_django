@@ -127,7 +127,7 @@ Regra de permissão:
 
 ## Como cadastrar um módulo
 
-Os módulos são gerenciados pelo admin do Django em [`core/admin.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\admin.py).
+Os módulos são gerenciados pelo admin do Django no pacote [`core/admin`](c:\Users\sidne\OneDrive\Desktop\base_django\core\admin).
 
 Exemplo prático:
 

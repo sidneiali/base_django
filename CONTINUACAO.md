@@ -29,7 +29,27 @@ Estado atual da arquitetura:
   - `core/admin/__init__.py`
   - `core/admin/modules.py`
   - `core/admin/audit.py`
-  - `core/admin/users.py`
+  - `core/admin/users/__init__.py`
+  - `core/admin/users/forms.py`
+  - `core/admin/users/admin.py`
+- a auditoria transversal do `core` já foi separada em pacote:
+  - `core/audit/__init__.py`
+  - `core/audit/context.py`
+  - `core/audit/snapshots.py`
+  - `core/audit/logging.py`
+- os middlewares do `core` já foram separados em pacote:
+  - `core/middleware/__init__.py`
+  - `core/middleware/paths.py`
+  - `core/middleware/api_auth.py`
+  - `core/middleware/request_id.py`
+  - `core/middleware/audit.py`
+  - `core/middleware/rate_limit.py`
+- os sinais do `core` já foram separados em pacote:
+  - `core/signals/__init__.py`
+  - `core/signals/shared.py`
+  - `core/signals/models.py`
+  - `core/signals/m2m.py`
+  - `core/signals/auth.py`
 
 ## Últimos Commits Relevantes
 
@@ -41,7 +61,7 @@ Estado atual da arquitetura:
 
 ## Última Validação
 
-Executado após a separação de `core/tests.py`, `panel/tests.py` e `core/admin.py`:
+Executado após a separação de `core/tests.py`, `panel/tests.py`, `core/admin.py`, `core/audit.py`, `core/middleware.py` e `core/signals.py`:
 
 - `uv run --extra dev ruff check config core panel`
 - `.\.venv\Scripts\python.exe manage.py check`
@@ -70,9 +90,15 @@ Alterações locais esperadas desta etapa:
 - `core/tests.py` removido
 - `panel/tests.py` removido
 - `core/admin.py` removido
+- `core/audit.py` removido
+- `core/middleware.py` removido
+- `core/signals.py` removido
 - `core/tests/` criado
 - `panel/tests/` criado
 - `core/admin/` criado
+- `core/audit/` criado
+- `core/middleware/` criado
+- `core/signals/` criado
 - `CONTINUACAO.md` atualizado
 
 Observação:
@@ -81,32 +107,19 @@ Observação:
 
 ## Próximo Passo
 
-Próximo corte recomendado em `core/`:
+Os cortes estruturais principais listados para `core/` foram concluídos.
 
-- dividir `core/audit.py`
-  - separar contexto de request/auditoria
-  - separar snapshot e sanitização
-  - separar criação de log e helpers de serialização
+Próximas opções naturais:
 
-Validação mínima depois desse corte:
-
-```powershell
-.\.venv\Scripts\python.exe manage.py check
-.\.venv\Scripts\python.exe manage.py test core.tests panel.tests
-```
+- revisar `panel/helpers.py` e decidir se ele deve ser renomeado para algo mais específico
+- iniciar uma feature nova sobre a base já modularizada
+- revisar se vale separar `core/forms.py`, `core/views.py` ou `panel/forms.py` além do nível atual
 
 ## Próximos Cortes de Arquitetura
 
 ### Core
 
-Arquivos da raiz que ainda valem refactor depois da pasta `tests/` e `admin/`:
-
-- `core/audit.py`
-  - dividir contexto, snapshot/sanitização e criação de log
-- `core/middleware.py`
-  - dividir auth da API, request id, auditoria e rate limit
-- `core/signals.py`
-  - dividir sinais de modelo, M2M e autenticação
+Os principais arquivos grandes da raiz já foram quebrados.
 
 Arquivos que podem ficar como estão por enquanto:
 
@@ -140,6 +153,6 @@ Observação sobre `panel/helpers.py`:
 ## Observações
 
 - `core/models.py` não está mais pendente
-- `core/tests.py`, `panel/tests.py` e `core/admin.py` não existem mais; a convenção agora é por pacote
-- o próximo trabalho sugerido é a separação de `core/audit.py`
+- `core/tests.py`, `panel/tests.py`, `core/admin.py`, `core/audit.py`, `core/middleware.py` e `core/signals.py` não existem mais; a convenção agora é por pacote
+- a base estrutural do `core` está bem mais modular e pronta para features novas
 - o SQLite dentro do OneDrive já apresentou `disk I/O error` em etapas anteriores de migration; se isso voltar, revisar o uso do banco dentro da pasta sincronizada
