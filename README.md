@@ -277,6 +277,10 @@ campos canônicos por `slug`.
 - `/painel/grupos/<id>/editar/`: edição de grupo
 - `/painel/auditoria/`: trilha HTML de auditoria com filtros
 - `/painel/auditoria/<id>/`: drill-down completo de um evento de auditoria
+- `/api/v1/panel/users/`: coleção JSON de usuários do painel
+- `/api/v1/panel/users/<id>/`: detalhe JSON de usuário
+- `/api/v1/panel/groups/`: coleção JSON de grupos do painel
+- `/api/v1/panel/groups/<id>/`: detalhe JSON de grupo
 - `/admin/`: admin do Django
 
 ## Painel interno
@@ -300,6 +304,8 @@ Permissões exigidas por tela:
 
 Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
 
+Na API do painel, o projeto agora expõe recursos versionados para usuários e grupos, ambos protegidos por Bearer token, envelope JSON padronizado e matriz CRUD por recurso.
+
 ## Arquivos importantes
 
 - [`config/settings/base.py`](c:\Users\sidne\OneDrive\Desktop\base_django\config\settings\base.py): configuração compartilhada entre ambientes
@@ -318,7 +324,7 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
 - o painel agora já possui CRUD HTML para módulos com ativação segura e exclusão protegida, mas ainda não cobre API JSON equivalente
-- a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
+- a API do painel agora cobre usuários e grupos, mas `módulos` ainda não possuem paridade JSON
 
 ## Próximos passos sugeridos
 

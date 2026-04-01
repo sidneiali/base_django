@@ -22,6 +22,8 @@ def _build_postman_collection(request) -> dict[str, object]:
     token_url = f"{base_url}{reverse('api_v1_core_token')}"
     users_collection_url = f"{base_url}{reverse('api_v1_panel_users_collection')}"
     user_detail_url = f"{base_url}/api/v1/panel/users/:id/"
+    groups_collection_url = f"{base_url}{reverse('api_v1_panel_groups_collection')}"
+    group_detail_url = f"{base_url}/api/v1/panel/groups/:id/"
     audit_logs_collection_url = f"{base_url}{reverse('api_v1_core_audit_logs_collection')}"
     audit_log_detail_url = f"{base_url}/api/v1/core/audit-logs/:id/"
 
@@ -29,8 +31,8 @@ def _build_postman_collection(request) -> dict[str, object]:
         "info": {
             "name": "BaseApp API",
             "description": (
-                "Coleção pública da API protegida por Bearer token para usuários "
-                "do painel e logs de auditoria."
+                "Coleção pública da API protegida por Bearer token para usuários, "
+                "grupos do painel e logs de auditoria."
             ),
             "schema": (
                 "https://schema.getpostman.com/json/collection/v2.1.0/"
@@ -41,6 +43,7 @@ def _build_postman_collection(request) -> dict[str, object]:
             {"key": "base_url", "value": base_url},
             {"key": "token", "value": "SEU_TOKEN"},
             {"key": "user_id", "value": "1"},
+            {"key": "group_id", "value": "1"},
             {"key": "audit_log_id", "value": "1"},
         ],
         "item": [
@@ -133,6 +136,76 @@ def _build_postman_collection(request) -> dict[str, object]:
                             "method": "DELETE",
                             "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
                             "url": user_detail_url.replace(":id", "{{user_id}}"),
+                        },
+                    },
+                ],
+            },
+            {
+                "name": "Grupos do painel",
+                "item": [
+                    {
+                        "name": "Listar grupos",
+                        "request": {
+                            "method": "GET",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": groups_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Criar grupo",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {"key": "Authorization", "value": "Bearer {{token}}", "type": "text"},
+                                {"key": "Content-Type", "value": "application/json", "type": "text"},
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {
+                                        "name": "Grupo API",
+                                        "permissions": [1],
+                                    },
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": groups_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Detalhar grupo",
+                        "request": {
+                            "method": "GET",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": group_detail_url,
+                        },
+                    },
+                    {
+                        "name": "Atualizar grupo",
+                        "request": {
+                            "method": "PATCH",
+                            "header": [
+                                {"key": "Authorization", "value": "Bearer {{token}}", "type": "text"},
+                                {"key": "Content-Type", "value": "application/json", "type": "text"},
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": json.dumps(
+                                    {"name": "Grupo API Atualizado", "permissions": [1]},
+                                    ensure_ascii=False,
+                                    indent=2,
+                                ),
+                            },
+                            "url": group_detail_url.replace(":id", "{{group_id}}"),
+                        },
+                    },
+                    {
+                        "name": "Excluir grupo",
+                        "request": {
+                            "method": "DELETE",
+                            "header": [{"key": "Authorization", "value": "Bearer {{token}}", "type": "text"}],
+                            "url": group_detail_url.replace(":id", "{{group_id}}"),
                         },
                     },
                 ],

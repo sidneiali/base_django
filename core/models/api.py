@@ -37,6 +37,7 @@ class ApiResourcePermission(models.Model):
 
     class Resource(models.TextChoices):
         PANEL_USERS = "panel.users", "Usuários"
+        PANEL_GROUPS = "panel.groups", "Grupos"
         CORE_API_ACCESS = "core.api_access", "Acesso à API"
         CORE_AUDIT_LOGS = "core.audit_logs", "Logs de auditoria"
 

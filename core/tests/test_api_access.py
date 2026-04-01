@@ -32,6 +32,7 @@ class ApiDocsTests(TestCase):
         self.assertContains(response, "/api/v1/core/me/")
         self.assertContains(response, "/api/v1/core/token/")
         self.assertContains(response, "/api/v1/panel/users/{id}/")
+        self.assertContains(response, "/api/v1/panel/groups/{id}/")
         self.assertContains(response, "/api/v1/core/audit-logs/{id}/")
         self.assertContains(response, "Authorization: Bearer SEU_TOKEN")
         self.assertContains(response, "X-Request-ID")
@@ -59,6 +60,7 @@ class ApiDocsTests(TestCase):
         self.assertIn("/api/v1/core/health/", schema["paths"])
         self.assertIn("/api/v1/core/me/", schema["paths"])
         self.assertIn("/api/v1/panel/users/", schema["paths"])
+        self.assertIn("/api/v1/panel/groups/", schema["paths"])
         self.assertIn("/api/v1/core/audit-logs/{id}/", schema["paths"])
         self.assertEqual(schema["servers"][0]["url"], "http://testserver")
 
@@ -73,11 +75,16 @@ class ApiDocsTests(TestCase):
 
         collection = json.loads(response.content)
         self.assertEqual(collection["info"]["name"], "BaseApp API")
-        self.assertEqual(collection["variable"][1]["key"], "token")
-        self.assertEqual(collection["variable"][3]["key"], "audit_log_id")
-        self.assertEqual(collection["item"][0]["name"], "Operacional")
-        self.assertEqual(collection["item"][1]["name"], "Acesso à API")
-        self.assertEqual(collection["item"][3]["name"], "Logs de auditoria")
+        variable_keys = {item["key"] for item in collection["variable"]}
+        self.assertIn("token", variable_keys)
+        self.assertIn("group_id", variable_keys)
+        self.assertIn("audit_log_id", variable_keys)
+        item_names = [item["name"] for item in collection["item"]]
+        self.assertIn("Operacional", item_names)
+        self.assertIn("Acesso à API", item_names)
+        self.assertIn("Usuários do painel", item_names)
+        self.assertIn("Grupos do painel", item_names)
+        self.assertIn("Logs de auditoria", item_names)
 
 
 class AuditLogApiTests(TestCase):

@@ -62,7 +62,7 @@ class ApiAccessModelTests(TestCase):
         access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
         ApiResourcePermission.objects.create(
             access_profile=access_profile,
-            resource="panel.groups",
+            resource="core.modules",
             can_read=True,
         )
 
@@ -70,6 +70,7 @@ class ApiAccessModelTests(TestCase):
 
         self.assertTrue(values["api_enabled"])
         self.assertIn(ApiResourcePermission.Resource.PANEL_USERS, values["permissions"])
+        self.assertIn(ApiResourcePermission.Resource.PANEL_GROUPS, values["permissions"])
         self.assertIn(ApiResourcePermission.Resource.CORE_API_ACCESS, values["permissions"])
         self.assertIn(
             ApiResourcePermission.Resource.CORE_AUDIT_LOGS,

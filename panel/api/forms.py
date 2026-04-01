@@ -1,9 +1,9 @@
 """Formulários de escrita usados pelos endpoints JSON do app panel."""
 
 from django import forms
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 
-from ..constants import PROTECTED_GROUP_NAMES
+from ..constants import BLOCKED_PERMISSION_APP_LABELS, PROTECTED_GROUP_NAMES
 
 
 class ApiUserWriteForm(forms.ModelForm):
@@ -58,3 +58,32 @@ class ApiUserWriteForm(forms.ModelForm):
             self.save_m2m()
 
         return user
+
+
+class ApiGroupWriteForm(forms.ModelForm):
+    """Valida payloads JSON de criação e edição de grupos editáveis."""
+
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.exclude(
+            content_type__app_label__in=BLOCKED_PERMISSION_APP_LABELS
+        )
+        .select_related("content_type")
+        .order_by(
+            "content_type__app_label",
+            "content_type__model",
+            "codename",
+        ),
+        required=False,
+    )
+
+    class Meta:
+        model = Group
+        fields = ["name", "permissions"]
+
+    def clean_name(self) -> str:
+        """Impede o uso dos nomes reservados para grupos protegidos."""
+
+        name = self.cleaned_data["name"].strip()
+        if name in PROTECTED_GROUP_NAMES:
+            raise forms.ValidationError("Esse grupo é protegido.")
+        return name

@@ -30,6 +30,7 @@ API_ACTION_OPTIONS: tuple[ApiActionOption, ...] = (
 )
 API_RESOURCE_ALLOWED_ACTIONS: dict[str, set[str]] = {
     ApiResourcePermission.Resource.PANEL_USERS: {"create", "read", "update", "delete"},
+    ApiResourcePermission.Resource.PANEL_GROUPS: {"create", "read", "update", "delete"},
     ApiResourcePermission.Resource.CORE_API_ACCESS: {"read"},
     ApiResourcePermission.Resource.CORE_AUDIT_LOGS: {"read"},
 }

@@ -8,6 +8,7 @@ Uso rapido:
     python scripts/api_request.py /api/v1/core/health/
 
     python scripts/api_request.py /api/v1/panel/users/ --method POST --json "{\"username\":\"api-user\",\"email\":\"api@example.com\",\"password\":\"SenhaSegura@123\"}"
+    python scripts/api_request.py /api/v1/panel/groups/ --method POST --json "{\"name\":\"Grupo API\",\"permissions\":[1]}"
 """
 
 from __future__ import annotations
@@ -31,6 +32,8 @@ ROUTE_EXAMPLES = [
     "/api/v1/core/audit-logs/1/",
     "/api/v1/panel/users/",
     "/api/v1/panel/users/1/",
+    "/api/v1/panel/groups/",
+    "/api/v1/panel/groups/1/",
 ]
 
 
@@ -46,8 +49,11 @@ def build_help_epilog() -> str:
         "  python scripts/api_request.py /api/v1/core/me/\n"
         "  python scripts/api_request.py /api/v1/core/audit-logs/\n"
         "  python scripts/api_request.py /api/v1/panel/users/\n"
+        "  python scripts/api_request.py /api/v1/panel/groups/\n"
         "  python scripts/api_request.py /api/v1/panel/users/ --method POST --json "
-        "\"{\\\"username\\\":\\\"api-user\\\",\\\"email\\\":\\\"api@example.com\\\",\\\"password\\\":\\\"SenhaSegura@123\\\"}\""
+        "\"{\\\"username\\\":\\\"api-user\\\",\\\"email\\\":\\\"api@example.com\\\",\\\"password\\\":\\\"SenhaSegura@123\\\"}\"\n"
+        "  python scripts/api_request.py /api/v1/panel/groups/ --method POST --json "
+        "\"{\\\"name\\\":\\\"Grupo API\\\",\\\"permissions\\\":[1]}\""
     )
 
 

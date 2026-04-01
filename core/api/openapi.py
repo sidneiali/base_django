@@ -11,6 +11,7 @@ TAG_ORDER = [
     "Operacional",
     "Acesso à API",
     "Usuários do painel",
+    "Grupos do painel",
     "Logs de auditoria",
 ]
 
@@ -474,6 +475,301 @@ def build_openapi_schema(request) -> dict[str, object]:
                     },
                 },
             },
+            "/api/v1/panel/groups/": {
+                "get": {
+                    "tags": ["Grupos do painel"],
+                    "summary": "Listar grupos",
+                    "description": "Lista grupos editáveis do painel, excluindo grupos protegidos.",
+                    "operationId": "api_groups_list",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/groups/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f'curl -H "Authorization: Bearer SEU_TOKEN" {full_url("/api/v1/panel/groups/")}'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.get(\n"
+                                f'    "{full_url("/api/v1/panel/groups/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "search", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "name", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "permission_id", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "ordering", "in": "query", "required": False, "schema": {"type": "string", "enum": ["name", "-name", "id", "-id"]}},
+                        {"name": "page", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "page_size", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 100}},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Lista de grupos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelGroupListEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Filtro, paginação ou ordenação inválidos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "post": {
+                    "tags": ["Grupos do painel"],
+                    "summary": "Criar grupo",
+                    "description": "Cria um grupo editável do painel com permissões visíveis.",
+                    "operationId": "api_groups_create",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/groups/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X POST {full_url('/api/v1/panel/groups/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
+                                '  -H "Content-Type: application/json" \\\n'
+                                '  -d "{\\"name\\":\\"Grupo API\\",\\"permissions\\":[1]}"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "payload = {\n"
+                                '    "name": "Grupo API",\n'
+                                '    "permissions": [1],\n'
+                                "}\n\n"
+                                "response = requests.post(\n"
+                                f'    "{full_url("/api/v1/panel/groups/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    json=payload,\n"
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PanelGroupWriteInput"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "Grupo criado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelGroupEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Payload inválido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ValidationErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+            },
+            "/api/v1/panel/groups/{id}/": {
+                "get": {
+                    "tags": ["Grupos do painel"],
+                    "summary": "Detalhar grupo",
+                    "description": "Retorna um grupo editável específico do painel.",
+                    "operationId": "api_groups_detail",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/groups/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f'curl -H "Authorization: Bearer SEU_TOKEN" {full_url("/api/v1/panel/groups/1/")}'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.get(\n"
+                                f'    "{full_url("/api/v1/panel/groups/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Grupo encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelGroupEnvelope"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Grupo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "patch": {
+                    "tags": ["Grupos do painel"],
+                    "summary": "Atualizar grupo",
+                    "description": "Atualiza um grupo editável do painel.",
+                    "operationId": "api_groups_update",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/groups/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X PATCH {full_url('/api/v1/panel/groups/1/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
+                                '  -H "Content-Type: application/json" \\\n'
+                                '  -d "{\\"name\\":\\"Grupo API Atualizado\\",\\"permissions\\":[1]}"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "payload = {\n"
+                                '    "name": "Grupo API Atualizado",\n'
+                                '    "permissions": [1],\n'
+                                "}\n\n"
+                                "response = requests.patch(\n"
+                                f'    "{full_url("/api/v1/panel/groups/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    json=payload,\n"
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PanelGroupWritePartialInput"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Grupo atualizado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/PanelGroupEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Payload inválido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ValidationErrorResponse"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Grupo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "delete": {
+                    "tags": ["Grupos do painel"],
+                    "summary": "Excluir grupo",
+                    "description": "Remove um grupo editável do painel.",
+                    "operationId": "api_groups_delete",
+                    "security": [{"BearerAuth": []}],
+                    "x-base-url": "/api/v1/panel/groups/",
+                    "x-codeSamples": [
+                        {
+                            "lang": "curl",
+                            "source": (
+                                f"curl -X DELETE {full_url('/api/v1/panel/groups/1/')} \\\n"
+                                '  -H "Authorization: Bearer SEU_TOKEN"'
+                            ),
+                        },
+                        {
+                            "lang": "python",
+                            "source": (
+                                "import requests\n\n"
+                                "response = requests.delete(\n"
+                                f'    "{full_url("/api/v1/panel/groups/1/")}",\n'
+                                '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
+                                "    timeout=30,\n"
+                                ")\n\n"
+                                "print(response.status_code)"
+                            ),
+                        },
+                    ],
+                    "parameters": [
+                        {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+                    ],
+                    "responses": {
+                        "204": {
+                            "description": "Grupo removido.",
+                        },
+                        "404": {
+                            "description": "Grupo não encontrado.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                },
+            },
             "/api/v1/core/audit-logs/": {
                 "get": {
                     "tags": ["Logs de auditoria"],
@@ -599,7 +895,7 @@ def build_openapi_schema(request) -> dict[str, object]:
             "version": "1.0.0",
             "description": (
                 "API versionada da BaseApp para introspecção da conta, gestão de usuários "
-                "do painel e leitura dos logs de auditoria."
+                "e grupos do painel, além da leitura dos logs de auditoria."
             ),
         },
         "servers": [
@@ -741,6 +1037,47 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "password": {"type": "string"},
                         "is_active": {"type": "boolean"},
                         "groups": {"type": "array", "items": {"type": "integer"}},
+                    },
+                },
+                "GroupPermissionSummary": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "codename": {"type": "string"},
+                        "name": {"type": "string"},
+                        "app_label": {"type": "string"},
+                        "model": {"type": "string"},
+                    },
+                    "required": ["id", "codename", "name", "app_label", "model"],
+                },
+                "PanelGroup": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "permissions_count": {"type": "integer"},
+                        "permissions": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/GroupPermissionSummary"
+                            },
+                        },
+                    },
+                    "required": ["id", "name", "permissions_count", "permissions"],
+                },
+                "PanelGroupWriteInput": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "permissions": {"type": "array", "items": {"type": "integer"}},
+                    },
+                    "required": ["name"],
+                },
+                "PanelGroupWritePartialInput": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "permissions": {"type": "array", "items": {"type": "integer"}},
                     },
                 },
                 "AuditActor": {
@@ -894,6 +1231,25 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "data": {
                             "type": "array",
                             "items": {"$ref": "#/components/schemas/User"},
+                        },
+                        "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "PanelGroupEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/PanelGroup"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "PanelGroupListEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/PanelGroup"},
                         },
                         "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
                     },
