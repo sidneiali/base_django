@@ -32,7 +32,10 @@ class PanelUserFormTests(TestCase):
                 "api_enabled": "on",
                 "api_panel_users_read": "on",
                 "api_panel_users_update": "on",
-                "api_panel_groups_read": "on",
+                "api_core_audit_logs_create": "on",
+                "api_core_audit_logs_read": "on",
+                "api_core_audit_logs_update": "on",
+                "api_core_audit_logs_delete": "on",
             }
         )
 
@@ -51,17 +54,14 @@ class PanelUserFormTests(TestCase):
         self.assertFalse(users_permission.can_create)
         self.assertFalse(users_permission.can_delete)
 
-        groups_permission = ApiResourcePermission.objects.get(
+        audit_logs_permission = ApiResourcePermission.objects.get(
             access_profile=access_profile,
-            resource=ApiResourcePermission.Resource.PANEL_GROUPS,
+            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
         )
-        self.assertTrue(groups_permission.can_read)
-        self.assertFalse(
-            ApiResourcePermission.objects.filter(
-                access_profile=access_profile,
-                resource=ApiResourcePermission.Resource.CORE_MODULES,
-            ).exists()
-        )
+        self.assertTrue(audit_logs_permission.can_read)
+        self.assertFalse(audit_logs_permission.can_create)
+        self.assertFalse(audit_logs_permission.can_update)
+        self.assertFalse(audit_logs_permission.can_delete)
 
 
 class PanelApiTests(TestCase):

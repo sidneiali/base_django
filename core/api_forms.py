@@ -14,6 +14,10 @@ API_ACTION_OPTIONS = (
     ("update", "Editar", "can_update"),
     ("delete", "Excluir", "can_delete"),
 )
+API_RESOURCE_ALLOWED_ACTIONS = {
+    ApiResourcePermission.Resource.PANEL_USERS: {"create", "read", "update", "delete"},
+    ApiResourcePermission.Resource.CORE_AUDIT_LOGS: {"read"},
+}
 
 
 def build_api_enabled_field() -> forms.BooleanField:
@@ -42,6 +46,12 @@ def build_api_permission_field_name(resource: str, action: str) -> str:
     """Converte um recurso e uma acao num nome de campo estavel."""
 
     return f"api_{resource.replace('.', '_')}_{action}"
+
+
+def resource_supports_action(resource: str, action: str) -> bool:
+    """Indica se um recurso realmente expõe a ação CRUD informada."""
+
+    return action in API_RESOURCE_ALLOWED_ACTIONS.get(resource, set())
 
 
 API_PERMISSION_FIELD_ROWS = tuple(
@@ -75,6 +85,22 @@ class ApiAccessFormMixin(forms.Form):
 
         super().__init__(*args, **kwargs)
 
+        for resource, _resource_label in API_RESOURCE_OPTIONS:
+            for action, _action_label, _permission_key in API_ACTION_OPTIONS:
+                if resource_supports_action(resource, action):
+                    continue
+
+                field_name = build_api_permission_field_name(resource, action)
+                field = self.fields[field_name]
+                field.disabled = True
+                field.initial = False
+                field.widget.attrs.update(
+                    {
+                        "disabled": True,
+                        "data-api-disabled": "true",
+                    }
+                )
+
         if self.is_bound:
             return
 
@@ -100,6 +126,7 @@ class ApiAccessFormMixin(forms.Form):
                     {
                         "label": action_label,
                         "field": self[build_api_permission_field_name(resource, action)],
+                        "is_supported": resource_supports_action(resource, action),
                     }
                 )
             rows.append({"label": resource_label, "fields": fields})
@@ -113,6 +140,9 @@ class ApiAccessFormMixin(forms.Form):
             permissions[resource] = {}
             for action, _action_label, permission_key in API_ACTION_OPTIONS:
                 field_name = build_api_permission_field_name(resource, action)
+                if not resource_supports_action(resource, action):
+                    permissions[resource][permission_key] = False
+                    continue
                 permissions[resource][permission_key] = bool(
                     self.cleaned_data.get(field_name, False)
                 )

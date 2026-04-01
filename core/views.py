@@ -25,18 +25,20 @@ def _build_public_base_url(request) -> str:
 
 
 def _build_postman_collection(request) -> dict[str, object]:
-    """Monta a coleção Postman pública do primeiro recurso da API."""
+    """Monta a coleção Postman pública dos recursos disponíveis da API."""
 
     base_url = _build_public_base_url(request)
     users_collection_url = f"{base_url}{reverse('api_panel_users_collection')}"
     user_detail_url = f"{base_url}/api/panel/users/:id/"
+    audit_logs_collection_url = f"{base_url}{reverse('api_core_audit_logs_collection')}"
+    audit_log_detail_url = f"{base_url}/api/core/audit-logs/:id/"
 
     return {
         "info": {
             "name": "BaseApp API",
             "description": (
-                "Coleção inicial da API protegida por Bearer token para o recurso "
-                "de usuários do painel."
+                "Coleção pública da API protegida por Bearer token para usuários "
+                "do painel e logs de auditoria."
             ),
             "schema": (
                 "https://schema.getpostman.com/json/collection/v2.1.0/"
@@ -47,6 +49,7 @@ def _build_postman_collection(request) -> dict[str, object]:
             {"key": "base_url", "value": base_url},
             {"key": "token", "value": "SEU_TOKEN"},
             {"key": "user_id", "value": "1"},
+            {"key": "audit_log_id", "value": "1"},
         ],
         "item": [
             {
@@ -151,6 +154,39 @@ def _build_postman_collection(request) -> dict[str, object]:
                                 }
                             ],
                             "url": user_detail_url.replace(":id", "{{user_id}}"),
+                        },
+                    },
+                ],
+            },
+            {
+                "name": "Logs de auditoria",
+                "item": [
+                    {
+                        "name": "Listar logs de auditoria",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": audit_logs_collection_url,
+                        },
+                    },
+                    {
+                        "name": "Detalhar log de auditoria",
+                        "request": {
+                            "method": "GET",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{token}}",
+                                    "type": "text",
+                                }
+                            ],
+                            "url": audit_log_detail_url.replace(":id", "{{audit_log_id}}"),
                         },
                     },
                 ],

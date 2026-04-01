@@ -6,11 +6,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.utils import timezone
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from .api_access import get_user_api_access_values
 from .models import (ApiAccessProfile, ApiResourcePermission, ApiToken,
                      AuditLog, Module)
 
@@ -165,6 +167,26 @@ class ApiAccessModelTests(TestCase):
         self.assertTrue(permission.allows("update"))
         self.assertFalse(permission.allows("delete"))
 
+    def test_api_access_values_ignore_legacy_resources(self):
+        """Recursos antigos sem endpoint não devem quebrar a matriz atual."""
+
+        user = User.objects.create_user(username="legacy-api", password="senha-forte")
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource="panel.groups",
+            can_read=True,
+        )
+
+        values = get_user_api_access_values(user)
+
+        self.assertTrue(values["api_enabled"])
+        self.assertIn(ApiResourcePermission.Resource.PANEL_USERS, values["permissions"])
+        self.assertIn(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            values["permissions"],
+        )
+
 
 class UserAdminTests(TestCase):
     """Garante compatibilidade do admin customizado com o Django 6."""
@@ -291,6 +313,8 @@ class AccountPasswordChangeTests(TestCase):
         self.assertNotContains(response, ">Postman<", html=False)
         self.assertContains(response, reverse("api_docs_postman"))
         self.assertContains(response, "/api/panel/users/&lt;id&gt;/")
+        self.assertContains(response, "/api/core/audit-logs/&lt;id&gt;/")
+        self.assertContains(response, 'data-endpoint-link="users-list"', html=False)
 
     def test_api_docs_postman_download_is_public(self):
         """A coleção Postman deve estar disponível para download público."""
@@ -304,6 +328,118 @@ class AccountPasswordChangeTests(TestCase):
         collection = json.loads(response.content)
         self.assertEqual(collection["info"]["name"], "BaseApp API")
         self.assertEqual(collection["variable"][1]["key"], "token")
+        self.assertEqual(collection["variable"][3]["key"], "audit_log_id")
+        self.assertEqual(collection["item"][1]["name"], "Logs de auditoria")
+
+
+class AuditLogApiTests(TestCase):
+    """Valida os endpoints Bearer para leitura dos logs de auditoria."""
+
+    def _issue_token(self, *, can_read: bool = True) -> str:
+        """Cria um usuário com acesso habilitado ao recurso de auditoria."""
+
+        user = User.objects.create_user(
+            username="audit-api",
+            email="audit-api@example.com",
+            password="SenhaSegura@123",
+        )
+        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
+        ApiResourcePermission.objects.create(
+            access_profile=access_profile,
+            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            can_read=can_read,
+        )
+        _token, raw_token = ApiToken.issue_for_user(user)
+        return raw_token
+
+    def test_audit_logs_collection_requires_read_permission(self):
+        """A listagem deve bloquear tokens sem leitura do recurso."""
+
+        raw_token = self._issue_token(can_read=False)
+
+        response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "forbidden")
+
+    def test_audit_logs_collection_lists_and_filters_events(self):
+        """A listagem deve aceitar filtros simples por ação e ator."""
+
+        actor = User.objects.create_user(username="auditor", password="SenhaSegura@123")
+        AuditLog.objects.all().delete()
+        create_log = AuditLog.objects.create(
+            actor=actor,
+            actor_identifier=actor.username,
+            action=AuditLog.ACTION_CREATE,
+            object_id="10",
+            object_repr="maria",
+            object_verbose_name="usuário",
+            request_method="POST",
+            path="/painel/usuarios/novo/",
+            created_at=timezone.now(),
+        )
+        AuditLog.objects.create(
+            actor_identifier="cli",
+            action=AuditLog.ACTION_DELETE,
+            object_id="11",
+            object_repr="grupo antigo",
+            object_verbose_name="grupo",
+            request_method="DELETE",
+            path="/painel/grupos/11/excluir/",
+            created_at=timezone.now(),
+        )
+        raw_token = self._issue_token()
+
+        response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            {
+                "action": AuditLog.ACTION_CREATE,
+                "actor": actor.username,
+                "page_size": 10,
+            },
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["count"], 1)
+        self.assertEqual(payload["page"], 1)
+        self.assertEqual(payload["page_size"], 10)
+        self.assertEqual(payload["results"][0]["id"], create_log.pk)
+        self.assertEqual(payload["results"][0]["actor"]["username"], actor.username)
+
+    def test_audit_log_detail_returns_full_payload(self):
+        """O detalhe deve expor os campos before/after/changes/metadata."""
+
+        raw_token = self._issue_token()
+        audit_log = AuditLog.objects.create(
+            actor_identifier="admin",
+            action=AuditLog.ACTION_UPDATE,
+            object_id="7",
+            object_repr="joao",
+            object_verbose_name="usuário",
+            before={"email": "antes@example.com"},
+            after={"email": "depois@example.com"},
+            changes={"email": {"before": "antes@example.com", "after": "depois@example.com"}},
+            metadata={"event": "manual_update"},
+            path="/painel/usuarios/7/editar/",
+            request_method="POST",
+        )
+
+        response = self.client.get(
+            reverse("api_core_audit_log_detail", args=[audit_log.pk]),
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["id"], audit_log.pk)
+        self.assertEqual(payload["before"]["email"], "antes@example.com")
+        self.assertEqual(payload["after"]["email"], "depois@example.com")
+        self.assertEqual(payload["metadata"]["event"], "manual_update")
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

@@ -65,6 +65,8 @@ def get_user_api_access_values(user: Any) -> dict[str, object]:
         }
 
     for permission in permissions:
+        if permission.resource not in permission_matrix:
+            continue
         permission_matrix[permission.resource] = {
             "can_create": permission.can_create,
             "can_read": permission.can_read,
@@ -94,6 +96,14 @@ def save_user_api_access(
             user=user,
             defaults={"api_enabled": api_enabled},
         )
+        known_resources = {
+            resource
+            for resource, _label in ApiResourcePermission.Resource.choices
+        }
+
+        ApiResourcePermission.objects.filter(access_profile=profile).exclude(
+            resource__in=known_resources
+        ).delete()
 
         for resource, _ in ApiResourcePermission.Resource.choices:
             resource_values = permissions.get(resource, {})

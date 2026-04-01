@@ -342,8 +342,31 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     margin-top: 0.45rem;
 }
 
+.public-docs__endpoint-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.public-docs__endpoint-link:hover {
+    color: #2f6fed;
+    text-decoration: underline;
+}
+
 .public-docs__tab-content {
     padding-top: 1rem;
+}
+
+.public-docs__example {
+    scroll-margin-top: 6rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.public-docs__example.is-highlighted {
+    border-radius: 0.9rem;
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.14);
 }
 
 .public-docs__code {

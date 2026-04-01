@@ -130,10 +130,14 @@
                                         <tr>
                                             <td class="fw-semibold">{{ row.label }}</td>
                                             {% for item in row.fields %}
-                                                <td class="text-center">
-                                                    <div class="form-check d-inline-flex m-0">
-                                                        {{ item.field }}
-                                                    </div>
+                                            <td class="text-center">
+                                                    {% if item.is_supported %}
+                                                        <div class="form-check d-inline-flex m-0">
+                                                            {{ item.field }}
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-secondary">-</span>
+                                                    {% endif %}
                                                 </td>
                                             {% endfor %}
                                         </tr>

@@ -17,6 +17,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("painel/", include("panel.urls")),
+    path("api/core/", include("core.api_urls")),
     path("api/panel/", include("panel.api_urls")),
     path(
         "login/",

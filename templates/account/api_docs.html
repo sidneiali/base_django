@@ -19,7 +19,7 @@
             <div class="card public-docs__card w-100">
                 <div class="card-body d-flex flex-column gap-3">
                     <div>
-                        <div class="public-docs__section-label">Recurso</div>
+                        <div class="public-docs__section-label">Recursos</div>
                         <h3 class="card-title mb-1">Usuários do painel</h3>
                         <div class="text-secondary">Base URL: <code>/api/panel/users/</code></div>
                     </div>
@@ -29,11 +29,21 @@
                     </div>
 
                     <ul class="public-docs__endpoint-list">
-                        <li><code>GET</code> `/api/panel/users/`</li>
-                        <li><code>POST</code> `/api/panel/users/`</li>
-                        <li><code>GET</code> `/api/panel/users/&lt;id&gt;/`</li>
-                        <li><code>PATCH</code> `/api/panel/users/&lt;id&gt;/`</li>
-                        <li><code>DELETE</code> `/api/panel/users/&lt;id&gt;/`</li>
+                        <li><a href="#users-list" class="public-docs__endpoint-link" data-endpoint-link="users-list"><code>GET</code> `/api/panel/users/`</a></li>
+                        <li><a href="#users-create" class="public-docs__endpoint-link" data-endpoint-link="users-create"><code>POST</code> `/api/panel/users/`</a></li>
+                        <li><a href="#users-detail" class="public-docs__endpoint-link" data-endpoint-link="users-detail"><code>GET</code> `/api/panel/users/&lt;id&gt;/`</a></li>
+                        <li><a href="#users-update" class="public-docs__endpoint-link" data-endpoint-link="users-update"><code>PATCH</code> `/api/panel/users/&lt;id&gt;/`</a></li>
+                        <li><a href="#users-delete" class="public-docs__endpoint-link" data-endpoint-link="users-delete"><code>DELETE</code> `/api/panel/users/&lt;id&gt;/`</a></li>
+                    </ul>
+
+                    <div>
+                        <h3 class="card-title mb-1">Logs de auditoria</h3>
+                        <div class="text-secondary">Base URL: <code>/api/core/audit-logs/</code></div>
+                    </div>
+
+                    <ul class="public-docs__endpoint-list">
+                        <li><a href="#audit-logs-list" class="public-docs__endpoint-link" data-endpoint-link="audit-logs-list"><code>GET</code> `/api/core/audit-logs/`</a></li>
+                        <li><a href="#audit-logs-detail" class="public-docs__endpoint-link" data-endpoint-link="audit-logs-detail"><code>GET</code> `/api/core/audit-logs/&lt;id&gt;/`</a></li>
                     </ul>
                 </div>
             </div>
@@ -47,7 +57,7 @@
                             <div class="public-docs__section-label">Exemplos rápidos</div>
                             <h3 class="card-title mb-1">Chamadas com Bearer token</h3>
                             <div class="text-secondary">
-                                Estes exemplos já funcionam com o primeiro recurso protegido da API.
+                                Estes exemplos cobrem os recursos de usuários do painel e logs de auditoria.
                             </div>
                         </div>
 
@@ -74,12 +84,12 @@
                         <div class="tab-content public-docs__tab-content">
                             <div class="tab-pane active show" id="api-tabs-curl" role="tabpanel">
                                 <div class="d-flex flex-column gap-3">
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-list">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-create">
                                         <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>curl -X POST {{ api_base_url }}/api/panel/users/ \
   -H "Authorization: Bearer SEU_TOKEN" \
@@ -87,12 +97,12 @@
   -d "{\"username\":\"api-user\",\"email\":\"api@example.com\",\"password\":\"SenhaSegura@123\",\"is_active\":true}"</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-detail">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/panel/users/1/</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-update">
                                         <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>curl -X PATCH {{ api_base_url }}/api/panel/users/1/ \
   -H "Authorization: Bearer SEU_TOKEN" \
@@ -100,17 +110,27 @@
   -d "{\"email\":\"alterado@example.com\"}"</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-delete">
                                         <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>curl -X DELETE {{ api_base_url }}/api/panel/users/1/ \
   -H "Authorization: Bearer SEU_TOKEN"</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="audit-logs-list">
+                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/audit-logs/</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="audit-logs-detail">
+                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>curl -H "Authorization: Bearer SEU_TOKEN" {{ api_base_url }}/api/core/audit-logs/1/</code></pre>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="tab-pane" id="api-tabs-python" role="tabpanel">
                                 <div class="d-flex flex-column gap-3">
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-list">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>import requests
 
@@ -124,7 +144,7 @@ print(response.status_code)
 print(response.json())</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-create">
                                         <h4 class="card-title mb-1">POST `/api/panel/users/`</h4>
                                         <pre class="public-docs__code"><code>import requests
 
@@ -146,7 +166,7 @@ print(response.status_code)
 print(response.json())</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-detail">
                                         <h4 class="card-title mb-1">GET `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>import requests
 
@@ -160,7 +180,7 @@ print(response.status_code)
 print(response.json())</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-update">
                                         <h4 class="card-title mb-1">PATCH `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>import requests
 
@@ -179,7 +199,7 @@ print(response.status_code)
 print(response.json())</code></pre>
                                     </div>
 
-                                    <div>
+                                    <div class="public-docs__example" data-endpoint-example="users-delete">
                                         <h4 class="card-title mb-1">DELETE `/api/panel/users/&lt;id&gt;/`</h4>
                                         <pre class="public-docs__code"><code>import requests
 
@@ -191,6 +211,34 @@ response = requests.delete(
 
 print(response.status_code)</code></pre>
                                     </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="audit-logs-list">
+                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/core/audit-logs/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
+
+                                    <div class="public-docs__example" data-endpoint-example="audit-logs-detail">
+                                        <h4 class="card-title mb-1">GET `/api/core/audit-logs/&lt;id&gt;/`</h4>
+                                        <pre class="public-docs__code"><code>import requests
+
+response = requests.get(
+    "{{ api_base_url }}/api/core/audit-logs/1/",
+    headers={"Authorization": "Bearer SEU_TOKEN"},
+    timeout=30,
+)
+
+print(response.status_code)
+print(response.json())</code></pre>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -200,4 +248,58 @@ print(response.status_code)</code></pre>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const endpointLinks = document.querySelectorAll("[data-endpoint-link]");
+        if (!endpointLinks.length) {
+            return;
+        }
+
+        let highlightedExample = null;
+
+        const clearHighlight = () => {
+            if (!highlightedExample) {
+                return;
+            }
+
+            highlightedExample.classList.remove("is-highlighted");
+            highlightedExample = null;
+        };
+
+        const getActivePane = () => (
+            document.querySelector(".public-docs .tab-pane.active.show")
+            || document.querySelector(".public-docs .tab-pane.active")
+        );
+
+        const scrollToEndpointExample = (endpointKey) => {
+            const activePane = getActivePane();
+            if (!activePane) {
+                return;
+            }
+
+            const example = activePane.querySelector(
+                `[data-endpoint-example="${endpointKey}"]`
+            );
+            if (!example) {
+                return;
+            }
+
+            clearHighlight();
+            highlightedExample = example;
+            example.classList.add("is-highlighted");
+            example.scrollIntoView({ behavior: "smooth", block: "start" });
+            window.setTimeout(clearHighlight, 1800);
+        };
+
+        endpointLinks.forEach((link) => {
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                scrollToEndpointExample(link.dataset.endpointLink);
+            });
+        });
+    })();
+</script>
 {% endblock %}

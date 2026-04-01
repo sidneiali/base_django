@@ -158,8 +158,7 @@ class ApiResourcePermission(models.Model):
 
     class Resource(models.TextChoices):
         PANEL_USERS = "panel.users", "Usuários"
-        PANEL_GROUPS = "panel.groups", "Grupos"
-        CORE_MODULES = "core.modules", "Módulos"
+        CORE_AUDIT_LOGS = "core.audit_logs", "Logs de auditoria"
 
     access_profile = models.ForeignKey(
         ApiAccessProfile,
