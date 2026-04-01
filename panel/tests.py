@@ -3,6 +3,7 @@
 import json
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
@@ -103,7 +104,7 @@ class PanelApiTests(TestCase):
         response = self.client.get(reverse("api_panel_users_collection"))
 
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json()["code"], "missing_authorization")
+        self.assertEqual(response.json()["error"]["code"], "missing_authorization")
 
     def test_users_collection_requires_read_permission(self):
         """O token autenticado ainda precisa ter permissão de leitura."""
@@ -116,7 +117,7 @@ class PanelApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["code"], "forbidden")
+        self.assertEqual(response.json()["error"]["code"], "forbidden")
 
     def test_users_collection_lists_non_superusers_and_updates_last_used(self):
         """A listagem deve autenticar via Bearer e ignorar superusuários."""
@@ -139,10 +140,13 @@ class PanelApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        usernames = {item["username"] for item in response.json()["results"]}
+        payload = response.json()
+        usernames = {item["username"] for item in payload["data"]}
         self.assertIn("api-client", usernames)
         self.assertIn("maria", usernames)
         self.assertNotIn("root", usernames)
+        self.assertEqual(payload["meta"]["pagination"]["total_items"], 2)
+        self.assertEqual(payload["meta"]["ordering"], "username")
 
         token = ApiToken.objects.get(user=api_user)
         self.assertIsNotNone(token.last_used_at)
@@ -158,7 +162,62 @@ class PanelApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("results", response.json())
+        self.assertIn("data", response.json())
+
+    def test_users_collection_supports_filters_ordering_and_pagination(self):
+        """A coleção deve aceitar filtros explícitos, ordenação e paginação."""
+
+        _api_user, raw_token = self._issue_token(can_read=True)
+        group = Group.objects.create(name="Clientes")
+        ana = User.objects.create_user(
+            username="ana",
+            email="ana@example.com",
+            password="SenhaSegura@123",
+            is_active=True,
+        )
+        ana.groups.add(group)
+        User.objects.create_user(
+            username="bruno",
+            email="bruno@example.com",
+            password="SenhaSegura@123",
+            is_active=False,
+        )
+
+        response = self.client.get(
+            reverse("api_panel_users_collection"),
+            {
+                "is_active": "true",
+                "group_id": group.pk,
+                "ordering": "-username",
+                "page_size": 1,
+            },
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["meta"]["ordering"], "-username")
+        self.assertEqual(payload["meta"]["filters"]["is_active"], True)
+        self.assertEqual(payload["meta"]["filters"]["group_id"], group.pk)
+        self.assertEqual(payload["meta"]["pagination"]["page_size"], 1)
+        self.assertEqual(payload["data"][0]["username"], "ana")
+
+    def test_users_collection_rejects_invalid_query_parameter(self):
+        """Filtros inválidos devem retornar erro padronizado."""
+
+        _api_user, raw_token = self._issue_token(can_read=True)
+
+        response = self.client.get(
+            reverse("api_panel_users_collection"),
+            {"is_active": "talvez"},
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["error"]["code"],
+            "invalid_query_parameter",
+        )
 
     def test_users_collection_creates_user_with_create_permission(self):
         """POST deve criar usuário quando o token tiver permissão de criação."""
@@ -181,6 +240,7 @@ class PanelApiTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.filter(username="novo-api").exists())
+        self.assertEqual(response.json()["data"]["username"], "novo-api")
 
     def test_user_detail_updates_and_deletes_with_crud_permissions(self):
         """PATCH e DELETE devem respeitar o token com update/delete."""
@@ -201,6 +261,7 @@ class PanelApiTests(TestCase):
         )
 
         self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(update_response.json()["data"]["email"], "alterado@example.com")
         target.refresh_from_db()
         self.assertEqual(target.email, "alterado@example.com")
 

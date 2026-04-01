@@ -6,12 +6,29 @@ import json
 from json import JSONDecodeError
 
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from core.api_auth import api_error_response, require_api_permission
+from core.api_auth import require_api_permission
+from core.api_queries import (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, build_filters_meta,
+                              paginate_queryset, parse_bool_filter,
+                              parse_ordering, parse_positive_int)
+from core.api_responses import (api_collection_response, api_error_response,
+                                api_success_response)
 
 from .api_forms import ApiUserWriteForm
+
+USER_ORDERING_FIELDS = {
+    "username": "username",
+    "-username": "-username",
+    "email": "email",
+    "-email": "-email",
+    "date_joined": "date_joined",
+    "-date_joined": "-date_joined",
+    "id": "id",
+    "-id": "-id",
+}
 
 
 def _parse_json_body(request: HttpRequest) -> tuple[dict, JsonResponse | None]:
@@ -27,6 +44,7 @@ def _parse_json_body(request: HttpRequest) -> tuple[dict, JsonResponse | None]:
             "O corpo da requisição deve ser um JSON válido.",
             code="invalid_json",
             status=400,
+            request=request,
         )
 
     if not isinstance(payload, dict):
@@ -34,6 +52,7 @@ def _parse_json_body(request: HttpRequest) -> tuple[dict, JsonResponse | None]:
             "O corpo JSON deve ser um objeto com pares chave/valor.",
             code="invalid_payload",
             status=400,
+            request=request,
         )
 
     return payload, None
@@ -56,16 +75,15 @@ def _serialize_user(user: User) -> dict[str, object]:
     }
 
 
-def _json_form_errors(form: ApiUserWriteForm) -> JsonResponse:
+def _json_form_errors(request: HttpRequest, form: ApiUserWriteForm) -> JsonResponse:
     """Retorna erros de validação do formulário em formato JSON padronizado."""
 
-    return JsonResponse(
-        {
-            "detail": "Os dados enviados são inválidos.",
-            "code": "validation_error",
-            "errors": form.errors.get_json_data(),
-        },
+    return api_error_response(
+        "Os dados enviados são inválidos.",
+        code="validation_error",
         status=400,
+        request=request,
+        fields=form.errors.get_json_data(),
     )
 
 
@@ -87,6 +105,63 @@ def _build_user_form_data(payload: dict, *, instance: User | None = None) -> dic
     }
 
 
+def _filter_users(
+    request: HttpRequest,
+    queryset,
+) -> tuple[object, dict[str, object], JsonResponse | None]:
+    """Aplica filtros explícitos à coleção de usuários."""
+
+    search = request.GET.get("search", "").strip() or request.GET.get("q", "").strip()
+    if search:
+        queryset = queryset.filter(
+            Q(username__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(email__icontains=search)
+        )
+
+    username = request.GET.get("username", "").strip()
+    if username:
+        queryset = queryset.filter(username__icontains=username)
+
+    email = request.GET.get("email", "").strip()
+    if email:
+        queryset = queryset.filter(email__icontains=email)
+
+    is_active, error_response = parse_bool_filter(
+        request.GET.get("is_active", "").strip(),
+        field_name="is_active",
+        request=request,
+    )
+    if error_response:
+        return queryset, {}, error_response
+    if is_active is not None:
+        queryset = queryset.filter(is_active=is_active)
+
+    group_id_raw = request.GET.get("group_id", "").strip()
+    group_id = None
+    if group_id_raw:
+        group_id, error_response = parse_positive_int(
+            group_id_raw,
+            field_name="group_id",
+            default=0,
+            request=request,
+        )
+        if error_response:
+            return queryset, {}, error_response
+        queryset = queryset.filter(groups__id=group_id).distinct()
+
+    return queryset, build_filters_meta(
+        {
+            "search": search,
+            "username": username,
+            "email": email,
+            "is_active": is_active,
+            "group_id": group_id,
+        }
+    ), None
+
+
 @csrf_exempt
 @require_api_permission("panel.users")
 def users_collection(request: HttpRequest) -> HttpResponse:
@@ -96,13 +171,55 @@ def users_collection(request: HttpRequest) -> HttpResponse:
         users = (
             User.objects.filter(is_superuser=False)
             .prefetch_related("groups")
-            .order_by("username")
         )
-        return JsonResponse(
-            {
-                "count": users.count(),
-                "results": [_serialize_user(user) for user in users],
-            }
+        users, filters, error_response = _filter_users(request, users)
+        if error_response:
+            return error_response
+
+        page, error_response = parse_positive_int(
+            request.GET.get("page", "").strip(),
+            field_name="page",
+            default=1,
+            request=request,
+        )
+        if error_response:
+            return error_response
+
+        page_size, error_response = parse_positive_int(
+            request.GET.get("page_size", "").strip(),
+            field_name="page_size",
+            default=DEFAULT_PAGE_SIZE,
+            maximum=MAX_PAGE_SIZE,
+            request=request,
+        )
+        if error_response:
+            return error_response
+
+        ordering, orm_ordering, error_response = parse_ordering(
+            request.GET.get("ordering", "").strip(),
+            request=request,
+            allowed=USER_ORDERING_FIELDS,
+            default="username",
+        )
+        if error_response:
+            return error_response
+
+        users = users.order_by(orm_ordering, "id")
+        paginated_users, pagination, error_response = paginate_queryset(
+            users,
+            request=request,
+            page=page,
+            page_size=page_size,
+        )
+        if error_response:
+            return error_response
+
+        return api_collection_response(
+            request,
+            items=[_serialize_user(user) for user in paginated_users],
+            pagination=pagination,
+            ordering=ordering,
+            filters=filters,
         )
 
     if request.method == "POST":
@@ -115,15 +232,17 @@ def users_collection(request: HttpRequest) -> HttpResponse:
             require_password=True,
         )
         if not form.is_valid():
-            return _json_form_errors(form)
+            return _json_form_errors(request, form)
 
         user = form.save()
-        return JsonResponse(_serialize_user(user), status=201)
+        return api_success_response(request, data=_serialize_user(user), status=201)
 
     return api_error_response(
         "Método não permitido para este endpoint.",
         code="method_not_allowed",
         status=405,
+        request=request,
+        extra_error={"allowed_methods": ["GET", "POST"]},
     )
 
 
@@ -138,10 +257,11 @@ def user_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "Usuário não encontrado.",
             code="not_found",
             status=404,
+            request=request,
         )
 
     if request.method == "GET":
-        return JsonResponse(_serialize_user(user))
+        return api_success_response(request, data=_serialize_user(user))
 
     if request.method in {"PUT", "PATCH"}:
         payload, error_response = _parse_json_body(request)
@@ -153,10 +273,10 @@ def user_detail(request: HttpRequest, pk: int) -> HttpResponse:
             instance=user,
         )
         if not form.is_valid():
-            return _json_form_errors(form)
+            return _json_form_errors(request, form)
 
         updated_user = form.save()
-        return JsonResponse(_serialize_user(updated_user))
+        return api_success_response(request, data=_serialize_user(updated_user))
 
     if request.method == "DELETE":
         user.delete()
@@ -166,4 +286,6 @@ def user_detail(request: HttpRequest, pk: int) -> HttpResponse:
         "Método não permitido para este endpoint.",
         code="method_not_allowed",
         status=405,
+        request=request,
+        extra_error={"allowed_methods": ["GET", "PUT", "PATCH", "DELETE"]},
     )

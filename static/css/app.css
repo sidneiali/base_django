@@ -365,6 +365,15 @@ a[aria-expanded="true"] .nav-link-toggle::before {
 
 .public-docs__card-body--content {
     flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.35rem;
+}
+
+.public-docs__hash-anchor {
+    display: block;
+    height: 0;
+    scroll-margin-top: 1rem;
 }
 
 .public-docs__sidebar {
@@ -440,15 +449,44 @@ a[aria-expanded="true"] .nav-link-toggle::before {
     min-height: 0;
 }
 
+.public-docs__info-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+.public-docs__info-card {
+    border-radius: 1rem !important;
+}
+
+.public-docs__info-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.public-docs__error-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.public-docs__error-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.public-docs__error-label {
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
 .public-docs__sections {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-right: 0.35rem;
 }
 
 .public-docs__docs-section {
@@ -795,6 +833,9 @@ a[aria-expanded="true"] .nav-link-toggle::before {
         padding-left: 1.75rem;
         padding-right: 1.75rem;
     }
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
 }
 
 .auth-cover-body {

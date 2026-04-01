@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from functools import wraps
 
 from django.db import OperationalError, ProgrammingError
-from django.http import JsonResponse
 
 from .audit import create_audit_log
 from .models import ApiAccessProfile, ApiResourcePermission, ApiToken
 from .models import AuditLog
+from .api_responses import api_error_response
 
 API_METHOD_ACTIONS = {
     "GET": "read",
@@ -37,14 +37,6 @@ class ApiAuthenticationResult:
         """Indica se a autenticacao da requisicao foi concluida com sucesso."""
 
         return self.user is not None and self.token is not None and not self.code
-
-
-def api_error_response(detail: str, *, code: str, status: int) -> JsonResponse:
-    """Retorna um erro JSON padronizado para os consumidores da API."""
-
-    return JsonResponse({"detail": detail, "code": code}, status=status)
-
-
 def extract_bearer_token(request) -> tuple[str | None, str | None, str | None]:
     """Extrai o token Bearer do header Authorization."""
 
@@ -213,6 +205,7 @@ def require_api_permission(resource: str):
                     result.detail or "A autenticação da API falhou.",
                     code=result.code or "api_auth_failed",
                     status=401,
+                    request=request,
                 )
 
             action = get_api_action_for_method(request.method)
@@ -221,6 +214,8 @@ def require_api_permission(resource: str):
                     "Método não permitido para este endpoint.",
                     code="method_not_allowed",
                     status=405,
+                    request=request,
+                    extra_error={"allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE"]},
                 )
 
             if not user_has_api_permission(result.user, resource, action):
@@ -237,6 +232,7 @@ def require_api_permission(resource: str):
                     "Seu token não possui permissão para esta operação.",
                     code="forbidden",
                     status=403,
+                    request=request,
                 )
 
             request.user = result.user

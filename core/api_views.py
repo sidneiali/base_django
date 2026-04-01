@@ -9,16 +9,30 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 
-from .api_auth import api_error_response, require_api_permission
+from .api_auth import require_api_permission
 from .api_access import get_user_api_access_values
+from .api_queries import (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, build_filters_meta,
+                          paginate_queryset, parse_date_filter,
+                          parse_ordering, parse_positive_int)
+from .api_responses import (api_collection_response, api_error_response,
+                            api_success_response)
 from .models import ApiResourcePermission, AuditLog
-
-DEFAULT_PAGE_SIZE = 20
-MAX_PAGE_SIZE = 100
 User = get_user_model()
+
+AUDIT_LOG_ORDERING_FIELDS = {
+    "created_at": "created_at",
+    "-created_at": "-created_at",
+    "action": "action",
+    "-action": "-action",
+    "actor": "actor_identifier",
+    "-actor": "-actor_identifier",
+    "object": "object_repr",
+    "-object": "-object_repr",
+    "id": "id",
+    "-id": "-id",
+}
 
 
 def _serialize_group(group) -> dict[str, object]:
@@ -107,69 +121,13 @@ def _serialize_audit_log(
     return payload
 
 
-def _parse_positive_int(
-    raw_value: str,
-    *,
-    field_name: str,
-    default: int,
-    minimum: int = 1,
-    maximum: int | None = None,
-) -> tuple[int, JsonResponse | None]:
-    """Valida inteiros positivos usados na paginação da API."""
-
-    if not raw_value:
-        return default, None
-
-    try:
-        value = int(raw_value)
-    except ValueError:
-        return 0, api_error_response(
-            f"O parâmetro {field_name} deve ser um número inteiro.",
-            code="invalid_query_parameter",
-            status=400,
-        )
-
-    if value < minimum:
-        return 0, api_error_response(
-            f"O parâmetro {field_name} deve ser maior ou igual a {minimum}.",
-            code="invalid_query_parameter",
-            status=400,
-        )
-
-    if maximum is not None and value > maximum:
-        return maximum, None
-
-    return value, None
-
-
-def _parse_date_filter(
-    raw_value: str,
-    *,
-    field_name: str,
-) -> tuple[date | None, JsonResponse | None]:
-    """Valida filtros de data em formato ISO ``YYYY-MM-DD``."""
-
-    if not raw_value:
-        return None, None
-
-    parsed = parse_date(raw_value)
-    if parsed is None:
-        return None, api_error_response(
-            f"O parâmetro {field_name} deve usar o formato YYYY-MM-DD.",
-            code="invalid_query_parameter",
-            status=400,
-        )
-
-    return parsed, None
-
-
 def _filter_audit_logs(
     request: HttpRequest,
     queryset: QuerySet[AuditLog],
-) -> tuple[QuerySet[AuditLog], JsonResponse | None]:
+) -> tuple[QuerySet[AuditLog], dict[str, object], JsonResponse | None]:
     """Aplica os filtros suportados na listagem dos logs de auditoria."""
 
-    query = request.GET.get("q", "").strip()
+    query = request.GET.get("search", "").strip() or request.GET.get("q", "").strip()
     if query:
         queryset = queryset.filter(
             Q(object_repr__icontains=query)
@@ -180,7 +138,23 @@ def _filter_audit_logs(
 
     action = request.GET.get("action", "").strip()
     if action:
+        valid_actions = {choice for choice, _label in AuditLog.ACTION_CHOICES}
+        if action not in valid_actions:
+            return queryset, {}, api_error_response(
+                "O parâmetro action é inválido para este endpoint.",
+                code="invalid_query_parameter",
+                status=400,
+                request=request,
+                extra_error={
+                    "parameter": "action",
+                    "allowed_values": sorted(valid_actions),
+                },
+            )
         queryset = queryset.filter(action=action)
+
+    app_label = request.GET.get("app_label", "").strip().lower()
+    if app_label:
+        queryset = queryset.filter(content_type__app_label__iexact=app_label)
 
     model = request.GET.get("model", "").strip().lower()
     if model:
@@ -200,25 +174,52 @@ def _filter_audit_logs(
     if object_id:
         queryset = queryset.filter(object_id=object_id)
 
-    date_from, error_response = _parse_date_filter(
+    path_filter = request.GET.get("path", "").strip()
+    if path_filter:
+        queryset = queryset.filter(path__icontains=path_filter)
+
+    date_from, error_response = parse_date_filter(
         request.GET.get("date_from", "").strip(),
         field_name="date_from",
+        request=request,
     )
     if error_response:
-        return queryset, error_response
+        return queryset, {}, error_response
     if date_from:
         queryset = queryset.filter(created_at__date__gte=date_from)
 
-    date_to, error_response = _parse_date_filter(
+    date_to, error_response = parse_date_filter(
         request.GET.get("date_to", "").strip(),
         field_name="date_to",
+        request=request,
     )
     if error_response:
-        return queryset, error_response
+        return queryset, {}, error_response
     if date_to:
         queryset = queryset.filter(created_at__date__lte=date_to)
 
-    return queryset, None
+    if date_from and date_to and date_from > date_to:
+        return queryset, {}, api_error_response(
+            "date_from não pode ser maior que date_to.",
+            code="invalid_query_parameter",
+            status=400,
+            request=request,
+            extra_error={"parameter": "date_range"},
+        )
+
+    return queryset, build_filters_meta(
+        {
+            "search": query,
+            "action": action,
+            "app_label": app_label,
+            "model": model,
+            "actor": actor,
+            "object_id": object_id,
+            "path": path_filter,
+            "date_from": date_from.isoformat() if isinstance(date_from, date) else None,
+            "date_to": date_to.isoformat() if isinstance(date_to, date) else None,
+        }
+    ), None
 
 
 def health(request: HttpRequest) -> HttpResponse:
@@ -227,8 +228,9 @@ def health(request: HttpRequest) -> HttpResponse:
     current_time = timezone.localtime(timezone.now())
     current_timezone = timezone.get_current_timezone_name()
 
-    return JsonResponse(
-        {
+    return api_success_response(
+        request,
+        data={
             "status": "ok",
             "timestamp": current_time.isoformat(),
             "timezone": current_timezone,
@@ -237,7 +239,7 @@ def health(request: HttpRequest) -> HttpResponse:
                 "requests": int(getattr(settings, "API_RATE_LIMIT_REQUESTS", 120)),
                 "window_seconds": int(getattr(settings, "API_RATE_LIMIT_WINDOW_SECONDS", 60)),
             },
-        }
+        },
     )
 
 
@@ -251,9 +253,11 @@ def me(request: HttpRequest) -> HttpResponse:
             "Método não permitido para este endpoint.",
             code="method_not_allowed",
             status=405,
+            request=request,
+            extra_error={"allowed_methods": ["GET"]},
         )
 
-    return JsonResponse(_serialize_current_user(request.user))
+    return api_success_response(request, data=_serialize_current_user(request.user))
 
 
 @csrf_exempt
@@ -266,6 +270,8 @@ def token_status(request: HttpRequest) -> HttpResponse:
             "Método não permitido para este endpoint.",
             code="method_not_allowed",
             status=405,
+            request=request,
+            extra_error={"allowed_methods": ["GET"]},
         )
 
     token = request.api_token
@@ -274,12 +280,14 @@ def token_status(request: HttpRequest) -> HttpResponse:
             "Token da API não encontrado na sessão autenticada.",
             code="token_not_available",
             status=404,
+            request=request,
         )
 
     access_values = get_user_api_access_values(request.user)
 
-    return JsonResponse(
-        {
+    return api_success_response(
+        request,
+        data={
             "api_enabled": bool(access_values["api_enabled"]),
             "token": {
                 "token_prefix": token.token_prefix,
@@ -289,7 +297,7 @@ def token_status(request: HttpRequest) -> HttpResponse:
                 "is_active": token.is_active,
             },
             "permissions": _serialize_api_permissions(request.user),
-        }
+        },
     )
 
 
@@ -303,44 +311,62 @@ def audit_logs_collection(request: HttpRequest) -> HttpResponse:
             "Método não permitido para este endpoint.",
             code="method_not_allowed",
             status=405,
+            request=request,
+            extra_error={"allowed_methods": ["GET"]},
         )
 
     audit_logs = AuditLog.objects.select_related("actor", "content_type")
-    audit_logs, error_response = _filter_audit_logs(request, audit_logs)
+    audit_logs, filters, error_response = _filter_audit_logs(request, audit_logs)
     if error_response:
         return error_response
 
-    page, error_response = _parse_positive_int(
+    page, error_response = parse_positive_int(
         request.GET.get("page", "").strip(),
         field_name="page",
         default=1,
+        request=request,
     )
     if error_response:
         return error_response
 
-    page_size, error_response = _parse_positive_int(
+    page_size, error_response = parse_positive_int(
         request.GET.get("page_size", "").strip(),
         field_name="page_size",
         default=DEFAULT_PAGE_SIZE,
         maximum=MAX_PAGE_SIZE,
+        request=request,
     )
     if error_response:
         return error_response
 
-    total = audit_logs.count()
-    start = (page - 1) * page_size
-    end = start + page_size
+    ordering, orm_ordering, error_response = parse_ordering(
+        request.GET.get("ordering", "").strip(),
+        request=request,
+        allowed=AUDIT_LOG_ORDERING_FIELDS,
+        default="-created_at",
+    )
+    if error_response:
+        return error_response
 
-    return JsonResponse(
-        {
-            "count": total,
-            "page": page,
-            "page_size": page_size,
-            "results": [
-                _serialize_audit_log(audit_log)
-                for audit_log in audit_logs[start:end]
-            ],
-        }
+    audit_logs = audit_logs.order_by(orm_ordering, "-id")
+    paginated_logs, pagination, error_response = paginate_queryset(
+        audit_logs,
+        request=request,
+        page=page,
+        page_size=page_size,
+    )
+    if error_response:
+        return error_response
+
+    return api_collection_response(
+        request,
+        items=[
+            _serialize_audit_log(audit_log)
+            for audit_log in paginated_logs
+        ],
+        pagination=pagination,
+        ordering=ordering,
+        filters=filters,
     )
 
 
@@ -354,6 +380,8 @@ def audit_log_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "Método não permitido para este endpoint.",
             code="method_not_allowed",
             status=405,
+            request=request,
+            extra_error={"allowed_methods": ["GET"]},
         )
 
     audit_log = (
@@ -366,6 +394,10 @@ def audit_log_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "Log de auditoria não encontrado.",
             code="not_found",
             status=404,
+            request=request,
         )
 
-    return JsonResponse(_serialize_audit_log(audit_log, include_payloads=True))
+    return api_success_response(
+        request,
+        data=_serialize_audit_log(audit_log, include_payloads=True),
+    )

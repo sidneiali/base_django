@@ -62,18 +62,23 @@
         <div class="col-12 col-xl-8 d-flex">
             <div class="card public-docs__card public-docs__content-card w-100">
                 <div class="card-body public-docs__card-body public-docs__card-body--content d-flex flex-column gap-4">
+                    <div class="public-docs__hash-anchor" id="api-tabs-curl" aria-hidden="true"></div>
+                    <div class="public-docs__hash-anchor" id="api-tabs-python" aria-hidden="true"></div>
+                    <div class="public-docs__hash-anchor" id="api-tabs-postman" aria-hidden="true"></div>
                     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                         <div>
                             <div class="public-docs__section-label">Exemplos rápidos</div>
                             <h3 class="card-title mb-1">Chamadas da OpenAPI v1</h3>
                             <div class="text-secondary">
                                 Esta página é montada a partir da especificação OpenAPI pública da aplicação.
+                                As respostas seguem o envelope <code>data</code> + <code>meta</code>.
                             </div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
                             <a
                                 href="{{ openapi_download_url }}"
+                                id="api-openapi-download"
                                 class="btn btn-outline-secondary"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -82,6 +87,7 @@
                             </a>
                             <a
                                 href="{{ postman_download_url }}"
+                                id="api-postman-download"
                                 class="btn btn-primary"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -89,6 +95,106 @@
                                 Baixar Postman JSON
                             </a>
                         </div>
+                    </div>
+
+                    <div class="public-docs__info-grid">
+                        <section class="public-docs__info-card card">
+                            <div class="card-body">
+                                <div class="public-docs__section-label">Headers</div>
+                                <h4 class="card-title mb-2">Headers importantes</h4>
+                                <p class="public-docs__example-summary">
+                                    Quase todos os endpoints exigem Bearer token. Em toda resposta da API, use o
+                                    <code>X-Request-ID</code> para rastrear chamadas e auditoria.
+                                </p>
+                                <div class="public-docs__code-panel">
+                                    <pre class="public-docs__code"><code>Authorization: Bearer SEU_TOKEN
+Accept: application/json</code></pre>
+                                </div>
+                                <div class="public-docs__code-panel mt-3">
+                                    <pre class="public-docs__code"><code>X-Request-ID: 6472beea-7623-43fa-aa4c-34b117d74b99
+Content-Type: application/json</code></pre>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="public-docs__info-card card">
+                            <div class="card-body">
+                                <div class="public-docs__section-label">Erros comuns</div>
+                                <h4 class="card-title mb-2">Exemplos rápidos de erro</h4>
+                                <div class="public-docs__error-list">
+                                    <div class="public-docs__error-item">
+                                        <div class="public-docs__error-label">401 · Token ausente ou inválido</div>
+                                        <div class="public-docs__code-panel">
+                                            <pre class="public-docs__code"><code>{
+    "error": {
+        "detail": "O token informado é inválido.",
+        "code": "invalid_token"
+    },
+    "meta": {
+        "request_id": "6472beea-7623-43fa-aa4c-34b117d74b99",
+        "version": "v1",
+        "path": "/api/v1/core/me/",
+        "method": "GET"
+    }
+}</code></pre>
+                                        </div>
+                                    </div>
+
+                                    <div class="public-docs__error-item">
+                                        <div class="public-docs__error-label">403 · Sem permissão no recurso</div>
+                                        <div class="public-docs__code-panel">
+                                            <pre class="public-docs__code"><code>{
+    "error": {
+        "detail": "Seu token não possui permissão para esta operação.",
+        "code": "forbidden"
+    },
+    "meta": {
+        "request_id": "6472beea-7623-43fa-aa4c-34b117d74b99",
+        "version": "v1",
+        "path": "/api/v1/core/audit-logs/",
+        "method": "GET"
+    }
+}</code></pre>
+                                        </div>
+                                    </div>
+
+                                    <div class="public-docs__error-item">
+                                        <div class="public-docs__error-label">429 · Rate limit excedido</div>
+                                        <div class="public-docs__code-panel">
+                                            <pre class="public-docs__code"><code>{
+    "error": {
+        "detail": "Limite de requisições da API excedido. Tente novamente em instantes.",
+        "code": "rate_limited"
+    },
+    "meta": {
+        "request_id": "6472beea-7623-43fa-aa4c-34b117d74b99",
+        "version": "v1",
+        "path": "/api/v1/core/me/",
+        "method": "GET"
+    }
+}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="public-docs__info-card card">
+                            <div class="card-body">
+                                <div class="public-docs__section-label">Teste local</div>
+                                <h4 class="card-title mb-2">Como testar pelo script</h4>
+                                <p class="public-docs__example-summary">
+                                    Preencha <code>scripts/.env</code> com seu token local e use o utilitário versionado
+                                    em <code>scripts/api_request.py</code> para ver status, headers e body formatado.
+                                </p>
+                                <div class="public-docs__code-panel">
+                                    <pre class="public-docs__code"><code>python scripts/api_request.py --help
+python scripts/api_request.py --list-routes
+python scripts/api_request.py /api/v1/core/me/
+python scripts/api_request.py /api/v1/core/audit-logs/</code></pre>
+                                </div>
+                            </div>
+                        </section>
                     </div>
 
                     <div class="public-docs__language-shell">
@@ -162,7 +268,7 @@
 {% block extra_js %}
 <script>
     (() => {
-        const docsSections = document.querySelector(".public-docs__sections");
+        const docsScrollContainer = document.querySelector(".public-docs__card-body--content");
         const sectionLinks = document.querySelectorAll("[data-section-link]");
         const endpointLinks = document.querySelectorAll("[data-endpoint-link]");
         const languageButtons = document.querySelectorAll("[data-code-lang]");
@@ -282,12 +388,41 @@
             window.setTimeout(clearHighlight, 1800);
         };
 
-        const initScrollSpy = () => {
-            if (!docsSections || !window.bootstrap?.ScrollSpy) {
+        const applyHashRoute = () => {
+            const hash = window.location.hash.replace(/^#/, "");
+            if (!hash) {
                 return;
             }
 
-            scrollSpy = new window.bootstrap.ScrollSpy(docsSections, {
+            if (hash === "api-tabs-python") {
+                setActiveLanguage("python");
+            } else if (hash === "api-tabs-curl") {
+                setActiveLanguage("curl");
+            }
+
+            if (document.querySelector(`[data-endpoint-example="${hash}"]`)) {
+                window.setTimeout(() => {
+                    scrollToEndpointExample(hash);
+                }, 60);
+                return;
+            }
+
+            const target = document.getElementById(hash);
+            if (!target) {
+                return;
+            }
+
+            window.setTimeout(() => {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 60);
+        };
+
+        const initScrollSpy = () => {
+            if (!docsScrollContainer || !window.bootstrap?.ScrollSpy) {
+                return;
+            }
+
+            scrollSpy = new window.bootstrap.ScrollSpy(docsScrollContainer, {
                 target: "#api-docs-nav",
                 smoothScroll: true,
                 offset: 24,
@@ -318,6 +453,8 @@
         initCodeCopyButtons();
         initScrollSpy();
         setActiveLanguage(currentLanguage);
+        applyHashRoute();
+        window.addEventListener("hashchange", applyHashRoute);
     })();
 </script>
 {% endblock %}

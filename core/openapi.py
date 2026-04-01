@@ -68,7 +68,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Status operacional da API.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/HealthResponse"}
+                                    "schema": {"$ref": "#/components/schemas/HealthEnvelope"}
                                 }
                             },
                         }
@@ -109,7 +109,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Usuário autenticado.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/CurrentUser"}
+                                    "schema": {"$ref": "#/components/schemas/CurrentUserEnvelope"}
                                 }
                             },
                         },
@@ -166,7 +166,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Status do token atual.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/TokenStatus"}
+                                    "schema": {"$ref": "#/components/schemas/TokenStatusEnvelope"}
                                 }
                             },
                         },
@@ -218,12 +218,30 @@ def build_openapi_schema(request) -> dict[str, object]:
                             ),
                         },
                     ],
+                    "parameters": [
+                        {"name": "search", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "username", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "email", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "is_active", "in": "query", "required": False, "schema": {"type": "boolean"}},
+                        {"name": "group_id", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "ordering", "in": "query", "required": False, "schema": {"type": "string", "enum": ["username", "-username", "email", "-email", "date_joined", "-date_joined", "id", "-id"]}},
+                        {"name": "page", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
+                        {"name": "page_size", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 100}},
+                    ],
                     "responses": {
                         "200": {
                             "description": "Lista de usuários.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/UserListResponse"}
+                                    "schema": {"$ref": "#/components/schemas/UserListEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Filtro, paginação ou ordenação inválidos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
                                 }
                             },
                         }
@@ -280,7 +298,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Usuário criado.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/User"}
+                                    "schema": {"$ref": "#/components/schemas/UserEnvelope"}
                                 }
                             },
                         },
@@ -332,7 +350,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Usuário encontrado.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/User"}
+                                    "schema": {"$ref": "#/components/schemas/UserEnvelope"}
                                 }
                             },
                         },
@@ -397,7 +415,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Usuário atualizado.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/User"}
+                                    "schema": {"$ref": "#/components/schemas/UserEnvelope"}
                                 }
                             },
                         },
@@ -485,13 +503,16 @@ def build_openapi_schema(request) -> dict[str, object]:
                         },
                     ],
                     "parameters": [
-                        {"name": "q", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "search", "in": "query", "required": False, "schema": {"type": "string"}},
                         {"name": "action", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "app_label", "in": "query", "required": False, "schema": {"type": "string"}},
                         {"name": "model", "in": "query", "required": False, "schema": {"type": "string"}},
                         {"name": "actor", "in": "query", "required": False, "schema": {"type": "string"}},
                         {"name": "object_id", "in": "query", "required": False, "schema": {"type": "string"}},
+                        {"name": "path", "in": "query", "required": False, "schema": {"type": "string"}},
                         {"name": "date_from", "in": "query", "required": False, "schema": {"type": "string", "format": "date"}},
                         {"name": "date_to", "in": "query", "required": False, "schema": {"type": "string", "format": "date"}},
+                        {"name": "ordering", "in": "query", "required": False, "schema": {"type": "string", "enum": ["created_at", "-created_at", "action", "-action", "actor", "-actor", "object", "-object", "id", "-id"]}},
                         {"name": "page", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1}},
                         {"name": "page_size", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 100}},
                     ],
@@ -500,7 +521,15 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Lista paginada de logs de auditoria.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/AuditLogListResponse"}
+                                    "schema": {"$ref": "#/components/schemas/AuditLogListEnvelope"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Filtro, paginação ou ordenação inválidos.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
                                 }
                             },
                         }
@@ -544,7 +573,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "description": "Log de auditoria encontrado.",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/AuditLogDetail"}
+                                    "schema": {"$ref": "#/components/schemas/AuditLogDetailEnvelope"}
                                 }
                             },
                         },
@@ -643,7 +672,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                     },
                     "required": ["api_enabled", "token", "permissions"],
                 },
-                "HealthResponse": {
+                "HealthPayload": {
                     "type": "object",
                     "properties": {
                         "status": {"type": "string"},
@@ -780,20 +809,143 @@ def build_openapi_schema(request) -> dict[str, object]:
                     },
                     "required": ["count", "page", "page_size", "results"],
                 },
-                "ErrorResponse": {
+                "ApiMeta": {
+                    "type": "object",
+                    "properties": {
+                        "request_id": {"type": "string"},
+                        "version": {"type": "string"},
+                        "path": {"type": "string"},
+                        "method": {"type": "string"},
+                    },
+                    "required": ["request_id", "version", "path", "method"],
+                },
+                "ApiCollectionMeta": {
+                    "allOf": [
+                        {"$ref": "#/components/schemas/ApiMeta"},
+                        {
+                            "type": "object",
+                            "properties": {
+                                "pagination": {
+                                    "type": "object",
+                                    "properties": {
+                                        "page": {"type": "integer"},
+                                        "page_size": {"type": "integer"},
+                                        "total_items": {"type": "integer"},
+                                        "total_pages": {"type": "integer"},
+                                        "has_previous": {"type": "boolean"},
+                                        "has_next": {"type": "boolean"},
+                                        "previous_page": {"type": ["integer", "null"]},
+                                        "next_page": {"type": ["integer", "null"]},
+                                    },
+                                    "required": [
+                                        "page",
+                                        "page_size",
+                                        "total_items",
+                                        "total_pages",
+                                        "has_previous",
+                                        "has_next",
+                                        "previous_page",
+                                        "next_page",
+                                    ],
+                                },
+                                "ordering": {"type": "string"},
+                                "filters": {"type": "object"},
+                            },
+                            "required": ["pagination"],
+                        },
+                    ]
+                },
+                "HealthEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/HealthPayload"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "CurrentUserEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/CurrentUser"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "TokenStatusEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/TokenStatus"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "UserEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/User"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "UserListEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/User"},
+                        },
+                        "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "AuditLogDetailEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/AuditLogDetail"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "AuditLogListEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/AuditLogSummary"},
+                        },
+                        "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "ErrorPayload": {
                     "type": "object",
                     "properties": {"detail": {"type": "string"}, "code": {"type": "string"}},
                     "required": ["detail", "code"],
                 },
+                "ErrorResponse": {
+                    "type": "object",
+                    "properties": {
+                        "error": {"$ref": "#/components/schemas/ErrorPayload"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["error", "meta"],
+                },
                 "ValidationErrorResponse": {
-                    "allOf": [
-                        {"$ref": "#/components/schemas/ErrorResponse"},
-                        {
-                            "type": "object",
-                            "properties": {"errors": {"type": "object"}},
-                            "required": ["errors"],
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "allOf": [
+                                {"$ref": "#/components/schemas/ErrorPayload"},
+                                {
+                                    "type": "object",
+                                    "properties": {"fields": {"type": "object"}},
+                                    "required": ["fields"],
+                                },
+                            ]
                         },
-                    ]
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
+                    },
+                    "required": ["error", "meta"],
                 },
             },
         },

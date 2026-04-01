@@ -320,6 +320,16 @@ class AccountPasswordChangeTests(TestCase):
         self.assertContains(response, "/api/v1/core/token/")
         self.assertContains(response, "/api/v1/panel/users/{id}/")
         self.assertContains(response, "/api/v1/core/audit-logs/{id}/")
+        self.assertContains(response, "Authorization: Bearer SEU_TOKEN")
+        self.assertContains(response, "X-Request-ID")
+        self.assertContains(response, "invalid_token")
+        self.assertContains(response, "forbidden")
+        self.assertContains(response, "rate_limited")
+        self.assertContains(response, "python scripts/api_request.py --help")
+        self.assertContains(response, "python scripts/api_request.py --list-routes")
+        self.assertContains(response, 'id="api-tabs-curl"', html=False)
+        self.assertContains(response, 'id="api-tabs-python"', html=False)
+        self.assertContains(response, 'id="api-tabs-postman"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-health"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-me"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-users-list"', html=False)
@@ -388,7 +398,7 @@ class AuditLogApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["code"], "forbidden")
+        self.assertEqual(response.json()["error"]["code"], "forbidden")
 
     def test_audit_logs_collection_lists_and_filters_events(self):
         """A listagem deve aceitar filtros simples por ação e ator."""
@@ -430,11 +440,60 @@ class AuditLogApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["count"], 1)
-        self.assertEqual(payload["page"], 1)
-        self.assertEqual(payload["page_size"], 10)
-        self.assertEqual(payload["results"][0]["id"], create_log.pk)
-        self.assertEqual(payload["results"][0]["actor"]["username"], actor.username)
+        self.assertEqual(payload["meta"]["pagination"]["total_items"], 1)
+        self.assertEqual(payload["meta"]["pagination"]["page"], 1)
+        self.assertEqual(payload["meta"]["pagination"]["page_size"], 10)
+        self.assertEqual(payload["meta"]["filters"]["action"], AuditLog.ACTION_CREATE)
+        self.assertEqual(payload["meta"]["filters"]["actor"], actor.username)
+        self.assertEqual(payload["meta"]["ordering"], "-created_at")
+        self.assertEqual(payload["data"][0]["id"], create_log.pk)
+        self.assertEqual(payload["data"][0]["actor"]["username"], actor.username)
+
+    def test_audit_logs_collection_supports_ordering_and_page_errors(self):
+        """A listagem deve validar ordering e páginas fora do intervalo."""
+
+        raw_token = self._issue_token()
+        AuditLog.objects.all().delete()
+        AuditLog.objects.create(
+            actor_identifier="bbb",
+            action=AuditLog.ACTION_CREATE,
+            object_id="1",
+            object_repr="segundo",
+            object_verbose_name="usuário",
+            request_method="POST",
+            path="/a/",
+        )
+        AuditLog.objects.create(
+            actor_identifier="aaa",
+            action=AuditLog.ACTION_UPDATE,
+            object_id="2",
+            object_repr="primeiro",
+            object_verbose_name="usuário",
+            request_method="POST",
+            path="/b/",
+        )
+
+        ordered_response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            {"ordering": "actor", "page_size": 1},
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+        self.assertEqual(ordered_response.status_code, 200)
+        ordered_payload = ordered_response.json()
+        self.assertEqual(ordered_payload["meta"]["ordering"], "actor")
+        self.assertEqual(ordered_payload["meta"]["pagination"]["total_pages"], 2)
+        self.assertEqual(ordered_payload["data"][0]["actor_identifier"], "aaa")
+
+        invalid_page_response = self.client.get(
+            reverse("api_core_audit_logs_collection"),
+            {"page": 5, "page_size": 1},
+            HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+        )
+        self.assertEqual(invalid_page_response.status_code, 400)
+        self.assertEqual(
+            invalid_page_response.json()["error"]["code"],
+            "page_out_of_range",
+        )
 
     def test_audit_log_detail_returns_full_payload(self):
         """O detalhe deve expor os campos before/after/changes/metadata."""
@@ -461,10 +520,10 @@ class AuditLogApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["id"], audit_log.pk)
-        self.assertEqual(payload["before"]["email"], "antes@example.com")
-        self.assertEqual(payload["after"]["email"], "depois@example.com")
-        self.assertEqual(payload["metadata"]["event"], "manual_update")
+        self.assertEqual(payload["data"]["id"], audit_log.pk)
+        self.assertEqual(payload["data"]["before"]["email"], "antes@example.com")
+        self.assertEqual(payload["data"]["after"]["email"], "depois@example.com")
+        self.assertEqual(payload["data"]["metadata"]["event"], "manual_update")
 
 
 class ApiAccessEndpointsTests(TestCase):
@@ -507,7 +566,7 @@ class ApiAccessEndpointsTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["code"], "forbidden")
+        self.assertEqual(response.json()["error"]["code"], "forbidden")
 
     def test_me_returns_authenticated_user_payload(self):
         """O endpoint /me deve devolver a identidade do usuário autenticado."""
@@ -521,10 +580,11 @@ class ApiAccessEndpointsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["id"], user.pk)
-        self.assertEqual(payload["username"], user.username)
-        self.assertEqual(payload["email"], user.email)
-        self.assertEqual(payload["groups"][0]["name"], "Integrações")
+        self.assertEqual(payload["data"]["id"], user.pk)
+        self.assertEqual(payload["data"]["username"], user.username)
+        self.assertEqual(payload["data"]["email"], user.email)
+        self.assertEqual(payload["data"]["groups"][0]["name"], "Integrações")
+        self.assertEqual(payload["meta"]["version"], "v1")
 
     def test_token_status_returns_current_token_and_permissions(self):
         """O endpoint /token deve expor o status do token atual e os acessos."""
@@ -538,12 +598,12 @@ class ApiAccessEndpointsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertTrue(payload["api_enabled"])
+        self.assertTrue(payload["data"]["api_enabled"])
         self.assertEqual(
-            payload["token"]["token_prefix"],
+            payload["data"]["token"]["token_prefix"],
             raw_token[: ApiToken.PREFIX_LENGTH],
         )
-        permissions = {item["resource"]: item for item in payload["permissions"]}
+        permissions = {item["resource"]: item for item in payload["data"]["permissions"]}
         self.assertTrue(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_read"])
         self.assertFalse(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_create"])
         self.assertEqual(user.username, "self-api")
@@ -590,9 +650,10 @@ class ApiOperationalSecurityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("X-Request-ID", response)
         payload = response.json()
-        self.assertEqual(payload["status"], "ok")
-        self.assertTrue(payload["timestamp"].endswith("-03:00"))
-        self.assertTrue(payload["rate_limit"]["enabled"])
+        self.assertEqual(payload["data"]["status"], "ok")
+        self.assertTrue(payload["data"]["timestamp"].endswith("-03:00"))
+        self.assertTrue(payload["data"]["rate_limit"]["enabled"])
+        self.assertEqual(payload["meta"]["request_id"], response["X-Request-ID"])
 
     def test_invalid_token_attempt_is_logged(self):
         """Token inválido deve gerar 401 e log de acesso negado."""
@@ -605,7 +666,7 @@ class ApiOperationalSecurityTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json()["code"], "invalid_token")
+        self.assertEqual(response.json()["error"]["code"], "invalid_token")
         self.assertIn("X-Request-ID", response)
 
         log = AuditLog.objects.filter(action=AuditLog.ACTION_API_ACCESS_DENIED).first()
@@ -631,7 +692,7 @@ class ApiOperationalSecurityTests(TestCase):
 
         self.assertEqual(first_response.status_code, 200)
         self.assertEqual(second_response.status_code, 429)
-        self.assertEqual(second_response.json()["code"], "rate_limited")
+        self.assertEqual(second_response.json()["error"]["code"], "rate_limited")
         self.assertEqual(second_response["Retry-After"], "60")
         self.assertEqual(second_response["X-RateLimit-Limit"], "1")
         self.assertIn("X-Request-ID", second_response)

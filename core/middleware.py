@@ -208,6 +208,7 @@ class ApiRateLimitMiddleware:
                 "Limite de requisições da API excedido. Tente novamente em instantes.",
                 code="rate_limited",
                 status=429,
+                request=request,
             )
             response["Retry-After"] = str(window_seconds)
             return _set_rate_limit_headers(
