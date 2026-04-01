@@ -13,6 +13,69 @@ from core.models import AuditLog
 User = get_user_model()
 
 
+class LoginFlowTests(TestCase):
+    """Valida o fluxo público de login do sistema."""
+
+    def test_login_page_loads_customized_template(self):
+        """A tela de login deve exibir o layout e textos customizados."""
+
+        response = self.client.get(reverse("login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entrar na sua conta")
+        self.assertContains(response, "Esqueci minha senha")
+        self.assertContains(response, "Sessão autenticada")
+
+    def test_successful_login_redirects_to_dashboard_and_creates_audit_entry(self):
+        """Login válido deve autenticar o usuário e registrar auditoria."""
+
+        user = User.objects.create_user(
+            username="lucas",
+            email="lucas@example.com",
+            password="SenhaSegura@123",
+        )
+        AuditLog.objects.all().delete()
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "lucas", "password": "SenhaSegura@123"},
+        )
+
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(str(self.client.session["_auth_user_id"]), str(user.pk))
+
+        login_log = AuditLog.objects.get(
+            action=AuditLog.ACTION_LOGIN,
+            object_id=str(user.pk),
+        )
+        self.assertEqual(login_log.actor, user)
+        self.assertEqual(login_log.metadata.get("event"), "user_logged_in")
+
+    def test_failed_login_creates_sanitized_audit_entry(self):
+        """Falha de login deve registrar auditoria sem expor a senha bruta."""
+
+        user = User.objects.create_user(
+            username="ana",
+            email="ana@example.com",
+            password="SenhaSegura@123",
+        )
+        AuditLog.objects.all().delete()
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "ana", "password": "SenhaIncorreta@123"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        failed_log = AuditLog.objects.get(action=AuditLog.ACTION_LOGIN_FAILED)
+        self.assertEqual(failed_log.object_id, str(user.pk))
+        self.assertEqual(failed_log.actor_identifier, "ana")
+        self.assertEqual(failed_log.metadata.get("event"), "user_login_failed")
+        self.assertEqual(failed_log.metadata["credentials"]["username"], "ana")
+        self.assertNotIn("password", failed_log.metadata["credentials"])
+
+
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class PasswordRecoveryTests(TestCase):
     """Valida o fluxo externo de recuperacao de senha."""
