@@ -3,6 +3,7 @@
 from django.urls import path
 
 from .views import (
+                    audit_logs_list,
                     group_create,
                     group_update,
                     groups_list,
@@ -12,6 +13,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("auditoria/", audit_logs_list, name="panel_audit_logs_list"),
     path("usuarios/", users_list, name="panel_users_list"),
     path("usuarios/novo/", user_create, name="panel_user_create"),
     path("usuarios/<int:pk>/editar/", user_update, name="panel_user_update"),

@@ -1,0 +1,132 @@
+<div data-page-title="Auditoria">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title mb-1">Auditoria</h3>
+                <p class="text-secondary mb-0">
+                    Eventos recentes de autenticação, operações e acessos protegidos do sistema.
+                </p>
+            </div>
+        </div>
+
+        <div class="card-body border-bottom">
+            <form method="get" class="row g-3" hx-push-url="true">
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.actor.id_for_label }}">{{ form.actor.label }}</label>
+                    {{ form.actor }}
+                    {% for error in form.actor.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.action.id_for_label }}">{{ form.action.label }}</label>
+                    {{ form.action }}
+                    {% for error in form.action.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.date_from.id_for_label }}">{{ form.date_from.label }}</label>
+                    {{ form.date_from }}
+                    {% for error in form.date_from.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.date_to.id_for_label }}">{{ form.date_to.label }}</label>
+                    {{ form.date_to }}
+                    {% for error in form.date_to.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="{{ form.object_query.id_for_label }}">{{ form.object_query.label }}</label>
+                    {{ form.object_query }}
+                    {% for error in form.object_query.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+                    <a href="{% url 'panel_audit_logs_list' %}" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th>Quando</th>
+                        <th>Ação</th>
+                        <th>Ator</th>
+                        <th>Objeto</th>
+                        <th>Caminho</th>
+                        <th>Request ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for audit_log in audit_logs %}
+                        <tr>
+                            <td class="text-nowrap">{{ audit_log.created_at|date:"d/m/Y H:i:s" }}</td>
+                            <td>
+                                <span class="badge bg-blue-lt">{{ audit_log.action_label }}</span>
+                            </td>
+                            <td>{{ audit_log.actor_display }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ audit_log.object_repr|default:"-" }}</div>
+                                <div class="text-secondary small">
+                                    {{ audit_log.object_verbose_name|default:"Evento" }}
+                                    {% if audit_log.object_id %}
+                                        · #{{ audit_log.object_id }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-nowrap">{{ audit_log.request_method|default:"-" }}</div>
+                                <div class="text-secondary small">{{ audit_log.path|default:"-" }}</div>
+                            </td>
+                            <td><code>{{ audit_log.request_id|default:"-" }}</code></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary">
+                                Nenhum evento encontrado para os filtros informados.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-secondary small">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                <div class="btn-list">
+                    {% if page_obj.has_previous %}
+                        <a
+                            href="?page={{ page_obj.previous_page_number }}{{ page_query }}"
+                            class="btn btn-outline-secondary btn-sm"
+                            hx-get="?page={{ page_obj.previous_page_number }}{{ page_query }}"
+                            hx-push-url="true"
+                        >
+                            Anterior
+                        </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a
+                            href="?page={{ page_obj.next_page_number }}{{ page_query }}"
+                            class="btn btn-outline-secondary btn-sm"
+                            hx-get="?page={{ page_obj.next_page_number }}{{ page_query }}"
+                            hx-push-url="true"
+                        >
+                            Próxima
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

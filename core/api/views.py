@@ -7,11 +7,12 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
+from ..audit import apply_audit_log_filters
 from ..models import ApiResourcePermission, AuditLog
 from .access import get_user_api_access_values
 from .auth import require_api_permission
@@ -134,14 +135,6 @@ def _filter_audit_logs(
     """Aplica os filtros suportados na listagem dos logs de auditoria."""
 
     query = request.GET.get("search", "").strip() or request.GET.get("q", "").strip()
-    if query:
-        queryset = queryset.filter(
-            Q(object_repr__icontains=query)
-            | Q(object_verbose_name__icontains=query)
-            | Q(actor_identifier__icontains=query)
-            | Q(path__icontains=query)
-        )
-
     action = request.GET.get("action", "").strip()
     if action:
         valid_actions = {choice for choice, _label in AuditLog.ACTION_CHOICES}
@@ -156,33 +149,11 @@ def _filter_audit_logs(
                     "allowed_values": sorted(valid_actions),
                 },
             )
-        queryset = queryset.filter(action=action)
-
     app_label = request.GET.get("app_label", "").strip().lower()
-    if app_label:
-        queryset = queryset.filter(content_type__app_label__iexact=app_label)
-
     model = request.GET.get("model", "").strip().lower()
-    if model:
-        queryset = queryset.filter(
-            Q(content_type__model__iexact=model)
-            | Q(object_verbose_name__icontains=model)
-        )
-
     actor = request.GET.get("actor", "").strip()
-    if actor:
-        queryset = queryset.filter(
-            Q(actor__username__icontains=actor)
-            | Q(actor_identifier__icontains=actor)
-        )
-
     object_id = request.GET.get("object_id", "").strip()
-    if object_id:
-        queryset = queryset.filter(object_id=object_id)
-
     path_filter = request.GET.get("path", "").strip()
-    if path_filter:
-        queryset = queryset.filter(path__icontains=path_filter)
 
     date_from, error_response = parse_date_filter(
         request.GET.get("date_from", "").strip(),
@@ -191,8 +162,6 @@ def _filter_audit_logs(
     )
     if error_response:
         return queryset, {}, error_response
-    if date_from:
-        queryset = queryset.filter(created_at__date__gte=date_from)
 
     date_to, error_response = parse_date_filter(
         request.GET.get("date_to", "").strip(),
@@ -201,8 +170,6 @@ def _filter_audit_logs(
     )
     if error_response:
         return queryset, {}, error_response
-    if date_to:
-        queryset = queryset.filter(created_at__date__lte=date_to)
 
     if date_from and date_to and date_from > date_to:
         return queryset, {}, api_error_response(
@@ -212,6 +179,19 @@ def _filter_audit_logs(
             request=request,
             extra_error={"parameter": "date_range"},
         )
+
+    queryset = apply_audit_log_filters(
+        queryset,
+        search=query,
+        action=action,
+        app_label=app_label,
+        model=model,
+        actor=actor,
+        object_id=object_id,
+        path_filter=path_filter,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
     return queryset, build_filters_meta(
         {

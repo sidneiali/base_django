@@ -63,12 +63,10 @@ class AuditLogAdmin(admin.ModelAdmin):
     def actor_identifier_display(self, obj: AuditLog) -> str:
         """Mostra o usuario autenticado ou o identificador digitado."""
 
-        if obj.actor:
-            return obj.actor.get_username()
-        return obj.actor_identifier or "-"
+        return obj.actor_display
 
     @admin.display(description="Request ID")
     def request_id_display(self, obj: AuditLog) -> str:
         """Mostra o identificador da requisição que originou o evento."""
 
-        return str(obj.metadata.get("request_id", "") or "-")
+        return obj.request_id or "-"

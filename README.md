@@ -159,6 +159,8 @@ curl http://127.0.0.1:8000/api/v1/core/health/
 
 Esse endpoint responde com `status`, `timestamp`, `timezone`, dados básicos de rate limit e `request_id`, o que já atende monitoramento simples e smoke checks de plataforma.
 
+Por ora, o projeto mantém apenas esse `healthcheck` leve. Um endpoint separado de `readiness` passa a fazer mais sentido quando houver dependências operacionais adicionais, como fila, cache distribuído ou integrações obrigatórias para o boot.
+
 ## CI
 
 O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop\base_django\.github\workflows\ci.yml) com:
@@ -263,6 +265,7 @@ campos canônicos por `slug`.
 - `/painel/grupos/`: listagem de grupos
 - `/painel/grupos/novo/`: criação de grupo
 - `/painel/grupos/<id>/editar/`: edição de grupo
+- `/painel/auditoria/`: trilha HTML de auditoria com filtros
 - `/admin/`: admin do Django
 
 ## Painel de usuários e grupos
@@ -278,6 +281,7 @@ Permissões exigidas por tela:
 
 - usuários: `auth.view_user`, `auth.add_user`, `auth.change_user`
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
+- auditoria: `core.view_auditlog`
 
 ## Arquivos importantes
 
@@ -296,11 +300,10 @@ Permissões exigidas por tela:
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) é genérica e serve como placeholder até cada app ter sua própria área
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py)
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
+- o painel agora já possui uma tela HTML de auditoria, mas ela ainda não entrou no seed inicial de módulos do dashboard
 - a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
-- a auditoria já existe em model e API, mas ainda não possui uma tela HTML própria no painel
 
 ## Próximos passos sugeridos
 
-- criar tela HTML de auditoria no painel
 - evoluir os módulos iniciais além de `Usuários` e `Grupos`
 - ampliar a cobertura para erros de validação, `403`, redirects e fluxos de edição

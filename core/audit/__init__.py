@@ -8,6 +8,7 @@ from .context import (
     set_audit_context,
 )
 from .logging import create_audit_log
+from .queries import apply_audit_log_filters
 from .snapshots import (
     build_changes,
     build_instance_snapshot,
@@ -16,6 +17,7 @@ from .snapshots import (
 
 __all__ = [
     "AuditContext",
+    "apply_audit_log_filters",
     "build_changes",
     "build_instance_snapshot",
     "create_audit_log",

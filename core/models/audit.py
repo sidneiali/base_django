@@ -72,3 +72,17 @@ class AuditLog(models.Model):
         """Retorna o label legível da ação armazenada."""
 
         return str(dict(self.ACTION_CHOICES).get(self.action, self.action))
+
+    @property
+    def actor_display(self) -> str:
+        """Resume o ator legível para consumo em templates e telas internas."""
+
+        if self.actor:
+            return self.actor.get_username()
+        return self.actor_identifier or "-"
+
+    @property
+    def request_id(self) -> str:
+        """Expõe o request id armazenado na metadata quando existir."""
+
+        return str(self.metadata.get("request_id", "") or "")
