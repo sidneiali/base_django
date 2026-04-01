@@ -101,6 +101,9 @@ body {
 }
 
 .app-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     color: rgba(255, 255, 255, 0.72) !important;
 }
 
@@ -112,6 +115,30 @@ body {
 
 .app-sidebar .text-secondary {
     color: rgba(226, 232, 240, 0.5) !important;
+}
+
+.app-sidebar__section-label {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.app-sidebar__group-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+}
+
+.app-sidebar .nav-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    flex: 0 0 1.1rem;
+    font-size: 1rem;
+    opacity: 0.88;
+}
+
+.app-sidebar .nav-link.disabled .nav-link-icon {
+    opacity: 0.55;
 }
 
 .app-topbar-shell {

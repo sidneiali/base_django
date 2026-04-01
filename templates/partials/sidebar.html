@@ -41,19 +41,32 @@
 
         {% if modules %}
           <li class="nav-item mt-3">
-            <div class="text-secondary small text-uppercase px-3">
+            <div class="app-sidebar__section-label text-secondary small text-uppercase px-3">
               Módulos
             </div>
           </li>
 
           {% for group_name, group_modules in modules.items %}
+            <li class="nav-item {% if not forloop.first %}mt-3{% endif %}">
+              <div
+                class="app-sidebar__group-label text-secondary small text-uppercase px-3"
+                data-sidebar-group="{{ group_name }}"
+              >
+                {{ group_name }}
+              </div>
+            </li>
+
             {% for module in group_modules %}
               <li class="nav-item">
                 <a
                   class="nav-link {% if not module.has_access %}disabled opacity-50{% endif %}"
                   href="{% if module.has_access %}{{ module.url }}{% else %}#{% endif %}"
                   data-nav-prefix="{{ module.url }}"
+                  aria-disabled="{% if module.has_access %}false{% else %}true{% endif %}"
                 >
+                  <span class="nav-link-icon">
+                    <i class="{{ module.icon }}"></i>
+                  </span>
                   <span class="nav-link-title">{{ module.name }}</span>
                 </a>
               </li>

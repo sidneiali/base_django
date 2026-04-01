@@ -106,6 +106,7 @@ Próximas opções naturais:
 
 - iniciar uma feature nova sobre a base já modularizada
 - seguir usando `mypy` como fonte principal de tipagem e deixar o `Pylance` focado em navegação/autocomplete no workspace
+- criar fixtures ou comando de seed para módulos iniciais
 
 ## Próximos Cortes de Arquitetura
 

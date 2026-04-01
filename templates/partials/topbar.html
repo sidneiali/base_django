@@ -32,6 +32,7 @@
                 hx-get="{% url 'account_password_change' %}"
                 hx-target="#page-content"
                 hx-push-url="true"
+                data-topbar-close-menu="true"
               >
                 Minha senha
               </a>
@@ -52,19 +53,31 @@
 
                 <div class="collapse topbar-settings-collapse" id="topbar-configuracoes">
                   {% if perms.auth.view_user %}
-                    <a class="dropdown-item topbar-settings-link" href="{% url 'panel_users_list' %}">
+                    <a
+                      class="dropdown-item topbar-settings-link"
+                      href="{% url 'panel_users_list' %}"
+                      data-topbar-close-menu="true"
+                    >
                       Usuários
                     </a>
                   {% endif %}
 
                   {% if perms.auth.view_group %}
-                    <a class="dropdown-item topbar-settings-link" href="{% url 'panel_groups_list' %}">
+                    <a
+                      class="dropdown-item topbar-settings-link"
+                      href="{% url 'panel_groups_list' %}"
+                      data-topbar-close-menu="true"
+                    >
                       Grupos
                     </a>
                   {% endif %}
 
                   {% if request.user.is_superuser %}
-                    <a class="dropdown-item topbar-settings-link" href="{% url 'admin:auth_user_changelist' %}">
+                    <a
+                      class="dropdown-item topbar-settings-link"
+                      href="{% url 'admin:auth_user_changelist' %}"
+                      data-topbar-close-menu="true"
+                    >
                       Super Usuário
                     </a>
                   {% endif %}
