@@ -123,6 +123,29 @@ class PanelModuleViewTests(TestCase):
         self.assertEqual(module.url_name, "panel_audit_logs_list")
         self.assertTrue(module.is_active)
 
+    def test_module_create_without_htmx_redirects_to_list(self) -> None:
+        """Criar módulo sem HTMX deve redirecionar com 302 para a listagem."""
+
+        self._login_with_permissions("add_module")
+
+        response = self.client.post(
+            reverse("panel_module_create"),
+            {
+                "name": "Novidades",
+                "slug": "novidades",
+                "description": "Painel de novidades",
+                "icon": "ti ti-bell",
+                "url_name": "module_entry",
+                "menu_group": "Comunicação",
+                "order": "15",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("panel_modules_list"))
+        self.assertTrue(Module.objects.filter(slug="novidades").exists())
+
     def test_module_create_rejects_invalid_route_name(self) -> None:
         """O formulário deve bloquear rotas inexistentes ou que peçam argumentos."""
 
@@ -148,6 +171,31 @@ class PanelModuleViewTests(TestCase):
             "Informe um nome de rota válido sem argumentos obrigatórios.",
         )
         self.assertFalse(Module.objects.filter(slug="destino-quebrado").exists())
+
+    def test_module_create_invalid_htmx_keeps_form_without_redirect(self) -> None:
+        """Submissão inválida via HTMX deve rerenderizar o fragmento do form."""
+
+        self._login_with_permissions("add_module")
+
+        response = self.client.post(
+            reverse("panel_module_create"),
+            {
+                "name": "",
+                "slug": "sem-nome",
+                "description": "Teste",
+                "icon": "ti ti-alert-triangle",
+                "url_name": "module_entry",
+                "menu_group": "Teste",
+                "order": "10",
+                "is_active": "on",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("HX-Location", response.headers)
+        self.assertContains(response, 'data-page-title="Novo módulo"', html=False)
+        self.assertContains(response, "Este campo é obrigatório.")
 
     def test_module_update_can_switch_to_generic_entry_and_clear_permission(self) -> None:
         """A edição deve permitir voltar para a entrada genérica sem permissão."""
@@ -189,6 +237,43 @@ class PanelModuleViewTests(TestCase):
         self.assertEqual(module.permission_codename, "")
         self.assertEqual(module.order, 35)
 
+    def test_module_update_without_htmx_redirects_to_list(self) -> None:
+        """Edição sem HTMX deve redirecionar para a listagem."""
+
+        self._login_with_permissions("change_module")
+        module = Module.objects.create(
+            name="Operação",
+            slug="operacao",
+            description="Área operacional",
+            icon="ti ti-settings",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+
+        response = self.client.post(
+            reverse("panel_module_update", args=[module.pk]),
+            {
+                "name": "Operação revisada",
+                "slug": "operacao",
+                "description": "Área operacional revisada",
+                "icon": "ti ti-settings",
+                "url_name": "module_entry",
+                "menu_group": "Operação",
+                "order": "12",
+                "is_active": "on",
+                "permission": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("panel_modules_list"))
+        module.refresh_from_db()
+        self.assertEqual(module.name, "Operação revisada")
+
     def test_module_deactivate_and_activate_toggle_state(self) -> None:
         """A listagem deve permitir inativar e reativar módulos com POST."""
 
@@ -224,6 +309,52 @@ class PanelModuleViewTests(TestCase):
         module.refresh_from_db()
         self.assertTrue(module.is_active)
 
+    def test_module_activate_and_deactivate_require_change_permission(self) -> None:
+        """Ações rápidas devem respeitar a permissão de alteração do módulo."""
+
+        self._login_with_permissions()
+        module = Module.objects.create(
+            name="Pedidos",
+            slug="pedidos",
+            description="Fluxo de pedidos",
+            icon="ti ti-shopping-cart",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+
+        deactivate_response = self.client.post(reverse("panel_module_deactivate", args=[module.pk]))
+        activate_response = self.client.post(reverse("panel_module_activate", args=[module.pk]))
+
+        self.assertEqual(deactivate_response.status_code, 403)
+        self.assertEqual(activate_response.status_code, 403)
+
+    def test_module_activate_and_deactivate_reject_get_requests(self) -> None:
+        """As ações rápidas devem aceitar apenas POST."""
+
+        self._login_with_permissions("change_module")
+        module = Module.objects.create(
+            name="Pedidos",
+            slug="pedidos",
+            description="Fluxo de pedidos",
+            icon="ti ti-shopping-cart",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+
+        deactivate_response = self.client.get(reverse("panel_module_deactivate", args=[module.pk]))
+        activate_response = self.client.get(reverse("panel_module_activate", args=[module.pk]))
+
+        self.assertEqual(deactivate_response.status_code, 405)
+        self.assertEqual(activate_response.status_code, 405)
+
     def test_module_delete_blocks_canonical_seed_module(self) -> None:
         """Módulos canônicos não podem ser excluídos pelo painel."""
 
@@ -251,6 +382,27 @@ class PanelModuleViewTests(TestCase):
         )
         self.assertTrue(Module.objects.filter(pk=module.pk).exists())
 
+    def test_module_delete_requires_delete_permission(self) -> None:
+        """A confirmação de exclusão deve respeitar a permissão de delete."""
+
+        self._login_with_permissions()
+        module = Module.objects.create(
+            name="Descartável",
+            slug="descartavel",
+            description="Módulo temporário",
+            icon="ti ti-trash",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Teste",
+            order=10,
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_module_delete", args=[module.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
     def test_module_delete_requires_inactive_module(self) -> None:
         """A exclusão deve ser bloqueada enquanto o módulo ainda estiver ativo."""
 
@@ -277,6 +429,30 @@ class PanelModuleViewTests(TestCase):
             status_code=400,
         )
         self.assertTrue(Module.objects.filter(pk=module.pk).exists())
+
+    def test_module_delete_confirmation_renders_for_inactive_custom_module(self) -> None:
+        """A tela de confirmação deve abrir quando a exclusão for permitida."""
+
+        self._login_with_permissions("delete_module")
+        module = Module.objects.create(
+            name="Arquivo morto",
+            slug="arquivo-morto",
+            description="Módulo descontinuado",
+            icon="ti ti-archive",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Legado",
+            order=50,
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_module_delete", args=[module.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-page-title="Excluir módulo: Arquivo morto"', html=False)
+        self.assertContains(response, "Esta ação remove o módulo do dashboard e do sidebar.")
+        self.assertContains(response, "Excluir módulo")
 
     def test_module_delete_removes_inactive_custom_module(self) -> None:
         """Módulos customizados e inativos podem ser excluídos com segurança."""
