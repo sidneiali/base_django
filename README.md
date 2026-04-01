@@ -142,6 +142,23 @@ Exemplo prático:
 
 Com isso, o card abrirá a rota nomeada `panel_users_list` e só ficará disponível para quem tiver a permissão `auth.view_user`.
 
+## Seed inicial dos módulos
+
+Para bootstrap local, o projeto possui um comando idempotente para criar ou atualizar
+os módulos iniciais do dashboard:
+
+```bash
+uv run python manage.py seed_initial_modules
+```
+
+Hoje o seed cria o conjunto mínimo de módulos internos:
+
+- `Usuários`
+- `Grupos`
+
+O comando pode ser executado novamente sem duplicar registros; ele reconcilia os
+campos canônicos por `slug`.
+
 ## Rotas principais
 
 - `/login/`: tela de autenticação
