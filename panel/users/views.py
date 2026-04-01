@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
-from ..helpers import build_dual_list_choices
+from ..dual_list import build_dual_list_choices
 from .forms import PanelUserForm
 
 

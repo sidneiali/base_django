@@ -22,6 +22,7 @@ Estado atual da arquitetura:
 - a API já está organizada em:
   - `core/api/`
   - `panel/api/`
+  - `core/api/types.py`
 - os testes já foram separados em pacote:
   - `core/tests/`
   - `panel/tests/`
@@ -53,23 +54,25 @@ Estado atual da arquitetura:
 
 ## Últimos Commits Relevantes
 
+- `34bcacc` `chore(typing): align API types with mypy and pylance`
+- `65f37d9` `refactor(core): split admin users and request stack by package`
+- `a03063c` `refactor(apps): split admin and tests by domain`
 - `13f3e09` `refactor(core): split models by domain`
-- `4a22c4f` `refactor(apps): split core and panel by domain`
 - `054aee9` `refactor(api): reorganize core and panel api packages`
-- `d6aca54` `feat(api): standardize v1 responses and docs`
-- `8491f92` `feat(api): add versioned openapi docs and request ids`
 
 ## Última Validação
 
-Executado após a separação de `core/tests.py`, `panel/tests.py`, `core/admin.py`, `core/audit.py`, `core/middleware.py` e `core/signals.py`:
+Executado após os commits `65f37d9` e `34bcacc`:
 
 - `uv run --extra dev ruff check config core panel`
+- `uv run --extra dev mypy config core panel`
 - `.\.venv\Scripts\python.exe manage.py check`
 - `.\.venv\Scripts\python.exe manage.py test core.tests panel.tests`
 
 Resultado:
 
 - `ruff` ok
+- `mypy` ok
 - `check` ok
 - `36` testes passando
 - discovery funcionando com:
@@ -85,25 +88,15 @@ Resultado:
 
 ## Worktree Atual
 
-Alterações locais esperadas desta etapa:
+Após os dois últimos commits, o worktree ficou praticamente limpo.
 
-- `core/tests.py` removido
-- `panel/tests.py` removido
-- `core/admin.py` removido
-- `core/audit.py` removido
-- `core/middleware.py` removido
-- `core/signals.py` removido
-- `core/tests/` criado
-- `panel/tests/` criado
-- `core/admin/` criado
-- `core/audit/` criado
-- `core/middleware/` criado
-- `core/signals/` criado
-- `CONTINUACAO.md` atualizado
+Alteração local restante:
+
+- `.gitignore`
 
 Observação:
 
-- existe uma alteração local em `.gitignore` que não faz parte desta etapa; tratar com cuidado antes de qualquer commit
+- a alteração em `.gitignore` não faz parte dos commits `65f37d9` e `34bcacc`; tratar com cuidado antes de qualquer novo commit
 
 ## Próximo Passo
 
@@ -111,9 +104,8 @@ Os cortes estruturais principais listados para `core/` foram concluídos.
 
 Próximas opções naturais:
 
-- revisar `panel/helpers.py` e decidir se ele deve ser renomeado para algo mais específico
 - iniciar uma feature nova sobre a base já modularizada
-- revisar se vale separar `core/forms.py`, `core/views.py` ou `panel/forms.py` além do nível atual
+- seguir usando `mypy` como fonte principal de tipagem e deixar o `Pylance` focado em navegação/autocomplete no workspace
 
 ## Próximos Cortes de Arquitetura
 
@@ -131,6 +123,11 @@ Arquivos que podem ficar como estão por enquanto:
 - `core/context_processors.py`
 - `core/htmx.py`
 
+Observação:
+
+- `core/forms.py` e `core/views.py` hoje funcionam como fachadas pequenas de compatibilidade
+- não valem novo corte por enquanto
+
 ### Panel
 
 Depois da pasta `tests/`, `panel/` está bem mais estável.
@@ -143,12 +140,12 @@ Arquivos que podem ficar como estão por enquanto:
 - `panel/models.py`
 - `panel/admin.py`
 - `panel/urls.py`
+- `panel/dual_list.py`
 
-Observação sobre `panel/helpers.py`:
+Observação:
 
-- o ideal não é mover automaticamente para `utils/`
-- primeiro vale decidir a responsabilidade real dele
-- se continuar ligado a formulário/apresentação, o melhor é renomear para algo mais específico e manter perto do domínio
+- `panel/forms.py` também está reduzido a uma fachada simples
+- não há ganho real em quebrá-lo mais neste momento
 
 ## Observações
 

@@ -183,7 +183,7 @@ Permissões exigidas por tela:
 - o `README` agora descreve a base, mas o projeto ainda está em fase inicial
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) é genérica e serve como placeholder até cada app ter sua própria área
 - o context processor [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) ainda devolve `modules` vazio; hoje o dashboard exibe os módulos corretamente, mas o sidebar ainda não usa a mesma fonte
-- os arquivos de teste em [`core/tests.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests.py) e [`panel/tests.py`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests.py) ainda estão sem cobertura real
+- os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas a cobertura ainda é parcial
 - `DEBUG=True` e `sqlite3` indicam configuração voltada para desenvolvimento local
 
 ## Próximos passos sugeridos

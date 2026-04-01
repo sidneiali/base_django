@@ -1,4 +1,4 @@
-"""Helpers compartilhados do painel administrativo."""
+"""Helpers específicos para listas duplas nos formulários do painel."""
 
 from collections.abc import Iterable
 from typing import TypeAlias, cast
