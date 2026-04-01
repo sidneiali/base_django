@@ -34,7 +34,21 @@ class Module(models.Model):
             return ""
         return f"{self.app_label}.{self.permission_codename}"
 
+    @property
+    def uses_generic_entry(self) -> bool:
+        """Indica se o módulo ainda usa a entrada genérica por slug."""
+
+        return self.url_name == "module_entry"
+
+    @property
+    def permission_label(self) -> str:
+        """Expõe uma label amigável da permissão exigida pelo módulo."""
+
+        return self.full_permission or "Apenas login no sistema"
+
     def get_absolute_url(self) -> str:
         """Resolve a URL nomeada configurada para o modulo."""
 
+        if self.uses_generic_entry:
+            return reverse("module_entry", kwargs={"slug": self.slug})
         return reverse(self.url_name)

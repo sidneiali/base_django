@@ -236,6 +236,10 @@ Exemplo prático:
 
 Com isso, o card abrirá a rota nomeada `panel_users_list` e só ficará disponível para quem tiver a permissão `auth.view_user`.
 
+Se um módulo ainda não tiver área dedicada, ele também pode usar `url_name=module_entry`.
+Nesse caso, o dashboard resolve a rota genérica por `slug` em `/modulo/<slug>/`, o que
+permite publicar o módulo no shell enquanto a tela final ainda está em construção.
+
 ## Seed inicial dos módulos
 
 Para bootstrap local, o projeto possui um comando idempotente para criar ou atualizar
@@ -249,6 +253,8 @@ Hoje o seed cria o conjunto mínimo de módulos internos:
 
 - `Usuários`
 - `Grupos`
+- `Auditoria`
+- `Documentação da API`
 
 O comando pode ser executado novamente sem duplicar registros; ele reconcilia os
 campos canônicos por `slug`.
@@ -300,10 +306,9 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 
 ## Estado atual e limitações
 
-- a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) é genérica e serve como placeholder até cada app ter sua própria área
+- a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) continua genérica, mas agora já exibe metadados úteis do módulo enquanto a área final ainda está em preparação
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
-- o painel agora já possui uma tela HTML de auditoria, mas ela ainda não entrou no seed inicial de módulos do dashboard
 - a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
 
 ## Próximos passos sugeridos

@@ -1,11 +1,61 @@
 <div data-page-title="{{ module.name }}">
-    <div class="card">
-        <div class="card-body">
-            <h1 class="h2">{{ module.name }}</h1>
-            <p class="text-secondary">{{ module.description }}</p>
-            <div class="alert alert-info mb-0">
-                Esta é a entrada genérica do módulo <strong>{{ module.name }}</strong>.
-                Depois você cria um app próprio e troca a rota para a área real.
+    <div class="page-header d-print-none mb-4">
+        <div class="row align-items-center">
+            <div class="col">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="avatar avatar-lg">
+                        <i class="{{ module.icon|default:'ti ti-layout-grid' }}"></i>
+                    </span>
+                    <div>
+                        <div class="text-secondary text-uppercase small">Módulo genérico</div>
+                        <h1 class="page-title mb-1">{{ module.name }}</h1>
+                        <div class="text-secondary">{{ module.description }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                    Voltar ao dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cards">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                        <h2 class="card-title mb-0">Status da área</h2>
+                        <span class="badge bg-azure-lt">Em preparação</span>
+                    </div>
+                    <p class="text-secondary">
+                        Este módulo já está publicado no dashboard e no sidebar, mas ainda usa
+                        a entrada genérica enquanto a área dedicada não é implementada.
+                    </p>
+                    <div class="alert alert-info mb-0">
+                        Quando a tela real estiver pronta, basta trocar o <code>url_name</code>
+                        do módulo para a rota definitiva.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Resumo operacional</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-5 text-secondary">Slug</dt>
+                        <dd class="col-7"><code>{{ module.slug }}</code></dd>
+                        <dt class="col-5 text-secondary">Grupo</dt>
+                        <dd class="col-7">{{ module.menu_group }}</dd>
+                        <dt class="col-5 text-secondary">Permissão</dt>
+                        <dd class="col-7">{{ module.permission_label }}</dd>
+                        <dt class="col-5 text-secondary">Rota</dt>
+                        <dd class="col-7"><code>{{ module.url_name }}</code></dd>
+                    </dl>
+                </div>
             </div>
         </div>
     </div>

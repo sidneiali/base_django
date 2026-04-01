@@ -18,9 +18,11 @@ class SeedInitialModulesCommandTests(TestCase):
 
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 2)
+        self.assertEqual(Module.objects.count(), 4)
         self.assertTrue(Module.objects.filter(slug="usuarios").exists())
         self.assertTrue(Module.objects.filter(slug="grupos").exists())
+        self.assertTrue(Module.objects.filter(slug="auditoria").exists())
+        self.assertTrue(Module.objects.filter(slug="documentacao-api").exists())
 
     def test_command_is_idempotent_and_refreshes_canonical_fields(self) -> None:
         """Rerodar o seed nao deve duplicar registros e deve restaurar o catalogo."""
@@ -35,10 +37,10 @@ class SeedInitialModulesCommandTests(TestCase):
         stdout = StringIO()
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 2)
+        self.assertEqual(Module.objects.count(), 4)
 
         users_module = Module.objects.get(slug="usuarios")
         self.assertEqual(users_module.description, "Gestão de usuários do sistema")
         self.assertEqual(users_module.menu_group, "Configurações")
         self.assertEqual(users_module.order, 10)
-        self.assertIn("0 criado(s), 2 atualizado(s)", stdout.getvalue())
+        self.assertIn("0 criado(s), 4 atualizado(s)", stdout.getvalue())
