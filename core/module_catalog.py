@@ -85,3 +85,11 @@ INITIAL_MODULES: tuple[ModuleSeedDefinition, ...] = (
         order=40,
     ),
 )
+
+INITIAL_MODULE_SLUGS = frozenset(definition.slug for definition in INITIAL_MODULES)
+
+
+def is_initial_module_slug(slug: str) -> bool:
+    """Indica se o slug informado pertence ao catálogo canônico inicial."""
+
+    return slug in INITIAL_MODULE_SLUGS

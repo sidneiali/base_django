@@ -3,6 +3,8 @@
 from django.db import models
 from django.urls import reverse
 
+from core.module_catalog import is_initial_module_slug
+
 
 class Module(models.Model):
     """Representa uma area funcional exibida no dashboard."""
@@ -45,6 +47,22 @@ class Module(models.Model):
         """Expõe uma label amigável da permissão exigida pelo módulo."""
 
         return self.full_permission or "Apenas login no sistema"
+
+    @property
+    def is_initial_module(self) -> bool:
+        """Indica se o módulo pertence ao seed canônico do projeto."""
+
+        return is_initial_module_slug(self.slug)
+
+    @property
+    def delete_block_reason(self) -> str:
+        """Explica por que o módulo não pode ser excluído com segurança."""
+
+        if self.is_initial_module:
+            return "Módulos canônicos do seed não podem ser excluídos pelo painel."
+        if self.is_active:
+            return "Inative o módulo antes de solicitar a exclusão."
+        return ""
 
     def get_absolute_url(self) -> str:
         """Resolve a URL nomeada configurada para o modulo."""

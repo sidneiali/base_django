@@ -285,6 +285,8 @@ O app [`panel`](c:\Users\sidne\OneDrive\Desktop\base_django\panel) oferece uma c
 
 - usuários comuns podem ser criados e editados sem virar `staff` ou `superuser`
 - módulos do dashboard podem ser cadastrados, editados e publicados sem depender do admin
+- módulos canônicos do seed podem ser inativados, mas não podem ser excluídos pelo painel
+- módulos customizados precisam estar inativos antes de poderem ser excluídos com segurança
 - grupos protegidos não aparecem para edição: `Superadmin`, `Root` e `Infra`
 - permissões de apps internos do Django como `admin`, `contenttypes` e `sessions` não são exibidas no formulário de grupos
 - os nomes de permissões são traduzidos para uma leitura mais amigável em português
@@ -315,7 +317,7 @@ Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, 
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) continua genérica, mas agora já exibe metadados úteis do módulo enquanto a área final ainda está em preparação
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
-- o painel agora já possui CRUD HTML para módulos, mas ainda não cobre exclusão nem API JSON equivalente
+- o painel agora já possui CRUD HTML para módulos com ativação segura e exclusão protegida, mas ainda não cobre API JSON equivalente
 - a API do painel ainda cobre apenas usuários; grupos ainda não possuem a mesma paridade JSON
 
 ## Próximos passos sugeridos

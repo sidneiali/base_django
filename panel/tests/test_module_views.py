@@ -188,3 +188,117 @@ class PanelModuleViewTests(TestCase):
         self.assertEqual(module.app_label, "")
         self.assertEqual(module.permission_codename, "")
         self.assertEqual(module.order, 35)
+
+    def test_module_deactivate_and_activate_toggle_state(self) -> None:
+        """A listagem deve permitir inativar e reativar módulos com POST."""
+
+        self._login_with_permissions("change_module")
+        module = Module.objects.create(
+            name="Expedição",
+            slug="expedicao",
+            description="Fluxo de saída",
+            icon="ti ti-truck",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+
+        deactivate_response = self.client.post(
+            reverse("panel_module_deactivate", args=[module.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(deactivate_response.status_code, 204)
+        module.refresh_from_db()
+        self.assertFalse(module.is_active)
+
+        activate_response = self.client.post(
+            reverse("panel_module_activate", args=[module.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(activate_response.status_code, 204)
+        module.refresh_from_db()
+        self.assertTrue(module.is_active)
+
+    def test_module_delete_blocks_canonical_seed_module(self) -> None:
+        """Módulos canônicos não podem ser excluídos pelo painel."""
+
+        self._login_with_permissions("delete_module")
+        module = Module.objects.create(
+            name="Módulos",
+            slug="modulos",
+            description="Cadastro canônico",
+            icon="ti ti-layout-grid",
+            url_name="panel_modules_list",
+            app_label="core",
+            permission_codename="view_module",
+            menu_group="Configurações",
+            order=20,
+            is_active=False,
+        )
+
+        response = self.client.post(reverse("panel_module_delete", args=[module.pk]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(
+            response,
+            "Módulos canônicos do seed não podem ser excluídos pelo painel.",
+            status_code=400,
+        )
+        self.assertTrue(Module.objects.filter(pk=module.pk).exists())
+
+    def test_module_delete_requires_inactive_module(self) -> None:
+        """A exclusão deve ser bloqueada enquanto o módulo ainda estiver ativo."""
+
+        self._login_with_permissions("delete_module")
+        module = Module.objects.create(
+            name="CRM legado",
+            slug="crm-legado",
+            description="Módulo em retirada",
+            icon="ti ti-users",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Comercial",
+            order=30,
+            is_active=True,
+        )
+
+        response = self.client.post(reverse("panel_module_delete", args=[module.pk]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(
+            response,
+            "Inative o módulo antes de solicitar a exclusão.",
+            status_code=400,
+        )
+        self.assertTrue(Module.objects.filter(pk=module.pk).exists())
+
+    def test_module_delete_removes_inactive_custom_module(self) -> None:
+        """Módulos customizados e inativos podem ser excluídos com segurança."""
+
+        self._login_with_permissions("delete_module")
+        module = Module.objects.create(
+            name="Campanhas antigas",
+            slug="campanhas-antigas",
+            description="Módulo descontinuado",
+            icon="ti ti-speakerphone",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Marketing",
+            order=40,
+            is_active=False,
+        )
+
+        response = self.client.post(
+            reverse("panel_module_delete", args=[module.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Module.objects.filter(pk=module.pk).exists())

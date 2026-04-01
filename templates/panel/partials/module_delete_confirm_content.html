@@ -1,0 +1,62 @@
+<div data-page-title="{{ page_title }}">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Módulo</div>
+                    <div class="fw-semibold">{{ module.name }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Slug</div>
+                    <div><code>{{ module.slug }}</code></div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Grupo</div>
+                    <div>{{ module.menu_group }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Status</div>
+                    <div>
+                        {% if module.is_active %}
+                            <span class="badge bg-success-lt">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-danger-lt">Inativo</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if delete_block_reason %}
+                <div class="alert alert-warning">
+                    {{ delete_block_reason }}
+                </div>
+                <p class="text-secondary mb-0">
+                    Se este módulo ainda fizer parte da navegação oficial, prefira apenas
+                    inativá-lo para removê-lo do dashboard e do sidebar sem perder o cadastro.
+                </p>
+            {% else %}
+                <div class="alert alert-danger">
+                    Esta ação remove o módulo do dashboard e do sidebar. Ela não pode ser desfeita.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            {% if not delete_block_reason %}
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        Excluir módulo
+                    </button>
+                </form>
+            {% endif %}
+            <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary">
+                Voltar
+            </a>
+        </div>
+    </div>
+</div>
