@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+import time
 import unittest
 from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from core.models import AuditLog
+from core.models import AuditLog, Module
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -44,6 +45,27 @@ def _find_edge_binary() -> str | None:
     return None
 
 
+def _env_flag(name: str, default: bool) -> bool:
+    """Converte flags de ambiente em booleanos previsíveis."""
+
+    raw_value = os.environ.get(name, "").strip().lower()
+    if not raw_value:
+        return default
+    return raw_value not in {"0", "false", "no", "off"}
+
+
+def _env_int(name: str, default: int) -> int:
+    """Lê inteiros de ambiente com fallback seguro."""
+
+    raw_value = os.environ.get(name, "").strip()
+    if not raw_value:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
 class PanelE2ESmokeTests(StaticLiveServerTestCase):
     """Valida no navegador real os fluxos críticos de autenticação e navegação."""
 
@@ -52,6 +74,8 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
     wait: WebDriverWait
     username = "e2e-user"
     password = "SenhaSegura@123"
+    headless = True
+    slow_mo_seconds = 0.0
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -65,9 +89,13 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
                 "Microsoft Edge não encontrado. Defina E2E_EDGE_BINARY para habilitar os testes E2E."
             )
 
+        cls.headless = _env_flag("E2E_HEADLESS", default=True)
+        cls.slow_mo_seconds = max(_env_int("E2E_SLOW_MO_MS", 0), 0) / 1000
+
         options = EdgeOptions()
         options.binary_location = edge_binary
-        options.add_argument("--headless=new")
+        if cls.headless:
+            options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1440,1200")
 
@@ -99,11 +127,13 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             email="e2e-user@example.com",
             password=self.password,
         )
+        Module.objects.filter(slug__startswith="e2e-").delete()
 
     def _open(self, path: str) -> None:
         """Abre um caminho relativo do projeto no live server."""
 
         self.browser.get(f"{self.live_server_url}{path}")
+        self._pause_for_demo()
 
     def _test_user(self):
         """Retorna o usuário principal usado pelos cenários E2E."""
@@ -115,6 +145,12 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
 
         permissions = Permission.objects.filter(codename__in=codenames)
         self._test_user().user_permissions.add(*permissions)
+
+    def _pause_for_demo(self) -> None:
+        """Desacelera o teste quando o modo visível for usado manualmente."""
+
+        if self.slow_mo_seconds > 0:
+            time.sleep(self.slow_mo_seconds)
 
     def _login(self) -> None:
         """Realiza login pelo formulário real da aplicação."""
@@ -136,6 +172,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
         )
         submit_button.click()
+        self._pause_for_demo()
 
         self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Dashboard"]'))
@@ -148,6 +185,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.element_to_be_clickable((By.CSS_SELECTOR, "[aria-label='Abrir menu do usuário']"))
         )
         toggle.click()
+        self._pause_for_demo()
         self.wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, ".dropdown-menu.show"))
         )
@@ -184,6 +222,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".dropdown-menu.show button[type='submit']"))
         )
         logout_button.click()
+        self._pause_for_demo()
 
         self.wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, ".auth-cover-form-header__title"))
@@ -201,6 +240,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.element_to_be_clickable((By.LINK_TEXT, "Minha senha"))
         )
         password_link.click()
+        self._pause_for_demo()
 
         self.wait.until(
             lambda browser: browser.current_url.endswith(
@@ -253,6 +293,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             "form[method='get'] button[type='submit']",
         )
         submit_button.click()
+        self._pause_for_demo()
 
         self.wait.until(lambda browser: "object_query=req-filter-match" in browser.current_url)
         self.wait.until(
@@ -283,6 +324,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.element_to_be_clickable((By.LINK_TEXT, "Detalhes"))
         )
         detail_link.click()
+        self._pause_for_demo()
 
         self.wait.until(
             EC.presence_of_element_located(
@@ -298,9 +340,143 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         back_href = back_link.get_attribute("href") or ""
         self.assertIn(query, back_href)
         back_link.click()
+        self._pause_for_demo()
 
         self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Auditoria"]'))
         )
         self.wait.until(lambda browser: "object_query=req-detail-smoke" in browser.current_url)
         self.assertIn("Evento detalhado", self.browser.page_source)
+
+    def _module_row_locator(self, module_name: str) -> tuple[str, str]:
+        """Monta o locator da linha da tabela correspondente ao módulo informado."""
+
+        xpath = (
+            "//tbody/tr[.//div[contains(@class, 'fw-semibold')][contains(., "
+            f"'{module_name}')]]"
+        )
+        return (By.XPATH, xpath)
+
+    def _module_row(self, module_name: str):
+        """Localiza a linha da tabela correspondente ao módulo informado."""
+
+        return self.wait.until(
+            EC.presence_of_element_located(self._module_row_locator(module_name))
+        )
+
+    def test_modules_list_filter_smoke(self) -> None:
+        """A listagem de módulos deve filtrar resultados reais no navegador."""
+
+        self._grant_permissions("view_module")
+        Module.objects.create(
+            name="E2E Financeiro",
+            slug="e2e-financeiro",
+            description="Fluxo financeiro",
+            icon="ti ti-cash",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+        Module.objects.create(
+            name="E2E CRM",
+            slug="e2e-crm",
+            description="Fluxo comercial",
+            icon="ti ti-users",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=20,
+            is_active=True,
+        )
+
+        self._login()
+        self._open(reverse("panel_modules_list"))
+
+        query_input = self.wait.until(
+            EC.visibility_of_element_located((By.NAME, "q"))
+        )
+        query_input.clear()
+        query_input.send_keys("financeiro")
+
+        search_button = self.browser.find_element(
+            By.CSS_SELECTOR,
+            "form[method='get'] button[type='submit']",
+        )
+        search_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(lambda browser: "q=financeiro" in browser.current_url)
+        self.wait.until(
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "E2E Financeiro")
+        )
+        self.assertIn("E2E Financeiro", self.browser.page_source)
+        self.assertNotIn("E2E CRM", self.browser.page_source)
+
+    def test_module_create_and_toggle_status_smoke(self) -> None:
+        """O operador deve conseguir criar, inativar e reativar um módulo no navegador."""
+
+        self._grant_permissions("view_module", "add_module", "change_module")
+
+        self._login()
+        self._open(reverse("panel_modules_list"))
+
+        new_link = self.wait.until(
+            EC.element_to_be_clickable((By.LINK_TEXT, "Novo módulo"))
+        )
+        new_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Novo módulo"]'))
+        )
+        self.browser.find_element(By.NAME, "name").send_keys("E2E Módulo")
+        self.browser.find_element(By.NAME, "slug").send_keys("e2e-modulo")
+        self.browser.find_element(By.NAME, "description").send_keys("Criado pelo smoke test")
+        self.browser.find_element(By.NAME, "icon").send_keys("ti ti-layout-grid")
+        self.browser.find_element(By.NAME, "menu_group").clear()
+        self.browser.find_element(By.NAME, "menu_group").send_keys("Operação")
+        self.browser.find_element(By.NAME, "url_name").clear()
+        self.browser.find_element(By.NAME, "url_name").send_keys("module_entry")
+        order_input = self.browser.find_element(By.NAME, "order")
+        order_input.clear()
+        order_input.send_keys("25")
+
+        save_button = self.browser.find_element(By.CSS_SELECTOR, "#btn-salvar-module")
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Módulos"]'))
+        )
+        self.wait.until(
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "E2E Módulo")
+        )
+        self.assertTrue(Module.objects.filter(slug="e2e-modulo").exists())
+
+        row_locator = self._module_row_locator("E2E Módulo")
+        row = self.wait.until(EC.presence_of_element_located(row_locator))
+        self.assertIn("Ativo", row.text)
+        deactivate_button = row.find_element(By.XPATH, ".//button[normalize-space()='Inativar']")
+        deactivate_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(row_locator, "Inativo")
+        )
+        module = Module.objects.get(slug="e2e-modulo")
+        self.assertFalse(module.is_active)
+
+        row = self.wait.until(EC.presence_of_element_located(row_locator))
+        activate_button = row.find_element(By.XPATH, ".//button[normalize-space()='Ativar']")
+        activate_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(row_locator, "Ativo")
+        )
+        module.refresh_from_db()
+        self.assertTrue(module.is_active)

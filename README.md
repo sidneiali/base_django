@@ -193,12 +193,29 @@ O primeiro corte usa Microsoft Edge em modo headless. Se o binário não estiver
 E2E_EDGE_BINARY=C:\caminho\para\msedge.exe
 ```
 
+Para assistir o navegador executando os testes, rode em modo visível:
+
+```bash
+$env:E2E_HEADLESS="0"
+uv run pytest -m e2e
+```
+
+Se quiser desacelerar a execução para acompanhar melhor:
+
+```bash
+$env:E2E_HEADLESS="0"
+$env:E2E_SLOW_MO_MS="350"
+uv run pytest -m e2e
+```
+
 Hoje os smoke tests cobrem:
 
 - login e logout reais no navegador
 - navegação da topbar para `Minha senha` via HTMX
 - filtros reais da auditoria HTML
 - drill-down da auditoria com retorno para a lista preservando contexto básico
+- listagem e filtro de módulos
+- criação de módulo e ciclo básico de ativar/inativar
 
 ## Visão geral
 
