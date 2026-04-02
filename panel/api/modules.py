@@ -17,7 +17,8 @@ from core.api.responses import (
     api_error_response,
     api_success_response,
 )
-from core.models import Module
+from core.audit import create_audit_log
+from core.models import AuditLog, Module
 from django.contrib.auth.models import Permission
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse
@@ -232,6 +233,29 @@ def _order_modules(queryset: QuerySet[Module], ordering: str, orm_ordering: str)
     return queryset.order_by(orm_ordering, "id")
 
 
+def _log_blocked_module_delete(
+    request: HttpRequest,
+    module: Module,
+    *,
+    detail: str,
+) -> None:
+    """Registra a tentativa bloqueada de exclusão de um módulo pela API."""
+
+    create_audit_log(
+        AuditLog.ACTION_API_ACCESS_DENIED,
+        instance=module,
+        actor=getattr(request, "user", None),
+        metadata={
+            "event": "api_resource_operation_denied",
+            "reason_code": "delete_not_allowed",
+            "detail": detail,
+            "resource": "panel.modules",
+            "action": "delete",
+            "status": 400,
+        },
+    )
+
+
 @csrf_exempt
 @require_api_permission("panel.modules")
 def modules_collection(request: HttpRequest) -> HttpResponse:
@@ -363,6 +387,7 @@ def module_detail(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "DELETE":
         block_reason = module.delete_block_reason
         if block_reason:
+            _log_blocked_module_delete(request, module, detail=block_reason)
             return api_error_response(
                 block_reason,
                 code="delete_not_allowed",
