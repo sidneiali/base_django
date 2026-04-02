@@ -215,10 +215,10 @@ Hoje os smoke tests cobrem:
 - navegação da topbar para `Minha senha` via HTMX
 - filtros reais da auditoria HTML
 - drill-down da auditoria com retorno para a lista preservando contexto básico
-- listagem e filtro de módulos
-- criação de módulo e ciclo básico de ativar/inativar
+- listagem, filtro, edição e ciclo básico de ativar/inativar de módulos
 - listagem e filtro de usuários
 - criação de usuário com associação de grupo pela dual-list
+- listagem, filtro, criação e edição de grupos com dual-list de permissões
 
 ## Visão geral
 

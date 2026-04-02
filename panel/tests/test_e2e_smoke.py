@@ -96,6 +96,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         options.binary_location = edge_binary
         if cls.headless:
             options.add_argument("--headless=new")
+        options.add_argument("--start-maximized")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1440,1200")
 
@@ -105,6 +106,11 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             raise unittest.SkipTest(
                 f"Não foi possível iniciar o Edge WebDriver: {exc}"
             ) from exc
+
+        try:
+            cls.browser.maximize_window()
+        except WebDriverException:
+            pass
 
         cls.wait = WebDriverWait(cls.browser, 10)
 
@@ -156,6 +162,19 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
 
         if self.slow_mo_seconds > 0:
             time.sleep(self.slow_mo_seconds)
+
+    def _select_dual_list_option(self, option) -> None:
+        """Marca uma option do dual-list de forma estável antes da ação."""
+
+        self.browser.execute_script(
+            """
+            arguments[0].scrollIntoView({block: "center"});
+            arguments[0].selected = true;
+            arguments[0].dispatchEvent(new Event("change", {bubbles: true}));
+            """,
+            option,
+        )
+        self._pause_for_demo()
 
     def _login(self) -> None:
         """Realiza login pelo formulário real da aplicação."""
@@ -767,3 +786,174 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         created_group = Group.objects.get(name="Grupo Operação E2E")
         self.assertTrue(created_group.permissions.filter(codename="view_user").exists())
         self.assertIn("Grupo Operação E2E", self._group_row("Grupo Operação E2E").text)
+
+    def test_group_update_permissions_smoke(self) -> None:
+        """O operador deve conseguir editar um grupo e trocar suas permissões."""
+
+        self._grant_permissions("view_group", "change_group")
+        group = Group.objects.create(name="Grupo Edição E2E")
+        group.permissions.add(Permission.objects.get(codename="view_user"))
+
+        self._login()
+        self._open(reverse("panel_groups_list"))
+
+        row = self._group_row("Grupo Edição E2E")
+        edit_link = row.find_element(
+            *self._locator_by_testid("group-edit-link")
+        )
+        edit_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("group-form-page"))
+        )
+        name_input = self.browser.find_element(
+            *self._locator_by_testid("group-name")
+        )
+        name_input.clear()
+        name_input.send_keys("Grupo Edição Atualizado")
+
+        chosen_permissions = self.wait.until(
+            EC.visibility_of_element_located(
+                self._locator_by_testid("group-permissions-chosen")
+            )
+        )
+        current_permission = chosen_permissions.find_element(
+            By.XPATH,
+            ".//option[contains(normalize-space(), 'Pode visualizar') and contains(normalize-space(), 'Usuário')]",
+        )
+        self._select_dual_list_option(current_permission)
+
+        remove_permission_button = self.browser.find_element(
+            *self._locator_by_testid("group-permissions-remove"),
+        )
+        remove_permission_button.click()
+        self._pause_for_demo()
+
+        self.wait.until_not(
+            lambda browser: "Pode visualizar"
+            in browser.find_element(
+                *self._locator_by_testid("group-permissions-chosen")
+            ).text
+        )
+
+        available_permissions = self.wait.until(
+            EC.visibility_of_element_located(
+                self._locator_by_testid("group-permissions-available")
+            )
+        )
+        replacement_permission = available_permissions.find_element(
+            By.XPATH,
+            ".//option[contains(normalize-space(), 'Pode alterar') and contains(normalize-space(), 'Usuário')]",
+        )
+        self._select_dual_list_option(replacement_permission)
+
+        add_permission_button = self.browser.find_element(
+            *self._locator_by_testid("group-permissions-add"),
+        )
+        add_permission_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                self._locator_by_testid("group-permissions-chosen"),
+                "Pode alterar",
+            )
+        )
+
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("group-save-submit")
+        )
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("groups-page"))
+        )
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                (By.CSS_SELECTOR, "tbody"),
+                "Grupo Edição Atualizado",
+            )
+        )
+
+        group.refresh_from_db()
+        self.assertEqual(group.name, "Grupo Edição Atualizado")
+        self.assertTrue(group.permissions.filter(codename="change_user").exists())
+        self.assertFalse(group.permissions.filter(codename="view_user").exists())
+        self.assertIn("Grupo Edição Atualizado", self._group_row(group.name).text)
+
+    def test_module_update_visibility_smoke(self) -> None:
+        """O operador deve conseguir editar um módulo e alterar sua visibilidade."""
+
+        self._grant_permissions("view_module", "change_module")
+        Module.objects.create(
+            name="E2E Módulo Editável",
+            slug="e2e-modulo-editavel",
+            description="Descrição inicial",
+            icon="ti ti-layout-grid",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=15,
+            is_active=True,
+            show_in_dashboard=True,
+            show_in_sidebar=True,
+        )
+
+        self._login()
+        self._open(reverse("panel_modules_list"))
+
+        row = self._module_row("E2E Módulo Editável")
+        edit_link = row.find_element(
+            *self._locator_by_testid("module-edit-link")
+        )
+        edit_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("module-form-page"))
+        )
+        description_input = self.browser.find_element(
+            *self._locator_by_testid("module-description")
+        )
+        description_input.clear()
+        description_input.send_keys("Descrição atualizada pelo smoke test")
+
+        show_in_dashboard = self.browser.find_element(
+            *self._locator_by_testid("module-show-in-dashboard")
+        )
+        if show_in_dashboard.is_selected():
+            show_in_dashboard.click()
+            self._pause_for_demo()
+
+        show_in_sidebar = self.browser.find_element(
+            *self._locator_by_testid("module-show-in-sidebar")
+        )
+        if show_in_sidebar.is_selected():
+            show_in_sidebar.click()
+            self._pause_for_demo()
+
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("module-save-submit")
+        )
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("modules-page"))
+        )
+        row = self._module_row("E2E Módulo Editável")
+        self.wait.until(
+            lambda browser: "Oculto" in self._module_row("E2E Módulo Editável").text
+        )
+
+        updated_module = Module.objects.get(slug="e2e-modulo-editavel")
+        self.assertEqual(
+            updated_module.description,
+            "Descrição atualizada pelo smoke test",
+        )
+        self.assertFalse(updated_module.show_in_dashboard)
+        self.assertFalse(updated_module.show_in_sidebar)
+        self.assertIn("Oculto", row.text)
