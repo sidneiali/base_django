@@ -399,6 +399,8 @@ Esse comando mostra a lista atual e pergunta qual modulo deve ser removido.
 - `/painel/grupos/novo/`: criação de grupo
 - `/painel/grupos/<id>/editar/`: edição de grupo
 - `/painel/auditoria/`: trilha HTML de auditoria com filtros
+- `/painel/auditoria/exportar/csv/`: exportação CSV da trilha HTML de auditoria
+- `/painel/auditoria/exportar/json/`: exportação JSON da trilha HTML de auditoria
 - `/painel/auditoria/<id>/`: drill-down completo de um evento de auditoria
 - `/api/v1/panel/users/`: coleção JSON de usuários do painel
 - `/api/v1/panel/users/<id>/`: detalhe JSON de usuário
@@ -427,7 +429,7 @@ Permissões exigidas por tela:
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
 - auditoria: `core.view_auditlog`
 
-Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
+Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica, exportar a listagem filtrada em CSV/JSON e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
 
 Na API do painel, o projeto agora expõe recursos versionados para usuários, grupos e módulos, todos protegidos por Bearer token, envelope JSON padronizado e matriz CRUD por recurso.
 

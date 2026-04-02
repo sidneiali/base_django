@@ -49,6 +49,20 @@
                 <div class="col-md-4 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-outline-primary" data-teste="audit-filter-submit">Filtrar</button>
                     <a href="{% url 'panel_audit_logs_list' %}" class="btn btn-outline-secondary" data-teste="audit-filter-clear">Limpar</a>
+                    <a
+                        href="{% url 'panel_audit_logs_export_csv' %}{{ current_query }}"
+                        class="btn btn-outline-success"
+                        data-teste="audit-export-csv"
+                    >
+                        Exportar CSV
+                    </a>
+                    <a
+                        href="{% url 'panel_audit_logs_export_json' %}{{ current_query }}"
+                        class="btn btn-outline-secondary"
+                        data-teste="audit-export-json"
+                    >
+                        Exportar JSON
+                    </a>
                 </div>
             </form>
         </div>

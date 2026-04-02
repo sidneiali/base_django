@@ -4,6 +4,8 @@ from django.urls import path
 
 from .views import (
                     audit_log_detail,
+                    audit_logs_export_csv,
+                    audit_logs_export_json,
                     audit_logs_list,
                     group_create,
                     group_update,
@@ -21,6 +23,16 @@ from .views import (
 
 urlpatterns = [
     path("auditoria/", audit_logs_list, name="panel_audit_logs_list"),
+    path(
+        "auditoria/exportar/csv/",
+        audit_logs_export_csv,
+        name="panel_audit_logs_export_csv",
+    ),
+    path(
+        "auditoria/exportar/json/",
+        audit_logs_export_json,
+        name="panel_audit_logs_export_json",
+    ),
     path("auditoria/<int:pk>/", audit_log_detail, name="panel_audit_log_detail"),
     path("modulos/", modules_list, name="panel_modules_list"),
     path("modulos/novo/", module_create, name="panel_module_create"),

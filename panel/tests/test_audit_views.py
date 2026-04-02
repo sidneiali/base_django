@@ -263,3 +263,133 @@ class PanelAuditViewTests(TestCase):
         self.assertContains(response, "?page=1", html=False)
         self.assertContains(response, "?page=3", html=False)
         self.assertContains(response, ">2<", html=False)
+
+    def test_audit_list_exposes_export_links_with_current_filters(self) -> None:
+        """A listagem deve expor exportações CSV/JSON preservando a query atual."""
+
+        actor = self._login_with_audit_permission()
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento exportável",
+            request_id="req-export-link",
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(
+            reverse("panel_audit_logs_list"),
+            {"actor": actor.username, "object_query": "req-export-link"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_export_csv")
+            + "?actor=operador-auditoria&amp;object_query=req-export-link",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_export_json")
+            + "?actor=operador-auditoria&amp;object_query=req-export-link",
+            html=False,
+        )
+
+    def test_audit_csv_export_respects_filters(self) -> None:
+        """A exportação CSV deve reaproveitar os filtros da listagem HTML."""
+
+        actor = self._login_with_audit_permission()
+        now = timezone.now()
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento exportado",
+            request_id="req-export-match",
+            created_at=now,
+        )
+        self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento fora do filtro",
+            request_id="req-export-skip",
+            created_at=now,
+        )
+
+        response = self.client.get(
+            reverse("panel_audit_logs_export_csv"),
+            {"object_query": "req-export-match"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+        content = response.content.decode("utf-8")
+        self.assertIn("Evento exportado", content)
+        self.assertNotIn("Evento fora do filtro", content)
+        self.assertIn("request_id", content)
+
+    def test_audit_json_export_includes_filters_and_payload(self) -> None:
+        """A exportação JSON deve incluir metadados do filtro e os resultados serializados."""
+
+        actor = self._login_with_audit_permission()
+        actor_for_log: Any = actor
+        audit_log = AuditLog.objects.create(
+            action=AuditLog.ACTION_UPDATE,
+            actor=actor_for_log,
+            actor_identifier=actor.username,
+            object_repr="Evento JSON",
+            object_verbose_name="Usuário",
+            request_method="PATCH",
+            path="/painel/usuarios/7/editar/",
+            before={"email": "antes@example.com"},
+            after={"email": "depois@example.com"},
+            changes={"email": {"before": "antes@example.com", "after": "depois@example.com"}},
+            metadata={"request_id": "req-export-json"},
+        )
+
+        response = self.client.get(
+            reverse("panel_audit_logs_export_json"),
+            {"actor": actor.username, "action": AuditLog.ACTION_UPDATE},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+        payload = response.json()
+        self.assertEqual(payload["count"], 1)
+        self.assertEqual(payload["filters"]["actor"], actor.username)
+        self.assertEqual(payload["filters"]["action"], AuditLog.ACTION_UPDATE)
+        self.assertEqual(payload["results"][0]["id"], audit_log.pk)
+        self.assertEqual(payload["results"][0]["request_id"], "req-export-json")
+        self.assertEqual(
+            payload["results"][0]["changes"]["email"]["after"],
+            "depois@example.com",
+        )
+
+    def test_audit_export_returns_400_for_invalid_filters(self) -> None:
+        """Filtros inválidos não devem gerar exportação silenciosa."""
+
+        self._login_with_audit_permission()
+
+        response = self.client.get(
+            reverse("panel_audit_logs_export_csv"),
+            {
+                "date_from": "2026-04-10",
+                "date_to": "2026-04-01",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(
+            response,
+            "Filtros inválidos para exportação.",
+            status_code=400,
+        )
+        self.assertContains(
+            response,
+            "A data final precisa ser igual ou posterior à data inicial.",
+            status_code=400,
+        )
