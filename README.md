@@ -171,6 +171,33 @@ O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop
 - `uv run python manage.py check --deploy`
 - `uv run python manage.py collectstatic --noinput`
 
+## Testes
+
+Suite padrão:
+
+```bash
+uv run pytest
+```
+
+Os smoke tests E2E com Selenium ficam marcados como `e2e` e não entram na suite padrão.
+
+Para rodar só os testes E2E:
+
+```bash
+uv run pytest -m e2e
+```
+
+O primeiro corte usa Microsoft Edge em modo headless. Se o binário não estiver em um dos caminhos padrão do Windows, defina:
+
+```text
+E2E_EDGE_BINARY=C:\caminho\para\msedge.exe
+```
+
+Hoje os smoke tests cobrem:
+
+- login e logout reais no navegador
+- navegação da topbar para `Minha senha` via HTMX
+
 ## Visão geral
 
 O sistema possui dois apps principais:

@@ -21,6 +21,7 @@ dev = [
     "pytest>=8.0",
     "pytest-django>=4.8",
     "ruff>=0.6",
+    "selenium>=4.0,<5.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -31,7 +32,10 @@ namespaces = false
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
-addopts = "-ra"
+addopts = "-ra -m \"not e2e\""
+markers = [
+    "e2e: smoke tests com Selenium e navegador real, executados separadamente da suite principal",
+]
 
 [tool.ruff]
 line-length = 88
