@@ -93,7 +93,12 @@ class PanelGroupForm(forms.ModelForm):
         model = Group
         fields = ["name", "permissions"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "data-teste": "group-name",
+                }
+            ),
         }
         labels = {
             "name": "Nome do grupo",

@@ -1,11 +1,11 @@
-<div data-page-title="{{ page_title }}">
+<div data-page-title="{{ page_title }}" data-teste="group-form-page">
     <div class="card">
         <div class="card-header">
             <h3 class="card-title mb-0">{{ page_title }}</h3>
         </div>
 
         <div class="card-body">
-            <form method="post" class="row g-3" id="group-form">
+            <form method="post" class="row g-3" id="group-form" data-teste="group-form">
                 {% csrf_token %}
 
                 <div class="col-12">
@@ -30,11 +30,13 @@
                                 class="form-control form-control-sm mb-2"
                                 placeholder="Filtrar permissões..."
                                 data-dual-list-filter
+                                data-teste="group-permissions-filter"
                             >
                             <select
                                 class="form-select flex-grow-1 dual-list-select"
                                 multiple
                                 data-dual-list-available
+                                data-teste="group-permissions-available"
                             >
                                 {% for pk, label in perm_available %}
                                     <option value="{{ pk }}">{{ label }}</option>
@@ -43,10 +45,10 @@
                         </div>
 
                         <div class="d-flex flex-column justify-content-center gap-2 flex-shrink-0 dual-list-actions-col">
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add>Adicionar →</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove>← Remover</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all>Todos →</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all>← Nenhum</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add data-teste="group-permissions-add">Adicionar →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove data-teste="group-permissions-remove">← Remover</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all data-teste="group-permissions-add-all">Todos →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all data-teste="group-permissions-remove-all">← Nenhum</button>
                         </div>
 
                         <div class="d-flex flex-column flex-grow-1 dual-list-col">
@@ -58,6 +60,7 @@
                                 class="form-select flex-grow-1 dual-list-select"
                                 multiple
                                 data-dual-list-chosen
+                                data-teste="group-permissions-chosen"
                             >
                                 {% for pk, label in perm_chosen %}
                                     <option value="{{ pk }}" selected>{{ label }}</option>
@@ -79,8 +82,8 @@
                 {% endif %}
 
                 <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="btn-salvar-group">Salvar</button>
-                    <a href="{% url 'panel_groups_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-group" data-teste="group-save-submit">Salvar</button>
+                    <a href="{% url 'panel_groups_list' %}" class="btn btn-outline-secondary" data-teste="group-cancel-link">Cancelar</a>
                 </div>
             </form>
         </div>

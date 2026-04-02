@@ -400,6 +400,19 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.presence_of_element_located(self._user_row_locator(username))
         )
 
+    def _group_row_locator(self, group_name: str) -> tuple[str, str]:
+        """Monta o locator da linha da tabela correspondente ao grupo informado."""
+
+        selector = f'[data-teste="group-row"][data-group-name="{group_name}"]'
+        return (By.CSS_SELECTOR, selector)
+
+    def _group_row(self, group_name: str):
+        """Localiza a linha da tabela correspondente ao grupo informado."""
+
+        return self.wait.until(
+            EC.presence_of_element_located(self._group_row_locator(group_name))
+        )
+
     def test_modules_list_filter_smoke(self) -> None:
         """A listagem de módulos deve filtrar resultados reais no navegador."""
 
@@ -662,3 +675,95 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self.assertEqual(created_user.email, "novo-e2e@example.com")
         self.assertTrue(created_user.groups.filter(name="Operação E2E").exists())
         self.assertIn("novo-e2e", self._user_row("novo-e2e").text)
+
+    def test_groups_list_filter_smoke(self) -> None:
+        """A listagem de grupos deve filtrar resultados reais no navegador."""
+
+        self._grant_permissions("view_group")
+        Group.objects.create(name="Grupo Financeiro E2E")
+        Group.objects.create(name="Grupo Comercial E2E")
+
+        self._login()
+        self._open(reverse("panel_groups_list"))
+
+        query_input = self.wait.until(
+            EC.visibility_of_element_located(self._locator_by_testid("groups-query"))
+        )
+        query_input.clear()
+        query_input.send_keys("Financeiro")
+
+        search_button = self.browser.find_element(
+            *self._locator_by_testid("groups-filter-submit"),
+        )
+        search_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(lambda browser: "q=Financeiro" in browser.current_url)
+        groups_table = self.browser.find_element(
+            *self._locator_by_testid("groups-table")
+        )
+        self.assertIn("Grupo Financeiro E2E", groups_table.text)
+        self.assertNotIn("Grupo Comercial E2E", groups_table.text)
+
+    def test_group_create_with_permission_smoke(self) -> None:
+        """O operador deve conseguir criar grupo e associar permissão pela dual-list."""
+
+        self._grant_permissions("view_group", "add_group")
+
+        self._login()
+        self._open(reverse("panel_groups_list"))
+
+        new_link = self.wait.until(
+            EC.element_to_be_clickable(self._locator_by_testid("groups-create-link"))
+        )
+        new_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("group-form-page"))
+        )
+        self.browser.find_element(
+            *self._locator_by_testid("group-name")
+        ).send_keys("Grupo Operação E2E")
+
+        available_permissions = self.wait.until(
+            EC.visibility_of_element_located(
+                self._locator_by_testid("group-permissions-available")
+            )
+        )
+        target_permission = available_permissions.find_element(
+            By.XPATH,
+            ".//option[contains(normalize-space(), 'Pode visualizar') and contains(normalize-space(), 'Usuário')]",
+        )
+        target_permission.click()
+        self._pause_for_demo()
+
+        add_permission_button = self.browser.find_element(
+            *self._locator_by_testid("group-permissions-add"),
+        )
+        add_permission_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                self._locator_by_testid("group-permissions-chosen"),
+                "Pode visualizar",
+            )
+        )
+
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("group-save-submit")
+        )
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("groups-page"))
+        )
+        self.wait.until(
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "Grupo Operação E2E")
+        )
+
+        created_group = Group.objects.get(name="Grupo Operação E2E")
+        self.assertTrue(created_group.permissions.filter(codename="view_user").exists())
+        self.assertIn("Grupo Operação E2E", self._group_row("Grupo Operação E2E").text)
