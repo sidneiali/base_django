@@ -87,7 +87,19 @@
                             <td>
                                 <span class="badge bg-blue-lt">{{ audit_log.action_label }}</span>
                             </td>
-                            <td>{{ audit_log.actor_display }}</td>
+                            <td>
+                                {% if audit_log.actor_display != "-" %}
+                                    <a
+                                        href="{% url 'panel_audit_logs_list' %}?actor={{ audit_log.actor_display|urlencode }}"
+                                        class="text-reset text-decoration-none fw-semibold"
+                                        data-teste="audit-row-actor-link"
+                                    >
+                                        {{ audit_log.actor_display }}
+                                    </a>
+                                {% else %}
+                                    {{ audit_log.actor_display }}
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="fw-semibold">{{ audit_log.object_repr|default:"-" }}</div>
                                 <div class="text-secondary small">
@@ -101,7 +113,19 @@
                                 <div class="text-nowrap">{{ audit_log.request_method|default:"-" }}</div>
                                 <div class="text-secondary small">{{ audit_log.path|default:"-" }}</div>
                             </td>
-                            <td><code>{{ audit_log.request_id|default:"-" }}</code></td>
+                            <td>
+                                {% if audit_log.request_id %}
+                                    <a
+                                        href="{% url 'panel_audit_logs_list' %}?object_query={{ audit_log.request_id|urlencode }}"
+                                        class="text-reset text-decoration-none"
+                                        data-teste="audit-row-request-link"
+                                    >
+                                        <code>{{ audit_log.request_id }}</code>
+                                    </a>
+                                {% else %}
+                                    <code>-</code>
+                                {% endif %}
+                            </td>
                             <td class="text-end">
                                 <a
                                     href="{% url 'panel_audit_log_detail' audit_log.pk %}{{ current_query }}"

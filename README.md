@@ -429,7 +429,7 @@ Permissões exigidas por tela:
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
 - auditoria: `core.view_auditlog`
 
-Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica, exportar a listagem filtrada em CSV/JSON e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
+Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica, exportar a listagem filtrada em CSV/JSON, pivotar rapidamente por ator ou `request_id` e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
 
 Na API do painel, o projeto agora expõe recursos versionados para usuários, grupos e módulos, todos protegidos por Bearer token, envelope JSON padronizado e matriz CRUD por recurso.
 

@@ -31,6 +31,15 @@
                 <div class="card-body">
                     <div class="text-secondary small mb-1">Ator</div>
                     <div class="fw-semibold">{{ audit_log.actor_display }}</div>
+                    {% if audit_log.actor_display != "-" %}
+                        <a
+                            href="{% url 'panel_audit_logs_list' %}?actor={{ audit_log.actor_display|urlencode }}"
+                            class="small"
+                            data-teste="audit-detail-actor-link"
+                        >
+                            Ver eventos do mesmo ator
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -39,6 +48,15 @@
                 <div class="card-body">
                     <div class="text-secondary small mb-1">Request ID</div>
                     <div><code>{{ audit_log.request_id|default:"-" }}</code></div>
+                    {% if audit_log.request_id %}
+                        <a
+                            href="{% url 'panel_audit_logs_list' %}?object_query={{ audit_log.request_id|urlencode }}"
+                            class="small"
+                            data-teste="audit-detail-request-link"
+                        >
+                            Ver eventos da mesma requisição
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

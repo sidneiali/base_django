@@ -230,6 +230,33 @@ class PanelAuditViewTests(TestCase):
         self.assertContains(response, "Evento HTMX")
         self.assertNotContains(response, "<!doctype html>", html=False)
 
+    def test_audit_detail_exposes_related_navigation_links(self) -> None:
+        """O detalhe deve oferecer atalhos por ator e pela mesma requisição."""
+
+        actor = self._login_with_audit_permission()
+        audit_log = self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento relacionado",
+            request_id="req-related",
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(reverse("panel_audit_log_detail", args=[audit_log.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_list") + "?actor=operador-auditoria",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_list") + "?object_query=req-related",
+            html=False,
+        )
+
     def test_audit_detail_returns_404_for_unknown_event(self) -> None:
         """A abertura de um log inexistente deve responder 404."""
 
@@ -293,6 +320,33 @@ class PanelAuditViewTests(TestCase):
             response,
             reverse("panel_audit_logs_export_json")
             + "?actor=operador-auditoria&amp;object_query=req-export-link",
+            html=False,
+        )
+
+    def test_audit_list_exposes_quick_links_for_actor_and_request_id(self) -> None:
+        """Cada linha deve permitir pivot rápido por ator e request id."""
+
+        actor = self._login_with_audit_permission()
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento navegável",
+            request_id="req-row-link",
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(reverse("panel_audit_logs_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_list") + "?actor=operador-auditoria",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            reverse("panel_audit_logs_list") + "?object_query=req-row-link",
             html=False,
         )
 
