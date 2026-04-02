@@ -695,6 +695,124 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self.assertTrue(created_user.groups.filter(name="Operação E2E").exists())
         self.assertIn("novo-e2e", self._user_row("novo-e2e").text)
 
+    def test_user_update_with_group_smoke(self) -> None:
+        """O operador deve conseguir editar usuário e trocar seus grupos."""
+
+        self._grant_permissions("view_user", "change_user")
+        original_group = Group.objects.create(name="Grupo Atual E2E")
+        Group.objects.create(name="Grupo Novo E2E")
+        user = User.objects.create_user(
+            username="editar-e2e",
+            email="editar-e2e@example.com",
+            password="SenhaSegura@123",
+            first_name="Editar",
+            last_name="Original",
+        )
+        user.groups.add(original_group)
+
+        self._login()
+        self._open(reverse("panel_users_list"))
+
+        row = self._user_row("editar-e2e")
+        edit_link = row.find_element(
+            *self._locator_by_testid("user-edit-link")
+        )
+        edit_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("user-form-page"))
+        )
+        email_input = self.browser.find_element(
+            *self._locator_by_testid("user-email")
+        )
+        email_input.clear()
+        email_input.send_keys("editar-atualizado@example.com")
+
+        first_name_input = self.browser.find_element(
+            *self._locator_by_testid("user-first-name")
+        )
+        first_name_input.clear()
+        first_name_input.send_keys("Editado")
+
+        last_name_input = self.browser.find_element(
+            *self._locator_by_testid("user-last-name")
+        )
+        last_name_input.clear()
+        last_name_input.send_keys("Atualizado")
+
+        chosen_groups = self.wait.until(
+            EC.visibility_of_element_located(
+                self._locator_by_testid("user-groups-chosen")
+            )
+        )
+        current_group = chosen_groups.find_element(
+            By.XPATH,
+            ".//option[normalize-space()='Grupo Atual E2E']",
+        )
+        self._select_dual_list_option(current_group)
+
+        remove_group_button = self.browser.find_element(
+            *self._locator_by_testid("user-groups-remove"),
+        )
+        remove_group_button.click()
+        self._pause_for_demo()
+
+        self.wait.until_not(
+            lambda browser: "Grupo Atual E2E"
+            in browser.find_element(
+                *self._locator_by_testid("user-groups-chosen")
+            ).text
+        )
+
+        available_groups = self.wait.until(
+            EC.visibility_of_element_located(
+                self._locator_by_testid("user-groups-available")
+            )
+        )
+        replacement_option = available_groups.find_element(
+            By.XPATH,
+            ".//option[normalize-space()='Grupo Novo E2E']",
+        )
+        self._select_dual_list_option(replacement_option)
+
+        add_group_button = self.browser.find_element(
+            *self._locator_by_testid("user-groups-add"),
+        )
+        add_group_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                self._locator_by_testid("user-groups-chosen"),
+                "Grupo Novo E2E",
+            )
+        )
+
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("user-save-submit")
+        )
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located(self._locator_by_testid("users-page"))
+        )
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                (By.CSS_SELECTOR, "tbody"),
+                "editar-e2e",
+            )
+        )
+
+        user.refresh_from_db()
+        self.assertEqual(user.email, "editar-atualizado@example.com")
+        self.assertEqual(user.first_name, "Editado")
+        self.assertEqual(user.last_name, "Atualizado")
+        self.assertFalse(user.groups.filter(name="Grupo Atual E2E").exists())
+        self.assertTrue(user.groups.filter(name="Grupo Novo E2E").exists())
+        self.assertIn("editar-atualizado@example.com", self._user_row("editar-e2e").text)
+
     def test_groups_list_filter_smoke(self) -> None:
         """A listagem de grupos deve filtrar resultados reais no navegador."""
 
