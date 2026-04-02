@@ -277,7 +277,7 @@ Os módulos podem ser gerenciados por quatro caminhos:
 - pela tela [`/painel/modulos/`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\modules\views.py)
 - pelo assistente CLI `configure_module` para criar um modulo novo
 - pelo assistente CLI `edit_module` para editar um modulo existente
-- pelo seed canônico definido em [`core/canonical_modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\canonical_modules.py) e exposto por [`core/module_catalog.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\module_catalog.py)
+- pelo seed canônico definido em [`core/modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\modules.py), selecionado por [`core/initial_modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\initial_modules.py), montado por [`core/canonical_modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\canonical_modules.py) e exposto por [`core/module_catalog.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\module_catalog.py)
 
 Exemplo prático:
 
@@ -291,6 +291,11 @@ Exemplo prático:
 - `order`: `10`
 
 Com isso, o card abrirá a rota nomeada `panel_users_list` e só ficará disponível para quem tiver a permissão `auth.view_user`.
+
+Convenção atual do projeto:
+
+- áreas implementadas dentro de `core/` ou `panel/` entram como módulos canônicos
+- áreas fora desses namespaces ficam como módulos simples, sem entrar por padrão no catálogo canônico
 
 Se quiser um assistente no terminal para criar um modulo novo com perguntas guiadas:
 

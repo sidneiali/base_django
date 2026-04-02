@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+from core.initial_modules import INITIAL_MODULES as BASE_INITIAL_MODULES
+from core.modules import MODULES, ModuleDefinition
+
 
 @dataclass(frozen=True, slots=True)
 class ModuleSeedDefinition:
@@ -29,62 +32,27 @@ class ModuleSeedDefinition:
         data.pop("slug")
         return data
 
+def _build_canonical_module_map() -> dict[str, ModuleDefinition]:
+    """Monta o mapa canonico final a partir dos modulos iniciais e extras."""
 
-INITIAL_MODULES: tuple[ModuleSeedDefinition, ...] = (
-    ModuleSeedDefinition(
-        name="Usuários",
-        slug="usuarios",
-        description="Gestão de usuários do sistema",
-        icon="ti ti-users",
-        url_name="panel_users_list",
-        app_label="auth",
-        permission_codename="view_user",
-        menu_group="Configurações",
-        order=10,
-    ),
-    ModuleSeedDefinition(
-        name="Módulos",
-        slug="modulos",
-        description="Gestão dos módulos exibidos no dashboard e no sidebar",
-        icon="ti ti-layout-grid",
-        url_name="panel_modules_list",
-        app_label="core",
-        permission_codename="view_module",
-        menu_group="Configurações",
-        order=20,
-    ),
-    ModuleSeedDefinition(
-        name="Grupos",
-        slug="grupos",
-        description="Gestão de grupos e permissões",
-        icon="ti ti-users-group",
-        url_name="panel_groups_list",
-        app_label="auth",
-        permission_codename="view_group",
-        menu_group="Segurança",
-        order=20,
-    ),
-    ModuleSeedDefinition(
-        name="Auditoria",
-        slug="auditoria",
-        description="Consulta operacional dos eventos auditados do sistema",
-        icon="ti ti-history",
-        url_name="panel_audit_logs_list",
-        app_label="core",
-        permission_codename="view_auditlog",
-        menu_group="Segurança",
-        order=30,
-    ),
-    ModuleSeedDefinition(
-        name="Documentação da API",
-        slug="documentacao-api",
-        description="Referência pública da API, exemplos e coleção Postman",
-        icon="ti ti-book",
-        url_name="api_docs",
-        app_label="",
-        permission_codename="",
-        menu_group="Integrações",
-        order=40,
-        show_in_dashboard=False,
-    ),
+    duplicate_slugs = BASE_INITIAL_MODULES.keys() & MODULES.keys()
+    if duplicate_slugs:
+        duplicated = ", ".join(sorted(duplicate_slugs))
+        raise ValueError(
+            "Slugs canonicos duplicados entre initial_modules e modules: "
+            f"{duplicated}"
+        )
+
+    return {
+        **BASE_INITIAL_MODULES,
+        **MODULES,
+    }
+
+
+CANONICAL_MODULES = _build_canonical_module_map()
+
+
+INITIAL_MODULES: tuple[ModuleSeedDefinition, ...] = tuple(
+    ModuleSeedDefinition(slug=slug, **module_definition)
+    for slug, module_definition in CANONICAL_MODULES.items()
 )

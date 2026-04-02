@@ -34,5 +34,5 @@ class Command(BaseCommand):
         self.stdout.write(f"- Exibicao: {module.visibility_label}")
         if not module.is_initial_module:
             self.stdout.write(
-                "- Dica: se esse modulo for canonico do produto, replique a definicao em core/canonical_modules.py."
+                "- Dica: modulos de areas em core/ ou panel/ entram no catalogo canonico; replique a definicao em core/modules.py e, se fizer parte do conjunto inicial, inclua o slug em core/initial_modules.py."
             )
