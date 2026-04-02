@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import os
 import unittest
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from core.models import AuditLog
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.urls import reverse
+from django.utils import timezone
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
@@ -101,6 +105,17 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
 
         self.browser.get(f"{self.live_server_url}{path}")
 
+    def _test_user(self):
+        """Retorna o usuário principal usado pelos cenários E2E."""
+
+        return User.objects.get(username=self.username)
+
+    def _grant_permissions(self, *codenames: str) -> None:
+        """Concede permissões do Django ao usuário principal do cenário."""
+
+        permissions = Permission.objects.filter(codename__in=codenames)
+        self._test_user().user_permissions.add(*permissions)
+
     def _login(self) -> None:
         """Realiza login pelo formulário real da aplicação."""
 
@@ -135,6 +150,27 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         toggle.click()
         self.wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, ".dropdown-menu.show"))
+        )
+
+    def _create_audit_log(
+        self,
+        *,
+        action: str,
+        actor_identifier: str,
+        object_repr: str,
+        request_id: str,
+    ) -> AuditLog:
+        """Cria um evento de auditoria controlado para os smoke tests."""
+
+        return AuditLog.objects.create(
+            action=action,
+            actor=self._test_user(),
+            actor_identifier=actor_identifier,
+            object_repr=object_repr,
+            object_verbose_name="Evento",
+            request_method="GET",
+            path="/painel/auditoria/",
+            metadata={"request_id": request_id},
         )
 
     def test_login_and_logout_smoke(self) -> None:
@@ -178,3 +214,93 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             self.browser.current_url.endswith(reverse("account_password_change"))
         )
         self.assertIn("Alterar senha", self.browser.page_source)
+
+    def test_audit_list_filter_smoke(self) -> None:
+        """A tela de auditoria deve filtrar eventos reais no navegador."""
+
+        self._grant_permissions("view_auditlog")
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor_identifier=self.username,
+            object_repr="Login do operador",
+            request_id="req-filter-match",
+        )
+        old_log = self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor_identifier=self.username,
+            object_repr="Atualização antiga",
+            request_id="req-filter-old",
+        )
+        AuditLog.objects.filter(pk=old_log.pk).update(
+            created_at=timezone.now() - timedelta(days=3)
+        )
+
+        self._login()
+        self._open(reverse("panel_audit_logs_list"))
+
+        actor_input = self.wait.until(
+            EC.visibility_of_element_located((By.NAME, "actor"))
+        )
+        actor_input.clear()
+        actor_input.send_keys(self.username)
+
+        object_input = self.browser.find_element(By.NAME, "object_query")
+        object_input.clear()
+        object_input.send_keys("req-filter-match")
+
+        submit_button = self.browser.find_element(
+            By.CSS_SELECTOR,
+            "form[method='get'] button[type='submit']",
+        )
+        submit_button.click()
+
+        self.wait.until(lambda browser: "object_query=req-filter-match" in browser.current_url)
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                (By.CSS_SELECTOR, "tbody"),
+                "Login do operador",
+            )
+        )
+        self.assertIn("Login do operador", self.browser.page_source)
+        self.assertNotIn("Atualização antiga", self.browser.page_source)
+
+    def test_audit_detail_back_link_preserves_filters(self) -> None:
+        """O drill-down deve abrir e o retorno deve manter os filtros atuais."""
+
+        self._grant_permissions("view_auditlog")
+        self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor_identifier=self.username,
+            object_repr="Evento detalhado",
+            request_id="req-detail-smoke",
+        )
+
+        self._login()
+        query = "?actor=e2e-user&object_query=req-detail-smoke"
+        self._open(reverse("panel_audit_logs_list") + query)
+
+        detail_link = self.wait.until(
+            EC.element_to_be_clickable((By.LINK_TEXT, "Detalhes"))
+        )
+        detail_link.click()
+
+        self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-page-title="Detalhe da auditoria"]')
+            )
+        )
+        self.assertIn("Evento detalhado", self.browser.page_source)
+        self.assertIn("req-detail-smoke", self.browser.page_source)
+
+        back_link = self.wait.until(
+            EC.element_to_be_clickable((By.LINK_TEXT, "Voltar para a lista"))
+        )
+        back_href = back_link.get_attribute("href") or ""
+        self.assertIn(query, back_href)
+        back_link.click()
+
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Auditoria"]'))
+        )
+        self.wait.until(lambda browser: "object_query=req-detail-smoke" in browser.current_url)
+        self.assertIn("Evento detalhado", self.browser.page_source)

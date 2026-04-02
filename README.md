@@ -197,6 +197,8 @@ Hoje os smoke tests cobrem:
 
 - login e logout reais no navegador
 - navegação da topbar para `Minha senha` via HTMX
+- filtros reais da auditoria HTML
+- drill-down da auditoria com retorno para a lista preservando contexto básico
 
 ## Visão geral
 
