@@ -216,6 +216,8 @@ Hoje os smoke tests cobrem:
 - drill-down da auditoria com retorno para a lista preservando contexto básico
 - listagem e filtro de módulos
 - criação de módulo e ciclo básico de ativar/inativar
+- listagem e filtro de usuários
+- criação de usuário com associação de grupo pela dual-list
 
 ## Visão geral
 

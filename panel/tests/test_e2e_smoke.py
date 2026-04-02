@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from core.models import AuditLog, Module
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -364,6 +364,19 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             EC.presence_of_element_located(self._module_row_locator(module_name))
         )
 
+    def _user_row_locator(self, username: str) -> tuple[str, str]:
+        """Monta o locator da linha da tabela correspondente ao usuário informado."""
+
+        xpath = f"//tbody/tr[./td[1][normalize-space()='{username}']]"
+        return (By.XPATH, xpath)
+
+    def _user_row(self, username: str):
+        """Localiza a linha da tabela correspondente ao usuário informado."""
+
+        return self.wait.until(
+            EC.presence_of_element_located(self._user_row_locator(username))
+        )
+
     def test_modules_list_filter_smoke(self) -> None:
         """A listagem de módulos deve filtrar resultados reais no navegador."""
 
@@ -480,3 +493,109 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         )
         module.refresh_from_db()
         self.assertTrue(module.is_active)
+
+    def test_users_list_filter_smoke(self) -> None:
+        """A listagem de usuários deve filtrar resultados reais no navegador."""
+
+        self._grant_permissions("view_user")
+        User.objects.create_user(
+            username="ana-e2e",
+            email="ana-e2e@example.com",
+            password="SenhaSegura@123",
+        )
+        User.objects.create_user(
+            username="bruno-e2e",
+            email="bruno-e2e@example.com",
+            password="SenhaSegura@123",
+        )
+
+        self._login()
+        self._open(reverse("panel_users_list"))
+
+        query_input = self.wait.until(
+            EC.visibility_of_element_located((By.NAME, "q"))
+        )
+        query_input.clear()
+        query_input.send_keys("ana-e2e")
+
+        search_button = self.browser.find_element(
+            By.CSS_SELECTOR,
+            "form[method='get'] button[type='submit']",
+        )
+        search_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(lambda browser: "q=ana-e2e" in browser.current_url)
+        self.wait.until(
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "ana-e2e")
+        )
+        self.assertIn("ana-e2e", self.browser.page_source)
+        self.assertNotIn("bruno-e2e", self.browser.page_source)
+
+    def test_user_create_with_group_smoke(self) -> None:
+        """O operador deve conseguir criar usuário e associar grupo pela dual-list."""
+
+        self._grant_permissions("view_user", "add_user")
+        Group.objects.create(name="Operação E2E")
+
+        self._login()
+        self._open(reverse("panel_users_list"))
+
+        new_link = self.wait.until(
+            EC.element_to_be_clickable((By.LINK_TEXT, "Novo usuário"))
+        )
+        new_link.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Novo usuário"]'))
+        )
+        self.browser.find_element(By.NAME, "username").send_keys("novo-e2e")
+        self.browser.find_element(By.NAME, "email").send_keys("novo-e2e@example.com")
+        self.browser.find_element(By.NAME, "first_name").send_keys("Novo")
+        self.browser.find_element(By.NAME, "last_name").send_keys("E2E")
+        self.browser.find_element(By.NAME, "password").send_keys("SenhaSegura@123")
+
+        interval_input = self.browser.find_element(By.NAME, "auto_refresh_interval")
+        interval_input.clear()
+        interval_input.send_keys("30")
+
+        available_groups = self.wait.until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-dual-list-available]"))
+        )
+        operation_group = available_groups.find_element(
+            By.XPATH,
+            ".//option[normalize-space()='Operação E2E']",
+        )
+        operation_group.click()
+        self._pause_for_demo()
+
+        add_group_button = self.browser.find_element(
+            By.CSS_SELECTOR,
+            "[data-dual-list-add]",
+        )
+        add_group_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.text_to_be_present_in_element(
+                (By.CSS_SELECTOR, "[data-dual-list-chosen]"),
+                "Operação E2E",
+            )
+        )
+
+        save_button = self.browser.find_element(By.CSS_SELECTOR, "#btn-salvar-user")
+        save_button.click()
+        self._pause_for_demo()
+
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Usuários"]'))
+        )
+        self.wait.until(
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "novo-e2e")
+        )
+
+        created_user = User.objects.get(username="novo-e2e")
+        self.assertEqual(created_user.email, "novo-e2e@example.com")
+        self.assertTrue(created_user.groups.filter(name="Operação E2E").exists())
+        self.assertIn("novo-e2e", self._user_row("novo-e2e").text)
