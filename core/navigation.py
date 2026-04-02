@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from django.http import HttpRequest
+from django.urls import reverse
 
 from .models import Module
 
@@ -26,6 +27,18 @@ class ModuleNavigationItem:
 ModuleNavigationGroups = dict[str, list[ModuleNavigationItem]]
 
 
+@dataclass(frozen=True, slots=True)
+class TopbarShortcutItem:
+    """Representa um atalho exibido no menu superior autenticado."""
+
+    key: str
+    label: str
+    url: str
+
+
+TopbarShortcutGroups = dict[str, list[TopbarShortcutItem]]
+
+
 def _module_has_access(module: Module, user: Any) -> bool:
     """Resolve se o usuário atual pode acessar o módulo informado."""
 
@@ -36,10 +49,16 @@ def _module_has_access(module: Module, user: Any) -> bool:
     )
 
 
+def _user_has_shortcut_access(permission: str | None, user: Any) -> bool:
+    """Resolve se o usuário atual pode visualizar um atalho do topo."""
+
+    return bool(user.is_superuser or permission is None or user.has_perm(permission))
+
+
 def build_modules_for_user(user: Any) -> ModuleNavigationGroups:
     """Agrupa os módulos ativos e calcula acesso para um usuário."""
 
-    modules = Module.objects.filter(is_active=True)
+    modules = Module.objects.filter(is_active=True).order_by("menu_group", "order", "name")
     grouped: ModuleNavigationGroups = defaultdict(list)
 
     for module in modules:
@@ -51,6 +70,42 @@ def build_modules_for_user(user: Any) -> ModuleNavigationGroups:
                 icon=module.icon or "ti ti-layout-grid",
                 url=module.get_absolute_url(),
                 has_access=_module_has_access(module, user),
+            )
+        )
+
+    return dict(grouped)
+
+
+def build_topbar_shortcuts_for_user(user: Any) -> TopbarShortcutGroups:
+    """Monta atalhos operacionais do topo sem depender do seed de módulos."""
+
+    shortcut_definitions = (
+        ("Configurações", "users", "Usuários", "panel_users_list", "auth.view_user"),
+        ("Configurações", "modules", "Módulos", "panel_modules_list", "core.view_module"),
+        ("Segurança", "groups", "Grupos", "panel_groups_list", "auth.view_group"),
+        ("Segurança", "audit", "Auditoria", "panel_audit_logs_list", "core.view_auditlog"),
+        ("Integrações", "api-docs", "Documentação da API", "api_docs", None),
+    )
+
+    grouped: TopbarShortcutGroups = defaultdict(list)
+
+    for group_name, key, label, url_name, permission in shortcut_definitions:
+        if not _user_has_shortcut_access(permission, user):
+            continue
+        grouped[group_name].append(
+            TopbarShortcutItem(
+                key=key,
+                label=label,
+                url=reverse(url_name),
+            )
+        )
+
+    if user.is_superuser:
+        grouped["Administração"].append(
+            TopbarShortcutItem(
+                key="admin-users",
+                label="Super Usuário",
+                url=reverse("admin:auth_user_changelist"),
             )
         )
 
@@ -73,3 +128,21 @@ def get_request_modules(request: HttpRequest) -> ModuleNavigationGroups:
     modules = build_modules_for_user(request.user)
     setattr(request, "_cached_navigation_modules", modules)
     return modules
+
+
+def get_request_topbar_shortcuts(request: HttpRequest) -> TopbarShortcutGroups:
+    """Retorna atalhos do topo com cache por request."""
+
+    if not request.user.is_authenticated:
+        return {}
+
+    cached_shortcuts = cast(
+        TopbarShortcutGroups | None,
+        getattr(request, "_cached_topbar_shortcuts", None),
+    )
+    if cached_shortcuts is not None:
+        return cached_shortcuts
+
+    shortcuts = build_topbar_shortcuts_for_user(request.user)
+    setattr(request, "_cached_topbar_shortcuts", shortcuts)
+    return shortcuts

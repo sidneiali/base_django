@@ -96,3 +96,91 @@ class SidebarNavigationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(mocked_builder.call_count, 1)
+
+    def test_superuser_topbar_exposes_shell_shortcuts_without_seeded_modules(self):
+        """O topo deve expor as áreas operacionais mesmo sem módulos seedados no banco."""
+
+        user = User.objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="SenhaSegura@123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="users"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="modules"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="groups"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="audit"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="api-docs"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="admin-users"',
+            html=False,
+        )
+        self.assertContains(response, reverse("panel_users_list"))
+        self.assertContains(response, reverse("panel_modules_list"))
+        self.assertContains(response, reverse("panel_groups_list"))
+        self.assertContains(response, reverse("panel_audit_logs_list"))
+        self.assertContains(response, reverse("api_docs"))
+        self.assertContains(response, reverse("admin:auth_user_changelist"))
+
+    def test_topbar_shortcuts_follow_permissions_when_modules_are_absent(self):
+        """O topo deve continuar útil mesmo quando a navegação por módulos ainda não foi seedada."""
+
+        user = User.objects.create_user(
+            username="operador",
+            email="operador@example.com",
+            password="SenhaSegura@123",
+        )
+        user.user_permissions.add(
+            Permission.objects.get(codename="view_module"),
+            Permission.objects.get(codename="view_auditlog"),
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="modules"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="audit"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'data-topbar-shortcut="users"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'data-topbar-shortcut="groups"',
+            html=False,
+        )
