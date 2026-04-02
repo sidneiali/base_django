@@ -166,6 +166,7 @@ Por ora, o projeto mantém apenas esse `healthcheck` leve. Um endpoint separado 
 O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop\base_django\.github\workflows\ci.yml) com:
 
 - `uv run ruff check config core panel`
+- `uv run mypy config core panel`
 - `uv run pytest`
 - `uv run python manage.py check`
 - `uv run python manage.py check --deploy`
@@ -448,7 +449,7 @@ Na API do painel, o projeto agora expõe recursos versionados para usuários, gr
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) continua genérica, mas agora já exibe metadados úteis do módulo enquanto a área final ainda está em preparação
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
 - os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
-- o painel agora já possui CRUD HTML para módulos com ativação segura e exclusão protegida, mas ainda não cobre API JSON equivalente
+- o painel agora já possui CRUD HTML para módulos com ativação segura e exclusão protegida, e a API do painel também já cobre módulos com paridade JSON básica
 - a API do painel agora cobre usuários, grupos e módulos; os próximos ganhos de paridade passam a ser cenários de erro, auditoria e fluxos mais avançados
 
 ## Próximos passos sugeridos
