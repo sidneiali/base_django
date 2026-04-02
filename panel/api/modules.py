@@ -103,6 +103,8 @@ def _serialize_module(
         "menu_group": module.menu_group,
         "order": module.order,
         "is_active": module.is_active,
+        "show_in_dashboard": module.show_in_dashboard,
+        "show_in_sidebar": module.show_in_sidebar,
         "uses_generic_entry": module.uses_generic_entry,
         "resolved_url": _resolve_module_url(module),
         "full_permission": module.full_permission,
@@ -147,6 +149,14 @@ def _build_module_form_data(
         "is_active": payload.get(
             "is_active",
             instance.is_active if instance else True,
+        ),
+        "show_in_dashboard": payload.get(
+            "show_in_dashboard",
+            instance.show_in_dashboard if instance else True,
+        ),
+        "show_in_sidebar": payload.get(
+            "show_in_sidebar",
+            instance.show_in_sidebar if instance else True,
         ),
         "permission": payload.get(
             "permission",

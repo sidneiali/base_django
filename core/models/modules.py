@@ -7,7 +7,7 @@ from core.module_catalog import is_initial_module_slug
 
 
 class Module(models.Model):
-    """Representa uma area funcional exibida no dashboard."""
+    """Representa uma area funcional exibida no shell autenticado."""
 
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True)
@@ -19,6 +19,8 @@ class Module(models.Model):
     menu_group = models.CharField(max_length=100, default="Geral")
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    show_in_sidebar = models.BooleanField(default=True)
+    show_in_dashboard = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["menu_group", "order", "name"]
@@ -47,6 +49,18 @@ class Module(models.Model):
         """Expõe uma label amigável da permissão exigida pelo módulo."""
 
         return self.full_permission or "Apenas login no sistema"
+
+    @property
+    def visibility_label(self) -> str:
+        """Resume onde o módulo aparece no shell autenticado."""
+
+        if self.show_in_sidebar and self.show_in_dashboard:
+            return "Dashboard e sidebar"
+        if self.show_in_dashboard:
+            return "Apenas dashboard"
+        if self.show_in_sidebar:
+            return "Apenas sidebar"
+        return "Oculto no shell"
 
     @property
     def is_initial_module(self) -> bool:

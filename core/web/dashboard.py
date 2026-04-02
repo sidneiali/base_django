@@ -6,19 +6,19 @@ from django.shortcuts import get_object_or_404
 
 from core.htmx import render_page
 from core.models import Module
-from core.navigation import get_request_modules
+from core.navigation import get_request_dashboard_modules
 
 
 @login_required
 def dashboard(request):
     """Renderiza o dashboard com os modulos visiveis ao usuario logado."""
 
-    modules = get_request_modules(request)
+    modules = get_request_dashboard_modules(request)
     return render_page(
         request,
         "dashboard.html",
         "partials/dashboard_content.html",
-        {"modules": modules},
+        {"dashboard_modules": modules},
     )
 
 

@@ -39,14 +39,14 @@
           </a>
         </li>
 
-        {% if modules %}
+        {% if sidebar_modules %}
           <li class="nav-item mt-3">
             <div class="app-sidebar__section-label text-secondary small text-uppercase px-3">
               Módulos
             </div>
           </li>
 
-          {% for group_name, group_modules in modules.items %}
+          {% for group_name, group_modules in sidebar_modules.items %}
             <li class="nav-item {% if not forloop.first %}mt-3{% endif %}">
               <div
                 class="app-sidebar__group-label text-secondary small text-uppercase px-3"
@@ -62,6 +62,7 @@
                   class="nav-link {% if not module.has_access %}disabled opacity-50{% endif %}"
                   href="{% if module.has_access %}{{ module.url }}{% else %}#{% endif %}"
                   data-nav-prefix="{{ module.url }}"
+                  data-sidebar-module="{{ module.slug }}"
                   aria-disabled="{% if module.has_access %}false{% else %}true{% endif %}"
                 >
                   <span class="nav-link-icon">

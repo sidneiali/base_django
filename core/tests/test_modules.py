@@ -35,6 +35,7 @@ class ModuleModelTests(TestCase):
             reverse("module_entry", args=[module.slug]),
         )
         self.assertEqual(module.permission_label, "Apenas login no sistema")
+        self.assertEqual(module.visibility_label, "Dashboard e sidebar")
 
 
 class ModuleEntryViewTests(TestCase):

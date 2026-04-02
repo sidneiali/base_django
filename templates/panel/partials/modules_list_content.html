@@ -31,6 +31,7 @@
                         <th>Grupo</th>
                         <th>Destino</th>
                         <th>Permissão</th>
+                        <th>Exibição</th>
                         <th>Status</th>
                         <th class="text-end">Ações</th>
                     </tr>
@@ -62,6 +63,19 @@
                                 {% endif %}
                             </td>
                             <td>{{ module.permission_label }}</td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if module.show_in_dashboard %}
+                                        <span class="badge bg-blue-lt">Dashboard</span>
+                                    {% endif %}
+                                    {% if module.show_in_sidebar %}
+                                        <span class="badge bg-indigo-lt">Sidebar</span>
+                                    {% endif %}
+                                    {% if not module.show_in_dashboard and not module.show_in_sidebar %}
+                                        <span class="badge bg-secondary-lt">Oculto</span>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td>
                                 {% if module.is_active %}
                                     <span class="badge bg-success-lt">Ativo</span>
@@ -100,7 +114,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-secondary">
+                            <td colspan="7" class="text-center text-secondary">
                                 Nenhum módulo encontrado.
                             </td>
                         </tr>

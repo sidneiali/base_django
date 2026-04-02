@@ -63,6 +63,8 @@ class PanelModuleForm(forms.ModelForm):
             "menu_group",
             "order",
             "is_active",
+            "show_in_dashboard",
+            "show_in_sidebar",
         ]
         widgets = {
             "name": forms.TextInput(
@@ -96,6 +98,18 @@ class PanelModuleForm(forms.ModelForm):
                     "data-teste": "module-is-active",
                 }
             ),
+            "show_in_dashboard": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "data-teste": "module-show-in-dashboard",
+                }
+            ),
+            "show_in_sidebar": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "data-teste": "module-show-in-sidebar",
+                }
+            ),
         }
         labels = {
             "name": "Nome do módulo",
@@ -106,6 +120,8 @@ class PanelModuleForm(forms.ModelForm):
             "menu_group": "Grupo do menu",
             "order": "Ordem",
             "is_active": "Módulo ativo",
+            "show_in_dashboard": "Exibir no dashboard",
+            "show_in_sidebar": "Exibir no sidebar",
         }
         help_texts = {
             "icon": "Use classes do Tabler, como `ti ti-layout-grid` ou `ti ti-users`.",
@@ -115,12 +131,19 @@ class PanelModuleForm(forms.ModelForm):
                 "`module_entry` para a entrada genérica por slug."
             ),
             "menu_group": "Define em qual grupo o módulo aparece no dashboard e no sidebar.",
+            "show_in_dashboard": "Desmarque se a área não deve aparecer nos cards do dashboard.",
+            "show_in_sidebar": "Desmarque se a área não deve aparecer no menu lateral.",
         }
 
     def __init__(self, *args, **kwargs):
         """Preenche o seletor de permissão com o valor atual do módulo."""
 
         super().__init__(*args, **kwargs)
+
+        if not self.is_bound and not self.instance.pk:
+            self.fields["is_active"].initial = True
+            self.fields["show_in_dashboard"].initial = True
+            self.fields["show_in_sidebar"].initial = True
 
         if not self.instance.pk or not self.instance.full_permission:
             return

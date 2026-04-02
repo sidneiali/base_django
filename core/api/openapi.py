@@ -843,7 +843,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 f"curl -X POST {full_url('/api/v1/panel/modules/')} \\\n"
                                 '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
                                 '  -H "Content-Type: application/json" \\\n'
-                                '  -d "{\\"name\\":\\"Módulo API\\",\\"slug\\":\\"modulo-api\\",\\"url_name\\":\\"module_entry\\"}"'
+                                '  -d "{\\"name\\":\\"Módulo API\\",\\"slug\\":\\"modulo-api\\",\\"url_name\\":\\"module_entry\\",\\"show_in_dashboard\\":true,\\"show_in_sidebar\\":true}"'
                             ),
                         },
                         {
@@ -854,6 +854,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 '    "name": "Módulo API",\n'
                                 '    "slug": "modulo-api",\n'
                                 '    "url_name": "module_entry",\n'
+                                '    "show_in_dashboard": True,\n'
+                                '    "show_in_sidebar": True,\n'
                                 "}\n\n"
                                 "response = requests.post(\n"
                                 f'    "{full_url("/api/v1/panel/modules/")}",\n'
@@ -961,7 +963,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 f"curl -X PATCH {full_url('/api/v1/panel/modules/1/')} \\\n"
                                 '  -H "Authorization: Bearer SEU_TOKEN" \\\n'
                                 '  -H "Content-Type: application/json" \\\n'
-                                '  -d "{\\"description\\":\\"Módulo ajustado via API\\",\\"is_active\\":false}"'
+                                '  -d "{\\"description\\":\\"Módulo ajustado via API\\",\\"is_active\\":false,\\"show_in_sidebar\\":false}"'
                             ),
                         },
                         {
@@ -971,6 +973,7 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 "payload = {\n"
                                 '    "description": "Módulo ajustado via API",\n'
                                 '    "is_active": False,\n'
+                                '    "show_in_sidebar": False,\n'
                                 "}\n\n"
                                 "response = requests.patch(\n"
                                 f'    "{full_url("/api/v1/panel/modules/1/")}",\n'
@@ -1407,6 +1410,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "menu_group": {"type": "string"},
                         "order": {"type": "integer"},
                         "is_active": {"type": "boolean"},
+                        "show_in_dashboard": {"type": "boolean"},
+                        "show_in_sidebar": {"type": "boolean"},
                         "uses_generic_entry": {"type": "boolean"},
                         "resolved_url": {"type": "string"},
                         "full_permission": {"type": "string"},
@@ -1428,6 +1433,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "menu_group",
                         "order",
                         "is_active",
+                        "show_in_dashboard",
+                        "show_in_sidebar",
                         "uses_generic_entry",
                         "resolved_url",
                         "full_permission",
@@ -1449,6 +1456,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "menu_group": {"type": "string"},
                         "order": {"type": "integer"},
                         "is_active": {"type": "boolean"},
+                        "show_in_dashboard": {"type": "boolean"},
+                        "show_in_sidebar": {"type": "boolean"},
                         "permission": {"type": ["integer", "null"]},
                     },
                     "required": ["name", "slug", "url_name"],
@@ -1464,6 +1473,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                         "menu_group": {"type": "string"},
                         "order": {"type": "integer"},
                         "is_active": {"type": "boolean"},
+                        "show_in_dashboard": {"type": "boolean"},
+                        "show_in_sidebar": {"type": "boolean"},
                         "permission": {"type": ["integer", "null"]},
                     },
                 },

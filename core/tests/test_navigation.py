@@ -97,6 +97,69 @@ class SidebarNavigationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(mocked_builder.call_count, 1)
 
+    def test_dashboard_and_sidebar_respect_independent_module_visibility(self) -> None:
+        """Dashboard e sidebar devem poder mostrar conjuntos diferentes de módulos."""
+
+        user = User.objects.create_user(
+            username="visibilidade",
+            email="visibilidade@example.com",
+            password="SenhaSegura@123",
+        )
+        self.client.force_login(user)
+
+        Module.objects.create(
+            name="Somente dashboard",
+            slug="somente-dashboard",
+            description="Aparece só nos cards",
+            icon="ti ti-layout-grid",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+            show_in_dashboard=True,
+            show_in_sidebar=False,
+        )
+        Module.objects.create(
+            name="Somente sidebar",
+            slug="somente-sidebar",
+            description="Aparece só no menu lateral",
+            icon="ti ti-layout-grid",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=20,
+            is_active=True,
+            show_in_dashboard=False,
+            show_in_sidebar=True,
+        )
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-dashboard-module="somente-dashboard"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'data-dashboard-module="somente-sidebar"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-sidebar-module="somente-sidebar"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'data-sidebar-module="somente-dashboard"',
+            html=False,
+        )
+
     def test_superuser_topbar_exposes_shell_shortcuts_without_seeded_modules(self):
         """O topo deve expor as áreas operacionais mesmo sem módulos seedados no banco."""
 

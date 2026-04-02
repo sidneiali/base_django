@@ -7,7 +7,9 @@ from .navigation import (
     TopbarShortcutItem,
     build_modules_for_user,
     build_topbar_shortcuts_for_user,
+    get_request_dashboard_modules,
     get_request_modules,
+    get_request_sidebar_modules,
     get_request_topbar_shortcuts,
 )
 
@@ -18,6 +20,8 @@ __all__ = [
     "TopbarShortcutItem",
     "build_modules_for_user",
     "build_topbar_shortcuts_for_user",
+    "get_request_dashboard_modules",
     "get_request_modules",
+    "get_request_sidebar_modules",
     "get_request_topbar_shortcuts",
 ]

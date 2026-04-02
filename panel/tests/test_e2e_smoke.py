@@ -448,8 +448,11 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self.wait.until(
             EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "E2E Financeiro")
         )
-        self.assertIn("E2E Financeiro", self.browser.page_source)
-        self.assertNotIn("E2E CRM", self.browser.page_source)
+        modules_table = self.browser.find_element(
+            *self._locator_by_testid("modules-table")
+        )
+        self.assertIn("E2E Financeiro", modules_table.text)
+        self.assertNotIn("E2E CRM", modules_table.text)
 
     def test_module_create_and_toggle_status_smoke(self) -> None:
         """O operador deve conseguir criar, inativar e reativar um módulo no navegador."""

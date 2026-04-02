@@ -247,7 +247,7 @@ static/     CSS customizado
 
 ## Modelo central: Module
 
-O model [`core/models/modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models\modules.py) define os módulos exibidos no dashboard.
+O model [`core/models/modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\models\modules.py) define os módulos exibidos no shell autenticado.
 
 Campos principais:
 
@@ -258,9 +258,11 @@ Campos principais:
 - `url_name`: nome da URL Django que será aberta ao clicar no módulo
 - `app_label`: app da permissão
 - `permission_codename`: codename da permissão
-- `menu_group`: agrupamento visual no dashboard
+- `menu_group`: agrupamento visual no dashboard e no sidebar
 - `order`: ordem de exibição
 - `is_active`: ativa ou oculta o módulo
+- `show_in_dashboard`: controla se o módulo aparece nos cards do dashboard
+- `show_in_sidebar`: controla se o módulo aparece no menu lateral
 
 Regra de permissão:
 
@@ -270,7 +272,12 @@ Regra de permissão:
 
 ## Como cadastrar um módulo
 
-Os módulos são gerenciados pelo admin do Django no pacote [`core/admin`](c:\Users\sidne\OneDrive\Desktop\base_django\core\admin).
+Os módulos podem ser gerenciados por quatro caminhos:
+
+- pela tela [`/painel/modulos/`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\modules\views.py)
+- pelo assistente CLI `configure_module` para criar um modulo novo
+- pelo assistente CLI `edit_module` para editar um modulo existente
+- pelo seed canônico definido em [`core/canonical_modules.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\canonical_modules.py) e exposto por [`core/module_catalog.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\module_catalog.py)
 
 Exemplo prático:
 
@@ -284,6 +291,38 @@ Exemplo prático:
 - `order`: `10`
 
 Com isso, o card abrirá a rota nomeada `panel_users_list` e só ficará disponível para quem tiver a permissão `auth.view_user`.
+
+Se quiser um assistente no terminal para criar um modulo novo com perguntas guiadas:
+
+```bash
+uv run python manage.py configure_module
+```
+
+O comando pergunta:
+
+- a lista atual de modulos canonicos do projeto
+- slug, nome, descricao e icone
+- rota Django do destino
+- grupo e ordem
+- se aparece no dashboard
+- se aparece no sidebar
+- se fica ativo
+- qual permissão exige
+
+Se quiser editar um modulo que ja existe:
+
+```bash
+uv run python manage.py edit_module
+```
+
+Ou, se preferir ja informar o slug:
+
+```bash
+uv run python manage.py edit_module usuarios
+```
+
+Nos fluxos que pedem um modulo existente, o terminal mostra antes a lista atual
+de modulos cadastrados para facilitar a escolha por numero ou `slug`.
 
 Se um módulo ainda não tiver área dedicada, ele também pode usar `url_name=module_entry`.
 Nesse caso, o dashboard resolve a rota genérica por `slug` em `/modulo/<slug>/`, o que
@@ -308,6 +347,31 @@ Hoje o seed cria o conjunto mínimo de módulos internos:
 
 O comando pode ser executado novamente sem duplicar registros; ele reconcilia os
 campos canônicos por `slug`.
+
+Se quiser limpar completamente o catalogo atual:
+
+```bash
+uv run python manage.py restore_initial_modules
+```
+
+Esse comando:
+
+- mostra os modulos cadastrados hoje
+- remove todo o catalogo atual
+
+Se depois disso voce quiser recriar os modulos canonicos, use:
+
+```bash
+uv run python manage.py seed_initial_modules
+```
+
+Se quiser remover um unico modulo da lista atual pelo terminal:
+
+```bash
+uv run python manage.py restore_initial_module
+```
+
+Esse comando mostra a lista atual e pergunta qual modulo deve ser removido.
 
 ## Rotas principais
 

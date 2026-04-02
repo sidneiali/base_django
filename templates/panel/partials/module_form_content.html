@@ -131,6 +131,39 @@
                     </div>
                 </div>
 
+                <div class="col-12">
+                    <div class="border rounded-3 p-3">
+                        <div class="mb-3">
+                            <h4 class="card-title mb-1">Visibilidade no shell</h4>
+                            <p class="text-secondary mb-0">
+                                Controle se o módulo aparece nos cards do dashboard, no menu lateral ou nos dois.
+                            </p>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row gap-3">
+                            <div class="form-check m-0">
+                                {{ form.show_in_dashboard }}
+                                <label class="form-check-label" for="{{ form.show_in_dashboard.id_for_label }}">
+                                    {{ form.show_in_dashboard.label }}
+                                </label>
+                                {% if form.show_in_dashboard.help_text %}
+                                    <div class="form-hint">{{ form.show_in_dashboard.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-check m-0">
+                                {{ form.show_in_sidebar }}
+                                <label class="form-check-label" for="{{ form.show_in_sidebar.id_for_label }}">
+                                    {{ form.show_in_sidebar.label }}
+                                </label>
+                                {% if form.show_in_sidebar.help_text %}
+                                    <div class="form-hint">{{ form.show_in_sidebar.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {% if form.non_field_errors %}
                     <div class="col-12">
                         <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>

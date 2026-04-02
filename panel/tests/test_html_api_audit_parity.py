@@ -180,6 +180,8 @@ class PanelHtmlApiAuditParityTests(TestCase):
                 "order": "35",
                 "permission": "",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
             },
         )
 

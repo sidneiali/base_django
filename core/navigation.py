@@ -22,6 +22,8 @@ class ModuleNavigationItem:
     icon: str
     url: str
     has_access: bool
+    show_in_sidebar: bool
+    show_in_dashboard: bool
 
 
 ModuleNavigationGroups = dict[str, list[ModuleNavigationItem]]
@@ -70,10 +72,34 @@ def build_modules_for_user(user: Any) -> ModuleNavigationGroups:
                 icon=module.icon or "ti ti-layout-grid",
                 url=module.get_absolute_url(),
                 has_access=_module_has_access(module, user),
+                show_in_sidebar=module.show_in_sidebar,
+                show_in_dashboard=module.show_in_dashboard,
             )
         )
 
     return dict(grouped)
+
+
+def _filter_modules_for_surface(
+    modules: ModuleNavigationGroups,
+    *,
+    surface: str,
+) -> ModuleNavigationGroups:
+    """Filtra a navegação agrupada para uma superfície específica do shell."""
+
+    attribute = "show_in_sidebar" if surface == "sidebar" else "show_in_dashboard"
+    filtered: ModuleNavigationGroups = {}
+
+    for group_name, group_modules in modules.items():
+        visible_modules = [
+            module
+            for module in group_modules
+            if getattr(module, attribute)
+        ]
+        if visible_modules:
+            filtered[group_name] = visible_modules
+
+    return filtered
 
 
 def build_topbar_shortcuts_for_user(user: Any) -> TopbarShortcutGroups:
@@ -113,7 +139,7 @@ def build_topbar_shortcuts_for_user(user: Any) -> TopbarShortcutGroups:
 
 
 def get_request_modules(request: HttpRequest) -> ModuleNavigationGroups:
-    """Retorna os módulos da navegação com cache por request."""
+    """Retorna todos os módulos ativos da navegação com cache por request."""
 
     if not request.user.is_authenticated:
         return {}
@@ -128,6 +154,21 @@ def get_request_modules(request: HttpRequest) -> ModuleNavigationGroups:
     modules = build_modules_for_user(request.user)
     setattr(request, "_cached_navigation_modules", modules)
     return modules
+
+
+def get_request_sidebar_modules(request: HttpRequest) -> ModuleNavigationGroups:
+    """Retorna os módulos visíveis no sidebar com cache por request."""
+
+    return _filter_modules_for_surface(get_request_modules(request), surface="sidebar")
+
+
+def get_request_dashboard_modules(request: HttpRequest) -> ModuleNavigationGroups:
+    """Retorna os módulos visíveis no dashboard com cache por request."""
+
+    return _filter_modules_for_surface(
+        get_request_modules(request),
+        surface="dashboard",
+    )
 
 
 def get_request_topbar_shortcuts(request: HttpRequest) -> TopbarShortcutGroups:

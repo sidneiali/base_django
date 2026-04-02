@@ -508,6 +508,8 @@ class PanelApiTests(TestCase):
                     "menu_group": "Segurança",
                     "order": 25,
                     "is_active": True,
+                    "show_in_dashboard": True,
+                    "show_in_sidebar": False,
                     "permission": permission.pk,
                 }
             ),
@@ -519,6 +521,8 @@ class PanelApiTests(TestCase):
         module = Module.objects.get(slug="gestao-de-grupos")
         self.assertEqual(module.app_label, "auth")
         self.assertEqual(module.permission_codename, "view_group")
+        self.assertTrue(module.show_in_dashboard)
+        self.assertFalse(module.show_in_sidebar)
         self.assertEqual(response.json()["data"]["permission"]["id"], permission.pk)
 
     def test_module_detail_reads_updates_and_deletes(self):
@@ -560,6 +564,8 @@ class PanelApiTests(TestCase):
                     "url_name": "panel_audit_logs_list",
                     "permission": permission.pk,
                     "is_active": True,
+                    "show_in_dashboard": False,
+                    "show_in_sidebar": True,
                 }
             ),
             content_type="application/json",
@@ -573,6 +579,8 @@ class PanelApiTests(TestCase):
         self.assertEqual(module.app_label, "core")
         self.assertEqual(module.permission_codename, "view_auditlog")
         self.assertTrue(module.is_active)
+        self.assertFalse(module.show_in_dashboard)
+        self.assertTrue(module.show_in_sidebar)
 
         module.is_active = False
         module.save(update_fields=["is_active"])

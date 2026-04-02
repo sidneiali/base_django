@@ -108,6 +108,8 @@ class PanelModuleViewTests(TestCase):
                 "menu_group": "Segurança",
                 "order": "45",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
                 "permission": str(permission.pk),
             },
             HTTP_HX_REQUEST="true",
@@ -122,6 +124,8 @@ class PanelModuleViewTests(TestCase):
         self.assertEqual(module.permission_codename, "view_auditlog")
         self.assertEqual(module.url_name, "panel_audit_logs_list")
         self.assertTrue(module.is_active)
+        self.assertTrue(module.show_in_dashboard)
+        self.assertTrue(module.show_in_sidebar)
 
     def test_module_create_without_htmx_redirects_to_list(self) -> None:
         """Criar módulo sem HTMX deve redirecionar com 302 para a listagem."""
@@ -139,6 +143,8 @@ class PanelModuleViewTests(TestCase):
                 "menu_group": "Comunicação",
                 "order": "15",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
             },
         )
 
@@ -162,6 +168,8 @@ class PanelModuleViewTests(TestCase):
                 "menu_group": "Teste",
                 "order": "10",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
             },
         )
 
@@ -188,6 +196,8 @@ class PanelModuleViewTests(TestCase):
                 "menu_group": "Teste",
                 "order": "10",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
             },
             HTTP_HX_REQUEST="true",
         )
@@ -226,6 +236,7 @@ class PanelModuleViewTests(TestCase):
                 "order": "35",
                 "permission": "",
                 "is_active": "on",
+                "show_in_dashboard": "on",
             },
             HTTP_HX_REQUEST="true",
         )
@@ -236,6 +247,8 @@ class PanelModuleViewTests(TestCase):
         self.assertEqual(module.app_label, "")
         self.assertEqual(module.permission_codename, "")
         self.assertEqual(module.order, 35)
+        self.assertTrue(module.show_in_dashboard)
+        self.assertFalse(module.show_in_sidebar)
 
     def test_module_update_without_htmx_redirects_to_list(self) -> None:
         """Edição sem HTMX deve redirecionar para a listagem."""
@@ -265,6 +278,8 @@ class PanelModuleViewTests(TestCase):
                 "menu_group": "Operação",
                 "order": "12",
                 "is_active": "on",
+                "show_in_dashboard": "on",
+                "show_in_sidebar": "on",
                 "permission": "",
             },
         )
