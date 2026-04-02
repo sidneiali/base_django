@@ -85,5 +85,6 @@ INITIAL_MODULES: tuple[ModuleSeedDefinition, ...] = (
         permission_codename="",
         menu_group="Integrações",
         order=40,
+        show_in_dashboard=False,
     ),
 )

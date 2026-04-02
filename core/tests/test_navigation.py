@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
@@ -245,5 +246,30 @@ class SidebarNavigationTests(TestCase):
         self.assertNotContains(
             response,
             'data-topbar-shortcut="groups"',
+            html=False,
+        )
+
+    def test_seeded_api_docs_module_stays_out_of_dashboard_cards(self) -> None:
+        """Documentação da API deve nascer no sidebar, mas não nos cards do dashboard."""
+
+        user = User.objects.create_superuser(
+            username="admin-docs",
+            email="admin-docs@example.com",
+            password="SenhaSegura@123",
+        )
+        call_command("seed_initial_modules")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response,
+            'data-dashboard-module="documentacao-api"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-sidebar-module="documentacao-api"',
             html=False,
         )

@@ -348,6 +348,11 @@ Hoje o seed cria o conjunto mínimo de módulos internos:
 O comando pode ser executado novamente sem duplicar registros; ele reconcilia os
 campos canônicos por `slug`.
 
+No catálogo canônico atual:
+
+- `Usuários`, `Módulos`, `Grupos` e `Auditoria` nascem visíveis no dashboard e no sidebar
+- `Documentação da API` nasce visível só no sidebar
+
 Se quiser limpar completamente o catalogo atual:
 
 ```bash

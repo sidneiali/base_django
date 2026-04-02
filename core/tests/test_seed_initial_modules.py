@@ -24,12 +24,9 @@ class SeedInitialModulesCommandTests(TestCase):
         self.assertTrue(Module.objects.filter(slug="grupos").exists())
         self.assertTrue(Module.objects.filter(slug="auditoria").exists())
         self.assertTrue(Module.objects.filter(slug="documentacao-api").exists())
-        self.assertFalse(
-            Module.objects.filter(show_in_dashboard=False).exists()
-        )
-        self.assertFalse(
-            Module.objects.filter(show_in_sidebar=False).exists()
-        )
+        docs_module = Module.objects.get(slug="documentacao-api")
+        self.assertFalse(docs_module.show_in_dashboard)
+        self.assertTrue(docs_module.show_in_sidebar)
 
     def test_command_is_idempotent_and_refreshes_canonical_fields(self) -> None:
         """Rerodar o seed nao deve duplicar registros e deve restaurar o catalogo."""
@@ -52,4 +49,7 @@ class SeedInitialModulesCommandTests(TestCase):
         self.assertEqual(users_module.order, 10)
         self.assertTrue(users_module.show_in_dashboard)
         self.assertTrue(users_module.show_in_sidebar)
+        docs_module = Module.objects.get(slug="documentacao-api")
+        self.assertFalse(docs_module.show_in_dashboard)
+        self.assertTrue(docs_module.show_in_sidebar)
         self.assertIn("0 criado(s), 5 atualizado(s)", stdout.getvalue())
