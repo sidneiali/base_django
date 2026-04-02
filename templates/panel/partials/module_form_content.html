@@ -1,11 +1,11 @@
-<div data-page-title="{{ page_title }}">
+<div data-page-title="{{ page_title }}" data-teste="module-form-page">
     <div class="card">
         <div class="card-header">
             <h3 class="card-title mb-0">{{ page_title }}</h3>
         </div>
 
         <div class="card-body">
-            <form method="post" class="row g-3" id="module-form">
+            <form method="post" class="row g-3" id="module-form" data-teste="module-form">
                 {% csrf_token %}
 
                 <div class="col-12 col-md-6">
@@ -138,8 +138,8 @@
                 {% endif %}
 
                 <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="btn-salvar-module">Salvar</button>
-                    <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-module" data-teste="module-save-submit">Salvar</button>
+                    <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary" data-teste="module-cancel-link">Cancelar</a>
                 </div>
             </form>
         </div>

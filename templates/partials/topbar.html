@@ -15,6 +15,7 @@
               data-bs-toggle="dropdown"
               data-bs-auto-close="outside"
               aria-label="Abrir menu do usuário"
+              data-teste="topbar-user-toggle"
             >
               <span class="avatar avatar-sm">
                 {{ request.user.username|slice:":1"|upper }}
@@ -25,7 +26,7 @@
               </div>
             </a>
 
-            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" data-teste="topbar-user-menu">
               <a
                 class="dropdown-item"
                 href="{% url 'account_password_change' %}"
@@ -33,6 +34,7 @@
                 hx-target="#page-content"
                 hx-push-url="true"
                 data-topbar-close-menu="true"
+                data-teste="topbar-my-password-link"
               >
                 Minha senha
               </a>
@@ -86,7 +88,7 @@
 
               <form method="post" action="{% url 'logout' %}" class="m-0">
                 {% csrf_token %}
-                <button type="submit" class="dropdown-item">
+                <button type="submit" class="dropdown-item" data-teste="topbar-logout-submit">
                   Sair
                 </button>
               </form>

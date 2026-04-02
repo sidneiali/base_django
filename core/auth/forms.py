@@ -22,6 +22,7 @@ class LoginForm(AuthenticationForm):
                 "placeholder": "Digite seu usuário",
                 "autofocus": True,
                 "spellcheck": "false",
+                "data-teste": "login-username",
             }
         )
 
@@ -30,6 +31,7 @@ class LoginForm(AuthenticationForm):
             {
                 "class": "form-control form-control-lg",
                 "placeholder": "Digite sua senha",
+                "data-teste": "login-password",
             }
         )
 

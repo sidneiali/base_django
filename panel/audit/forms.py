@@ -18,6 +18,7 @@ class AuditLogFilterForm(forms.Form):
             attrs={
                 "class": "form-control",
                 "placeholder": "Pesquisar por usuário ou identificador",
+                "data-teste": "audit-filter-actor",
             }
         ),
     )
@@ -25,7 +26,12 @@ class AuditLogFilterForm(forms.Form):
         required=False,
         label="Ação",
         choices=[("", "Todas")] + list(AuditLog.ACTION_CHOICES),
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "data-teste": "audit-filter-action",
+            }
+        ),
     )
     object_query = forms.CharField(
         required=False,
@@ -34,6 +40,7 @@ class AuditLogFilterForm(forms.Form):
             attrs={
                 "class": "form-control",
                 "placeholder": "Pesquisar por objeto, caminho ou request ID",
+                "data-teste": "audit-filter-object-query",
             }
         ),
     )
@@ -41,7 +48,11 @@ class AuditLogFilterForm(forms.Form):
         required=False,
         label="Data inicial",
         widget=forms.DateInput(
-            attrs={"class": "form-control", "type": "date"},
+            attrs={
+                "class": "form-control",
+                "type": "date",
+                "data-teste": "audit-filter-date-from",
+            },
             format="%Y-%m-%d",
         ),
         input_formats=["%Y-%m-%d"],
@@ -50,7 +61,11 @@ class AuditLogFilterForm(forms.Form):
         required=False,
         label="Data final",
         widget=forms.DateInput(
-            attrs={"class": "form-control", "type": "date"},
+            attrs={
+                "class": "form-control",
+                "type": "date",
+                "data-teste": "audit-filter-date-to",
+            },
             format="%Y-%m-%d",
         ),
         input_formats=["%Y-%m-%d"],

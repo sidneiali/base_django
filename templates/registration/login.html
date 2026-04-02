@@ -24,7 +24,7 @@
 
                         <div class="auth-cover-form-header">
                             <p class="auth-cover-form-header__eyebrow">Acesso seguro</p>
-                            <h2 class="auth-cover-form-header__title">Entrar na sua conta</h2>
+                            <h2 class="auth-cover-form-header__title" data-teste="login-title">Entrar na sua conta</h2>
                         </div>
 
                         {% if form.non_field_errors %}
@@ -33,7 +33,7 @@
                             </div>
                         {% endif %}
 
-                        <form method="post" class="auth-cover-form" novalidate>
+                        <form method="post" class="auth-cover-form" novalidate data-teste="login-form">
                             {% csrf_token %}
 
                             {% for hidden_field in form.hidden_fields %}
@@ -61,7 +61,7 @@
                             </div>
 
                             <div class="auth-cover-form__actions mb-3">
-                                <a href="{% url 'password_reset' %}" class="auth-cover-form__link">
+                                <a href="{% url 'password_reset' %}" class="auth-cover-form__link" data-teste="login-forgot-password">
                                     Esqueci minha senha
                                 </a>
                             </div>
@@ -86,7 +86,7 @@
                             </div>
 
                             <div class="form-footer">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" data-teste="login-submit">
                                     Entrar
                                 </button>
                             </div>

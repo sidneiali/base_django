@@ -1,4 +1,4 @@
-<div data-page-title="Detalhe da auditoria">
+<div data-page-title="Detalhe da auditoria" data-teste="audit-detail-page">
     <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
         <div>
             <h3 class="mb-1">Detalhe da auditoria</h3>
@@ -6,7 +6,7 @@
                 Drill-down completo do evento {{ audit_log.action_label|lower }}.
             </p>
         </div>
-        <a href="{{ back_url }}" class="btn btn-outline-secondary">Voltar para a lista</a>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary" data-teste="audit-back-link">Voltar para a lista</a>
     </div>
 
     <div class="row g-3 mb-3">

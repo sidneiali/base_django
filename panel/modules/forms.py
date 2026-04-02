@@ -44,7 +44,12 @@ class PanelModuleForm(forms.ModelForm):
         required=False,
         label="Permissão exigida",
         help_text="Deixe em branco para liberar o módulo a qualquer usuário autenticado.",
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "data-teste": "module-permission",
+            }
+        ),
     )
 
     class Meta:
@@ -60,14 +65,37 @@ class PanelModuleForm(forms.ModelForm):
             "is_active",
         ]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "slug": forms.TextInput(attrs={"class": "form-control"}),
-            "description": forms.TextInput(attrs={"class": "form-control"}),
-            "icon": forms.TextInput(attrs={"class": "form-control"}),
-            "url_name": forms.TextInput(attrs={"class": "form-control"}),
-            "menu_group": forms.TextInput(attrs={"class": "form-control"}),
-            "order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-name"}
+            ),
+            "slug": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-slug"}
+            ),
+            "description": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-description"}
+            ),
+            "icon": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-icon"}
+            ),
+            "url_name": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-url-name"}
+            ),
+            "menu_group": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "module-menu-group"}
+            ),
+            "order": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": "0",
+                    "data-teste": "module-order",
+                }
+            ),
+            "is_active": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "data-teste": "module-is-active",
+                }
+            ),
         }
         labels = {
             "name": "Nome do módulo",

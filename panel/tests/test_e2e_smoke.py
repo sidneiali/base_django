@@ -135,6 +135,11 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self.browser.get(f"{self.live_server_url}{path}")
         self._pause_for_demo()
 
+    def _locator_by_testid(self, testid: str) -> tuple[str, str]:
+        """Monta um locator CSS estável baseado em `data-teste`."""
+
+        return (By.CSS_SELECTOR, f'[data-teste="{testid}"]')
+
     def _test_user(self):
         """Retorna o usuário principal usado pelos cenários E2E."""
 
@@ -158,10 +163,14 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("login"))
 
         username_input = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "username"))
+            EC.visibility_of_element_located(
+                self._locator_by_testid("login-username")
+            )
         )
         password_input = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "password"))
+            EC.visibility_of_element_located(
+                self._locator_by_testid("login-password")
+            )
         )
         username_input.clear()
         username_input.send_keys(self.username)
@@ -169,25 +178,29 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         password_input.send_keys(self.password)
 
         submit_button = self.wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
+            EC.element_to_be_clickable(self._locator_by_testid("login-submit"))
         )
         submit_button.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Dashboard"]'))
+            EC.presence_of_element_located(self._locator_by_testid("dashboard-page"))
         )
 
     def _open_user_menu(self) -> None:
         """Expande o dropdown do usuário no topo da aplicação."""
 
         toggle = self.wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "[aria-label='Abrir menu do usuário']"))
+            EC.element_to_be_clickable(
+                self._locator_by_testid("topbar-user-toggle")
+            )
         )
         toggle.click()
         self._pause_for_demo()
         self.wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, ".dropdown-menu.show"))
+            EC.visibility_of_element_located(
+                self._locator_by_testid("topbar-user-menu")
+            )
         )
 
     def _create_audit_log(
@@ -219,13 +232,15 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
 
         self._open_user_menu()
         logout_button = self.wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".dropdown-menu.show button[type='submit']"))
+            EC.element_to_be_clickable(
+                self._locator_by_testid("topbar-logout-submit")
+            )
         )
         logout_button.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, ".auth-cover-form-header__title"))
+            EC.visibility_of_element_located(self._locator_by_testid("login-title"))
         )
         self.assertIn(reverse("login"), self.browser.current_url)
         self.assertIn("Entrar na sua conta", self.browser.page_source)
@@ -237,7 +252,9 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open_user_menu()
 
         password_link = self.wait.until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Minha senha"))
+            EC.element_to_be_clickable(
+                self._locator_by_testid("topbar-my-password-link")
+            )
         )
         password_link.click()
         self._pause_for_demo()
@@ -248,7 +265,9 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
             )
         )
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Minha senha"]'))
+            EC.presence_of_element_located(
+                self._locator_by_testid("account-password-page")
+            )
         )
         self.assertTrue(
             self.browser.current_url.endswith(reverse("account_password_change"))
@@ -279,18 +298,21 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_audit_logs_list"))
 
         actor_input = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "actor"))
+            EC.visibility_of_element_located(
+                self._locator_by_testid("audit-filter-actor")
+            )
         )
         actor_input.clear()
         actor_input.send_keys(self.username)
 
-        object_input = self.browser.find_element(By.NAME, "object_query")
+        object_input = self.browser.find_element(
+            *self._locator_by_testid("audit-filter-object-query")
+        )
         object_input.clear()
         object_input.send_keys("req-filter-match")
 
         submit_button = self.browser.find_element(
-            By.CSS_SELECTOR,
-            "form[method='get'] button[type='submit']",
+            *self._locator_by_testid("audit-filter-submit"),
         )
         submit_button.click()
         self._pause_for_demo()
@@ -321,21 +343,21 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_audit_logs_list") + query)
 
         detail_link = self.wait.until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Detalhes"))
+            EC.element_to_be_clickable(self._locator_by_testid("audit-detail-link"))
         )
         detail_link.click()
         self._pause_for_demo()
 
         self.wait.until(
             EC.presence_of_element_located(
-                (By.CSS_SELECTOR, '[data-page-title="Detalhe da auditoria"]')
+                self._locator_by_testid("audit-detail-page")
             )
         )
         self.assertIn("Evento detalhado", self.browser.page_source)
         self.assertIn("req-detail-smoke", self.browser.page_source)
 
         back_link = self.wait.until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Voltar para a lista"))
+            EC.element_to_be_clickable(self._locator_by_testid("audit-back-link"))
         )
         back_href = back_link.get_attribute("href") or ""
         self.assertIn(query, back_href)
@@ -343,7 +365,7 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Auditoria"]'))
+            EC.presence_of_element_located(self._locator_by_testid("audit-list-page"))
         )
         self.wait.until(lambda browser: "object_query=req-detail-smoke" in browser.current_url)
         self.assertIn("Evento detalhado", self.browser.page_source)
@@ -351,11 +373,12 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
     def _module_row_locator(self, module_name: str) -> tuple[str, str]:
         """Monta o locator da linha da tabela correspondente ao módulo informado."""
 
-        xpath = (
-            "//tbody/tr[.//div[contains(@class, 'fw-semibold')][contains(., "
-            f"'{module_name}')]]"
+        slug = Module.objects.only("slug").get(name=module_name).slug
+        selector = (
+            '[data-teste="module-row"]'
+            f'[data-module-slug="{slug}"]'
         )
-        return (By.XPATH, xpath)
+        return (By.CSS_SELECTOR, selector)
 
     def _module_row(self, module_name: str):
         """Localiza a linha da tabela correspondente ao módulo informado."""
@@ -367,8 +390,8 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
     def _user_row_locator(self, username: str) -> tuple[str, str]:
         """Monta o locator da linha da tabela correspondente ao usuário informado."""
 
-        xpath = f"//tbody/tr[./td[1][normalize-space()='{username}']]"
-        return (By.XPATH, xpath)
+        selector = f'[data-teste="user-row"][data-username="{username}"]'
+        return (By.CSS_SELECTOR, selector)
 
     def _user_row(self, username: str):
         """Localiza a linha da tabela correspondente ao usuário informado."""
@@ -410,14 +433,13 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_modules_list"))
 
         query_input = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "q"))
+            EC.visibility_of_element_located(self._locator_by_testid("modules-query"))
         )
         query_input.clear()
         query_input.send_keys("financeiro")
 
         search_button = self.browser.find_element(
-            By.CSS_SELECTOR,
-            "form[method='get'] button[type='submit']",
+            *self._locator_by_testid("modules-filter-submit"),
         )
         search_button.click()
         self._pause_for_demo()
@@ -438,32 +460,52 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_modules_list"))
 
         new_link = self.wait.until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Novo módulo"))
+            EC.element_to_be_clickable(
+                self._locator_by_testid("modules-create-link")
+            )
         )
         new_link.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Novo módulo"]'))
+            EC.presence_of_element_located(self._locator_by_testid("module-form-page"))
         )
-        self.browser.find_element(By.NAME, "name").send_keys("E2E Módulo")
-        self.browser.find_element(By.NAME, "slug").send_keys("e2e-modulo")
-        self.browser.find_element(By.NAME, "description").send_keys("Criado pelo smoke test")
-        self.browser.find_element(By.NAME, "icon").send_keys("ti ti-layout-grid")
-        self.browser.find_element(By.NAME, "menu_group").clear()
-        self.browser.find_element(By.NAME, "menu_group").send_keys("Operação")
-        self.browser.find_element(By.NAME, "url_name").clear()
-        self.browser.find_element(By.NAME, "url_name").send_keys("module_entry")
-        order_input = self.browser.find_element(By.NAME, "order")
+        self.browser.find_element(
+            *self._locator_by_testid("module-name")
+        ).send_keys("E2E Módulo")
+        self.browser.find_element(
+            *self._locator_by_testid("module-slug")
+        ).send_keys("e2e-modulo")
+        self.browser.find_element(
+            *self._locator_by_testid("module-description")
+        ).send_keys("Criado pelo smoke test")
+        self.browser.find_element(
+            *self._locator_by_testid("module-icon")
+        ).send_keys("ti ti-layout-grid")
+        menu_group_input = self.browser.find_element(
+            *self._locator_by_testid("module-menu-group")
+        )
+        menu_group_input.clear()
+        menu_group_input.send_keys("Operação")
+        url_name_input = self.browser.find_element(
+            *self._locator_by_testid("module-url-name")
+        )
+        url_name_input.clear()
+        url_name_input.send_keys("module_entry")
+        order_input = self.browser.find_element(
+            *self._locator_by_testid("module-order")
+        )
         order_input.clear()
         order_input.send_keys("25")
 
-        save_button = self.browser.find_element(By.CSS_SELECTOR, "#btn-salvar-module")
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("module-save-submit")
+        )
         save_button.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Módulos"]'))
+            EC.presence_of_element_located(self._locator_by_testid("modules-page"))
         )
         self.wait.until(
             EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "E2E Módulo")
@@ -473,7 +515,9 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         row_locator = self._module_row_locator("E2E Módulo")
         row = self.wait.until(EC.presence_of_element_located(row_locator))
         self.assertIn("Ativo", row.text)
-        deactivate_button = row.find_element(By.XPATH, ".//button[normalize-space()='Inativar']")
+        deactivate_button = row.find_element(
+            *self._locator_by_testid("module-deactivate-submit")
+        )
         deactivate_button.click()
         self._pause_for_demo()
 
@@ -484,7 +528,9 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self.assertFalse(module.is_active)
 
         row = self.wait.until(EC.presence_of_element_located(row_locator))
-        activate_button = row.find_element(By.XPATH, ".//button[normalize-space()='Ativar']")
+        activate_button = row.find_element(
+            *self._locator_by_testid("module-activate-submit")
+        )
         activate_button.click()
         self._pause_for_demo()
 
@@ -513,14 +559,13 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_users_list"))
 
         query_input = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "q"))
+            EC.visibility_of_element_located(self._locator_by_testid("users-query"))
         )
         query_input.clear()
         query_input.send_keys("ana-e2e")
 
         search_button = self.browser.find_element(
-            By.CSS_SELECTOR,
-            "form[method='get'] button[type='submit']",
+            *self._locator_by_testid("users-filter-submit"),
         )
         search_button.click()
         self._pause_for_demo()
@@ -542,26 +587,40 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._open(reverse("panel_users_list"))
 
         new_link = self.wait.until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Novo usuário"))
+            EC.element_to_be_clickable(self._locator_by_testid("users-create-link"))
         )
         new_link.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Novo usuário"]'))
+            EC.presence_of_element_located(self._locator_by_testid("user-form-page"))
         )
-        self.browser.find_element(By.NAME, "username").send_keys("novo-e2e")
-        self.browser.find_element(By.NAME, "email").send_keys("novo-e2e@example.com")
-        self.browser.find_element(By.NAME, "first_name").send_keys("Novo")
-        self.browser.find_element(By.NAME, "last_name").send_keys("E2E")
-        self.browser.find_element(By.NAME, "password").send_keys("SenhaSegura@123")
+        self.browser.find_element(
+            *self._locator_by_testid("user-username")
+        ).send_keys("novo-e2e")
+        self.browser.find_element(
+            *self._locator_by_testid("user-email")
+        ).send_keys("novo-e2e@example.com")
+        self.browser.find_element(
+            *self._locator_by_testid("user-first-name")
+        ).send_keys("Novo")
+        self.browser.find_element(
+            *self._locator_by_testid("user-last-name")
+        ).send_keys("E2E")
+        self.browser.find_element(
+            *self._locator_by_testid("user-password")
+        ).send_keys("SenhaSegura@123")
 
-        interval_input = self.browser.find_element(By.NAME, "auto_refresh_interval")
+        interval_input = self.browser.find_element(
+            *self._locator_by_testid("user-auto-refresh-interval")
+        )
         interval_input.clear()
         interval_input.send_keys("30")
 
         available_groups = self.wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-dual-list-available]"))
+            EC.visibility_of_element_located(
+                self._locator_by_testid("user-groups-available")
+            )
         )
         operation_group = available_groups.find_element(
             By.XPATH,
@@ -571,25 +630,26 @@ class PanelE2ESmokeTests(StaticLiveServerTestCase):
         self._pause_for_demo()
 
         add_group_button = self.browser.find_element(
-            By.CSS_SELECTOR,
-            "[data-dual-list-add]",
+            *self._locator_by_testid("user-groups-add"),
         )
         add_group_button.click()
         self._pause_for_demo()
 
         self.wait.until(
             EC.text_to_be_present_in_element(
-                (By.CSS_SELECTOR, "[data-dual-list-chosen]"),
+                self._locator_by_testid("user-groups-chosen"),
                 "Operação E2E",
             )
         )
 
-        save_button = self.browser.find_element(By.CSS_SELECTOR, "#btn-salvar-user")
+        save_button = self.browser.find_element(
+            *self._locator_by_testid("user-save-submit")
+        )
         save_button.click()
         self._pause_for_demo()
 
         self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-page-title="Usuários"]'))
+            EC.presence_of_element_located(self._locator_by_testid("users-page"))
         )
         self.wait.until(
             EC.text_to_be_present_in_element((By.CSS_SELECTOR, "tbody"), "novo-e2e")

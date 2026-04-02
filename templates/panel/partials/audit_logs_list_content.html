@@ -1,4 +1,4 @@
-<div data-page-title="Auditoria">
+<div data-page-title="Auditoria" data-teste="audit-list-page">
     <div class="card">
         <div class="card-header">
             <div>
@@ -10,7 +10,7 @@
         </div>
 
         <div class="card-body border-bottom">
-            <form method="get" class="row g-3" hx-push-url="true">
+            <form method="get" class="row g-3" hx-push-url="true" data-teste="audit-filter-form">
                 <div class="col-md-3">
                     <label class="form-label" for="{{ form.actor.id_for_label }}">{{ form.actor.label }}</label>
                     {{ form.actor }}
@@ -47,14 +47,14 @@
                     {% endfor %}
                 </div>
                 <div class="col-md-4 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-                    <a href="{% url 'panel_audit_logs_list' %}" class="btn btn-outline-secondary">Limpar</a>
+                    <button type="submit" class="btn btn-outline-primary" data-teste="audit-filter-submit">Filtrar</button>
+                    <a href="{% url 'panel_audit_logs_list' %}" class="btn btn-outline-secondary" data-teste="audit-filter-clear">Limpar</a>
                 </div>
             </form>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-vcenter table-hover card-table">
+            <table class="table table-vcenter table-hover card-table" data-teste="audit-table">
                 <thead>
                     <tr>
                         <th>Quando</th>
@@ -68,7 +68,7 @@
                 </thead>
                 <tbody>
                     {% for audit_log in audit_logs %}
-                        <tr>
+                        <tr data-teste="audit-row" data-audit-id="{{ audit_log.pk }}" data-request-id="{{ audit_log.request_id|default:'' }}">
                             <td class="text-nowrap">{{ audit_log.created_at|date:"d/m/Y H:i:s" }}</td>
                             <td>
                                 <span class="badge bg-blue-lt">{{ audit_log.action_label }}</span>
@@ -92,6 +92,7 @@
                                 <a
                                     href="{% url 'panel_audit_log_detail' audit_log.pk %}{{ current_query }}"
                                     class="btn btn-sm btn-outline-primary"
+                                    data-teste="audit-detail-link"
                                 >
                                     Detalhes
                                 </a>

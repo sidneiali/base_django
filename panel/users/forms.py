@@ -19,7 +19,10 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
         label="Senha",
         required=False,
         widget=forms.PasswordInput(
-            attrs={"class": "form-control"},
+            attrs={
+                "class": "form-control",
+                "data-teste": "user-password",
+            },
             render_value=False,
         ),
         help_text="Preencha só se quiser trocar a senha. Na criação, obrigatório.",
@@ -52,6 +55,7 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
                 "max": str(UserInterfacePreference.MAX_AUTO_REFRESH_INTERVAL),
                 "step": "5",
                 "data-auto-refresh-interval-input": "true",
+                "data-teste": "user-auto-refresh-interval",
             }
         ),
         help_text=(
@@ -72,10 +76,18 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
             "groups",
         ]
         widgets = {
-            "username": forms.TextInput(attrs={"class": "form-control"}),
-            "first_name": forms.TextInput(attrs={"class": "form-control"}),
-            "last_name": forms.TextInput(attrs={"class": "form-control"}),
-            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "username": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "user-username"}
+            ),
+            "first_name": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "user-first-name"}
+            ),
+            "last_name": forms.TextInput(
+                attrs={"class": "form-control", "data-teste": "user-last-name"}
+            ),
+            "email": forms.EmailInput(
+                attrs={"class": "form-control", "data-teste": "user-email"}
+            ),
         }
         labels = {
             "username": "Usuário",
@@ -90,7 +102,16 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.fields["auto_refresh_enabled"].widget.attrs.update(
-            {"class": "form-check-input"}
+            {
+                "class": "form-check-input",
+                "data-teste": "user-auto-refresh-enabled",
+            }
+        )
+        self.fields["is_active"].widget.attrs.update(
+            {
+                "class": "form-check-input",
+                "data-teste": "user-is-active",
+            }
         )
         self.fields["api_enabled"].widget.attrs.update(
             {"class": "form-check-input"}

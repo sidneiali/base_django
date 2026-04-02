@@ -1,11 +1,11 @@
-<div data-page-title="{{ page_title }}">
+<div data-page-title="{{ page_title }}" data-teste="user-form-page">
     <div class="card">
         <div class="card-header">
             <h3 class="card-title mb-0">{{ page_title }}</h3>
         </div>
 
         <div class="card-body">
-            <form method="post" class="row g-3" id="user-form">
+            <form method="post" class="row g-3" id="user-form" data-teste="user-form">
                 {% csrf_token %}
 
                 <div class="col-12 col-md-6">
@@ -151,7 +151,7 @@
                 <div class="col-12">
                     <label class="form-label">{{ form.groups.label }}</label>
 
-                    <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list>
+                    <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list data-teste="user-groups-dual-list">
 
                         <div class="d-flex flex-column flex-grow-1 dual-list-col">
                             <div class="text-secondary small mb-1">Disponíveis</div>
@@ -160,11 +160,13 @@
                                 class="form-control form-control-sm mb-2"
                                 placeholder="Filtrar grupos..."
                                 data-dual-list-filter
+                                data-teste="user-groups-filter"
                             >
                             <select
                                 class="form-select flex-grow-1 dual-list-select"
                                 multiple
                                 data-dual-list-available
+                                data-teste="user-groups-available"
                             >
                                 {% for pk, label in groups_available %}
                                     <option value="{{ pk }}">{{ label }}</option>
@@ -173,10 +175,10 @@
                         </div>
 
                         <div class="d-flex flex-column justify-content-center gap-2 flex-shrink-0 dual-list-actions-col">
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add>Adicionar →</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove>← Remover</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all>Todos →</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all>← Nenhum</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add data-teste="user-groups-add">Adicionar →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove data-teste="user-groups-remove">← Remover</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all data-teste="user-groups-add-all">Todos →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all data-teste="user-groups-remove-all">← Nenhum</button>
                         </div>
 
                         <div class="d-flex flex-column flex-grow-1 dual-list-col">
@@ -188,6 +190,7 @@
                                 class="form-select flex-grow-1 dual-list-select"
                                 multiple
                                 data-dual-list-chosen
+                                data-teste="user-groups-chosen"
                             >
                                 {% for pk, label in groups_chosen %}
                                     <option value="{{ pk }}" selected>{{ label }}</option>
@@ -209,8 +212,8 @@
                 {% endif %}
 
                 <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="btn-salvar-user">Salvar</button>
-                    <a href="{% url 'panel_users_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-user" data-teste="user-save-submit">Salvar</button>
+                    <a href="{% url 'panel_users_list' %}" class="btn btn-outline-secondary" data-teste="user-cancel-link">Cancelar</a>
                 </div>
             </form>
         </div>

@@ -180,6 +180,7 @@ uv run pytest
 ```
 
 Os smoke tests E2E com Selenium ficam marcados como `e2e` e não entram na suite padrão.
+Nos templates cobertos por E2E, prefira seletores estáveis com `data-teste` para evitar acoplamento com texto visível ou estrutura incidental de CSS.
 
 Para rodar só os testes E2E:
 
