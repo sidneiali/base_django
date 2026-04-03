@@ -8,6 +8,7 @@ from typing import Protocol
 
 from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
 
 User = get_user_model()
@@ -23,7 +24,7 @@ class PanelApiTokenMixin:
         username: str | None = None,
         email: str | None = None,
         **permissions: bool,
-    ) -> tuple[object, str]:
+    ) -> tuple[AbstractUser, str]:
         """Cria um usuário de API com token ativo e permissão configurável."""
 
         resolved_username = username or "api-client"

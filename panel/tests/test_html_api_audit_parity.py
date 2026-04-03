@@ -5,9 +5,7 @@ from __future__ import annotations
 import json
 
 from core.models import (
-    ApiAccessProfile,
     ApiResourcePermission,
-    ApiToken,
     AuditLog,
     Module,
 )
@@ -16,10 +14,12 @@ from django.contrib.auth.models import Group, Permission
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from .api_test_support import PanelApiTokenMixin
+
 User = get_user_model()
 
 
-class PanelHtmlApiAuditParityTests(TestCase):
+class PanelHtmlApiAuditParityTests(PanelApiTokenMixin, TestCase):
     """Garante trilha auditável coerente entre painel HTML e API JSON."""
 
     def _login_with_permissions(self, client: Client, *codenames: str) -> str:
@@ -35,24 +35,6 @@ class PanelHtmlApiAuditParityTests(TestCase):
         user.user_permissions.add(*permissions)
         client.force_login(user)
         return user.username
-
-    def _issue_token(self, resource: str, **permissions: bool) -> tuple[str, str]:
-        """Emite um token Bearer com a matriz de acesso informada."""
-
-        index = User.objects.count() + 1
-        user = User.objects.create_user(
-            username=f"api-audit-{index}",
-            email=f"api-audit-{index}@example.com",
-            password="SenhaSegura@123",
-        )
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=resource,
-            **permissions,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return user.username, raw_token
 
     def _assert_log_context(
         self,
@@ -109,10 +91,11 @@ class PanelHtmlApiAuditParityTests(TestCase):
         )
 
         api_client = Client()
-        api_actor, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_GROUPS,
+        api_user, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_GROUPS,
             can_update=True,
         )
+        api_actor = api_user.username
         api_group = Group.objects.create(name="Suporte API")
 
         AuditLog.objects.all().delete()
@@ -207,10 +190,11 @@ class PanelHtmlApiAuditParityTests(TestCase):
         self.assertEqual(html_log.changes["permission_codename"]["after"], "")
 
         api_client = Client()
-        api_actor, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        api_user, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_update=True,
         )
+        api_actor = api_user.username
         api_module = Module.objects.create(
             name="Auditoria API",
             slug="auditoria-api-audit",
@@ -301,10 +285,11 @@ class PanelHtmlApiAuditParityTests(TestCase):
         self.assertEqual(html_log.before["slug"], "modulo-removido-html")
 
         api_client = Client()
-        api_actor, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        api_user, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_delete=True,
         )
+        api_actor = api_user.username
         api_module = Module.objects.create(
             name="Módulo removido API",
             slug="modulo-removido-api",

@@ -4,16 +4,18 @@ from __future__ import annotations
 
 import json
 
-from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken, Module
+from core.models import ApiResourcePermission, Module
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 
+from .api_test_support import PanelApiTokenMixin
+
 User = get_user_model()
 
 
-class PanelHtmlApiParityTests(TestCase):
+class PanelHtmlApiParityTests(PanelApiTokenMixin, TestCase):
     """Garante que HTML e API apliquem as mesmas regras de negócio."""
 
     def _login_with_permissions(self, *codenames: str) -> None:
@@ -29,30 +31,12 @@ class PanelHtmlApiParityTests(TestCase):
         user.user_permissions.add(*permissions)
         self.client.force_login(user)
 
-    def _issue_token(self, resource: str, **permissions: bool) -> str:
-        """Emite um token Bearer com a matriz de acesso informada."""
-
-        index = User.objects.count() + 1
-        user = User.objects.create_user(
-            username=f"api-parity-{index}",
-            email=f"api-parity-{index}@example.com",
-            password="SenhaSegura@123",
-        )
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=resource,
-            **permissions,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return raw_token
-
     def test_protected_group_name_is_rejected_in_html_and_api(self) -> None:
         """HTML e API devem bloquear o mesmo nome reservado de grupo."""
 
         self._login_with_permissions("add_group")
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_GROUPS,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_GROUPS,
             can_create=True,
         )
 
@@ -81,8 +65,8 @@ class PanelHtmlApiParityTests(TestCase):
         """HTML e API devem rejeitar permissões fora da lista editável do painel."""
 
         self._login_with_permissions("add_group")
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_GROUPS,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_GROUPS,
             can_create=True,
         )
         blocked_permission = Permission.objects.filter(
@@ -123,8 +107,8 @@ class PanelHtmlApiParityTests(TestCase):
         """HTML e API devem validar o nome de rota do módulo do mesmo jeito."""
 
         self._login_with_permissions("add_module")
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_create=True,
         )
         payload = {
@@ -165,8 +149,8 @@ class PanelHtmlApiParityTests(TestCase):
         """HTML e API devem limpar a permissão ao voltar para a entrada genérica."""
 
         self._login_with_permissions("change_module")
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_update=True,
         )
         permission = Permission.objects.get(codename="view_auditlog")
@@ -244,8 +228,8 @@ class PanelHtmlApiParityTests(TestCase):
         """HTML e API devem expor o mesmo motivo de bloqueio na exclusão."""
 
         self._login_with_permissions("delete_module")
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_delete=True,
         )
         html_module = Module.objects.create(
