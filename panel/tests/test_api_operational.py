@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
-from typing import Protocol, TypedDict
 
 from core.models import (
-    ApiAccessProfile,
     ApiResourcePermission,
-    ApiToken,
     AuditLog,
     Module,
 )
@@ -18,51 +14,20 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
+from .api_test_support import (
+    HasPk,
+    PanelApiResourceCase,
+    PanelApiTokenMixin,
+    build_panel_api_resource_cases,
+)
+
 User = get_user_model()
 
 
-class _HasPk(Protocol):
-    """Contrato mínimo dos alvos usados nos testes de detalhe da API."""
-
-    pk: int
-
-
-ResourceFactory = Callable[[], _HasPk]
-
-
-class ResourceCase(TypedDict):
-    """Define um recurso do painel com as superfícies usadas nos testes."""
-
-    label: str
-    resource: str
-    collection_url: str
-    detail_url_name: str
-    factory: ResourceFactory
-    create_payload: dict[str, object]
-    update_payload: dict[str, object]
-
-
-class PanelApiOperationalTests(TestCase):
+class PanelApiOperationalTests(PanelApiTokenMixin, TestCase):
     """Valida cenários operacionais e falhas padronizadas da API do painel."""
 
-    def _issue_token(self, resource: str, **permissions: bool) -> str:
-        """Cria um token ativo com acesso configurável ao recurso informado."""
-
-        user = User.objects.create_user(
-            username=f"api-{resource.rsplit('.', 1)[-1]}-{User.objects.count()}",
-            email=f"{resource.rsplit('.', 1)[-1]}@example.com",
-            password="SenhaSegura@123",
-        )
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=resource,
-            **permissions,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return raw_token
-
-    def _create_user_target(self) -> _HasPk:
+    def _create_user_target(self) -> HasPk:
         """Cria um usuário comum editável pela API."""
 
         return User.objects.create_user(
@@ -71,12 +36,12 @@ class PanelApiOperationalTests(TestCase):
             password="SenhaSegura@123",
         )
 
-    def _create_group_target(self) -> _HasPk:
+    def _create_group_target(self) -> HasPk:
         """Cria um grupo editável pela API."""
 
         return Group.objects.create(name=f"Grupo {Group.objects.count() + 1}")
 
-    def _create_module_target(self) -> _HasPk:
+    def _create_module_target(self) -> HasPk:
         """Cria um módulo customizado seguro para edição e exclusão."""
 
         return Module.objects.create(
@@ -92,68 +57,28 @@ class PanelApiOperationalTests(TestCase):
             is_active=False,
         )
 
-    def _resource_cases(self) -> list[ResourceCase]:
+    def _resource_cases(self) -> tuple[PanelApiResourceCase, ...]:
         """Retorna os recursos do painel com URLs e payloads representativos."""
 
-        return [
-            {
-                "label": "usuarios",
-                "resource": ApiResourcePermission.Resource.PANEL_USERS,
-                "collection_url": reverse("api_panel_users_collection"),
-                "detail_url_name": "api_panel_user_detail",
-                "factory": self._create_user_target,
-                "create_payload": {
-                    "username": "novo-operacional",
-                    "email": "novo-operacional@example.com",
-                    "password": "SenhaSegura@123",
-                },
-                "update_payload": {
-                    "email": "atualizado-operacional@example.com",
-                },
-            },
-            {
-                "label": "grupos",
-                "resource": ApiResourcePermission.Resource.PANEL_GROUPS,
-                "collection_url": reverse("api_panel_groups_collection"),
-                "detail_url_name": "api_panel_group_detail",
-                "factory": self._create_group_target,
-                "create_payload": {
-                    "name": "Grupo Operacional",
-                },
-                "update_payload": {
-                    "name": "Grupo Operacional Atualizado",
-                },
-            },
-            {
-                "label": "modulos",
-                "resource": ApiResourcePermission.Resource.PANEL_MODULES,
-                "collection_url": reverse("api_panel_modules_collection"),
-                "detail_url_name": "api_panel_module_detail",
-                "factory": self._create_module_target,
-                "create_payload": {
-                    "name": "Módulo Operacional",
-                    "slug": "modulo-operacional",
-                    "url_name": "module_entry",
-                },
-                "update_payload": {
-                    "description": "Módulo atualizado via teste operacional",
-                },
-            },
-        ]
+        return build_panel_api_resource_cases(
+            user_factory=self._create_user_target,
+            group_factory=self._create_group_target,
+            module_factory=self._create_module_target,
+        )
 
     def test_collection_post_requires_create_permission_for_each_resource(self) -> None:
         """POST da coleção deve bloquear tokens sem a flag de criação."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_read=True,
                 )
 
                 response = self.client.post(
-                    str(case["collection_url"]),
-                    data=json.dumps(case["create_payload"]),
+                    case.collection_url,
+                    data=json.dumps(case.create_payload),
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
@@ -165,16 +90,16 @@ class PanelApiOperationalTests(TestCase):
         """PATCH do detalhe deve bloquear tokens sem a flag de atualização."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                target = case["factory"]()
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                target = case.factory()
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_read=True,
                 )
 
                 response = self.client.patch(
-                    reverse(str(case["detail_url_name"]), args=[target.pk]),
-                    data=json.dumps(case["update_payload"]),
+                    case.detail_url(target.pk),
+                    data=json.dumps(case.update_payload),
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
@@ -186,15 +111,15 @@ class PanelApiOperationalTests(TestCase):
         """DELETE do detalhe deve bloquear tokens sem a flag de exclusão."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                target = case["factory"]()
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                target = case.factory()
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_read=True,
                 )
 
                 response = self.client.delete(
-                    reverse(str(case["detail_url_name"]), args=[target.pk]),
+                    case.detail_url(target.pk),
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
 
@@ -205,11 +130,11 @@ class PanelApiOperationalTests(TestCase):
         """DELETE bem-sucedido deve preservar envelope JSON e contexto básico."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                target = case["factory"]()
-                detail_url = reverse(str(case["detail_url_name"]), args=[target.pk])
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                target = case.factory()
+                detail_url = case.detail_url(target.pk)
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_delete=True,
                 )
 
@@ -224,7 +149,7 @@ class PanelApiOperationalTests(TestCase):
                     payload["data"],
                     {
                         "deleted": True,
-                        "resource": str(case["resource"]),
+                        "resource": case.resource,
                         "id": target.pk,
                     },
                 )
@@ -236,14 +161,14 @@ class PanelApiOperationalTests(TestCase):
         """POST da coleção deve rejeitar corpo JSON inválido nos três recursos."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_create=True,
                 )
 
                 response = self.client.post(
-                    str(case["collection_url"]),
+                    case.collection_url,
                     data="{json-invalido",
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
@@ -256,15 +181,15 @@ class PanelApiOperationalTests(TestCase):
         """POST da coleção deve rejeitar payload JSON que não seja objeto."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_create=True,
                 )
 
                 response = self.client.post(
-                    str(case["collection_url"]),
-                    data=json.dumps([case["create_payload"]]),
+                    case.collection_url,
+                    data=json.dumps([case.create_payload]),
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
@@ -276,15 +201,15 @@ class PanelApiOperationalTests(TestCase):
         """PUT na coleção deve chegar à view e responder 405 padronizado."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_update=True,
                 )
 
                 response = self.client.put(
-                    str(case["collection_url"]),
-                    data=json.dumps(case["update_payload"]),
+                    case.collection_url,
+                    data=json.dumps(case.update_payload),
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
@@ -296,16 +221,16 @@ class PanelApiOperationalTests(TestCase):
         """POST no detalhe deve responder 405 quando o token puder criar."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                target = case["factory"]()
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                target = case.factory()
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_create=True,
                 )
 
                 response = self.client.post(
-                    reverse(str(case["detail_url_name"]), args=[target.pk]),
-                    data=json.dumps(case["create_payload"]),
+                    case.detail_url(target.pk),
+                    data=json.dumps(case.create_payload),
                     content_type="application/json",
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
@@ -317,14 +242,14 @@ class PanelApiOperationalTests(TestCase):
         """GET do detalhe deve responder 404 para ids inexistentes."""
 
         for case in self._resource_cases():
-            with self.subTest(resource=case["label"]):
-                raw_token = self._issue_token(
-                    str(case["resource"]),
+            with self.subTest(resource=case.label):
+                raw_token = self._issue_raw_token(
+                    resource=case.resource,
                     can_read=True,
                 )
 
                 response = self.client.get(
-                    reverse(str(case["detail_url_name"]), args=[999999]),
+                    case.detail_url(999999),
                     HTTP_AUTHORIZATION=f"Bearer {raw_token}",
                 )
 
@@ -334,8 +259,8 @@ class PanelApiOperationalTests(TestCase):
     def test_forbidden_create_attempt_is_audited_for_panel_modules(self) -> None:
         """Acesso negado de criação em módulos deve gerar trilha auditável."""
 
-        raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        raw_token = self._issue_raw_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             can_read=True,
         )
         AuditLog.objects.all().delete()
