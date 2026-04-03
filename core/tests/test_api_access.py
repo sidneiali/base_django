@@ -3,12 +3,12 @@
 import json
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken, AuditLog
+from core.models import ApiResourcePermission, ApiToken, AuditLog
+from core.tests.api_access_test_support import ApiAccessFactory
 
 User = get_user_model()
 
@@ -137,27 +137,14 @@ class ApiDocsTests(TestCase):
 class AuditLogApiTests(TestCase):
     """Valida os endpoints Bearer para leitura dos logs de auditoria."""
 
-    def _issue_token(self, *, can_read: bool = True) -> str:
-        """Cria um usuário com acesso habilitado ao recurso de auditoria."""
-
-        user = User.objects.create_user(
-            username="audit-api",
-            email="audit-api@example.com",
-            password="SenhaSegura@123",
-        )
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
-            can_read=can_read,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return raw_token
-
     def test_audit_logs_collection_requires_read_permission(self):
         """A listagem deve bloquear tokens sem leitura do recurso."""
 
-        raw_token = self._issue_token(can_read=False)
+        raw_token = ApiAccessFactory.issue_token_without_permission(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
 
         response = self.client.get(
             reverse("api_core_audit_logs_collection"),
@@ -193,7 +180,11 @@ class AuditLogApiTests(TestCase):
             path="/painel/grupos/11/excluir/",
             created_at=timezone.now(),
         )
-        raw_token = self._issue_token()
+        raw_token = ApiAccessFactory.issue_token_with_single_resource(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
 
         response = self.client.get(
             reverse("api_core_audit_logs_collection"),
@@ -219,7 +210,11 @@ class AuditLogApiTests(TestCase):
     def test_audit_logs_collection_supports_ordering_and_page_errors(self):
         """A listagem deve validar ordering e páginas fora do intervalo."""
 
-        raw_token = self._issue_token()
+        raw_token = ApiAccessFactory.issue_token_with_single_resource(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
         AuditLog.objects.all().delete()
         AuditLog.objects.create(
             actor_identifier="bbb",
@@ -265,7 +260,11 @@ class AuditLogApiTests(TestCase):
     def test_audit_logs_collection_rejects_invalid_action_and_date_range(self):
         """A coleção deve validar ação inválida e intervalo de datas inconsistente."""
 
-        raw_token = self._issue_token()
+        raw_token = ApiAccessFactory.issue_token_with_single_resource(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
 
         invalid_action_response = self.client.get(
             reverse("api_core_audit_logs_collection"),
@@ -296,7 +295,11 @@ class AuditLogApiTests(TestCase):
     def test_audit_log_detail_returns_full_payload(self):
         """O detalhe deve expor os campos before/after/changes/metadata."""
 
-        raw_token = self._issue_token()
+        raw_token = ApiAccessFactory.issue_token_with_single_resource(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
         audit_log = AuditLog.objects.create(
             actor_identifier="admin",
             action=AuditLog.ACTION_UPDATE,
@@ -305,7 +308,9 @@ class AuditLogApiTests(TestCase):
             object_verbose_name="usuário",
             before={"email": "antes@example.com"},
             after={"email": "depois@example.com"},
-            changes={"email": {"before": "antes@example.com", "after": "depois@example.com"}},
+            changes={
+                "email": {"before": "antes@example.com", "after": "depois@example.com"}
+            },
             metadata={"event": "manual_update"},
             path="/painel/usuarios/7/editar/",
             request_method="POST",
@@ -326,7 +331,11 @@ class AuditLogApiTests(TestCase):
     def test_audit_log_detail_returns_404_for_unknown_event(self):
         """O detalhe deve responder 404 quando o log não existir."""
 
-        raw_token = self._issue_token()
+        raw_token = ApiAccessFactory.issue_token_with_single_resource(
+            ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
+            username="audit-api",
+            email="audit-api@example.com",
+        )
 
         response = self.client.get(
             reverse("api_core_audit_log_detail", args=[999999]),
@@ -340,36 +349,14 @@ class AuditLogApiTests(TestCase):
 class ApiAccessEndpointsTests(TestCase):
     """Valida os endpoints de introspecção da conta e do token atuais."""
 
-    def _issue_token(self, *, can_read: bool = True) -> tuple[object, str]:
-        """Cria um usuário com acesso habilitado ao recurso de introspecção."""
-
-        user = User.objects.create_user(
-            username="self-api",
-            email="self-api@example.com",
-            password="SenhaSegura@123",
-            first_name="Self",
-            last_name="Api",
-        )
-        group = Group.objects.create(name="Integrações")
-        user.groups.add(group)
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=ApiResourcePermission.Resource.CORE_API_ACCESS,
-            can_read=can_read,
-        )
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=ApiResourcePermission.Resource.CORE_AUDIT_LOGS,
-            can_read=True,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return user, raw_token
-
     def test_me_requires_api_access_permission(self):
         """A conta atual também precisa respeitar a permissão de leitura."""
 
-        _user, raw_token = self._issue_token(can_read=False)
+        raw_token = ApiAccessFactory.issue_token_without_permission(
+            ApiResourcePermission.Resource.CORE_API_ACCESS,
+            username="self-api",
+            email="self-api@example.com",
+        )
 
         response = self.client.get(
             reverse("api_core_me"),
@@ -382,7 +369,15 @@ class ApiAccessEndpointsTests(TestCase):
     def test_me_returns_authenticated_user_payload(self):
         """O endpoint /me deve devolver a identidade do usuário autenticado."""
 
-        user, raw_token = self._issue_token()
+        user, raw_token = ApiAccessFactory.issue_token_with_resource_permissions(
+            resources=[
+                (ApiResourcePermission.Resource.CORE_API_ACCESS, True, False),
+                (ApiResourcePermission.Resource.CORE_AUDIT_LOGS, True, False),
+            ],
+            username="self-api",
+            email="self-api@example.com",
+            groups=["Integrações"],
+        )
 
         response = self.client.get(
             reverse("api_core_me"),
@@ -400,7 +395,14 @@ class ApiAccessEndpointsTests(TestCase):
     def test_token_status_returns_current_token_and_permissions(self):
         """O endpoint /token deve expor o status do token atual e os acessos."""
 
-        user, raw_token = self._issue_token()
+        user, raw_token = ApiAccessFactory.issue_token_with_resource_permissions(
+            resources=[
+                (ApiResourcePermission.Resource.CORE_API_ACCESS, True, False),
+                (ApiResourcePermission.Resource.CORE_AUDIT_LOGS, True, False),
+            ],
+            username="self-api",
+            email="self-api@example.com",
+        )
 
         response = self.client.get(
             reverse("api_core_token"),
@@ -414,7 +416,13 @@ class ApiAccessEndpointsTests(TestCase):
             payload["data"]["token"]["token_prefix"],
             raw_token[: ApiToken.PREFIX_LENGTH],
         )
-        permissions = {item["resource"]: item for item in payload["data"]["permissions"]}
-        self.assertTrue(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_read"])
-        self.assertFalse(permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_create"])
+        permissions = {
+            item["resource"]: item for item in payload["data"]["permissions"]
+        }
+        self.assertTrue(
+            permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_read"]
+        )
+        self.assertFalse(
+            permissions[ApiResourcePermission.Resource.CORE_API_ACCESS]["can_create"]
+        )
         self.assertEqual(user.username, "self-api")
