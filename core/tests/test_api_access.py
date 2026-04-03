@@ -90,6 +90,49 @@ class ApiDocsTests(TestCase):
         self.assertIn("Módulos do painel", item_names)
         self.assertIn("Logs de auditoria", item_names)
 
+    def test_api_docs_postman_collection_keeps_detail_variables_and_json_headers(self):
+        """A coleção Postman deve preservar placeholders e headers dos requests mutáveis."""
+
+        response = self.client.get(reverse("api_docs_postman"))
+
+        self.assertEqual(response.status_code, 200)
+        collection = json.loads(response.content)
+        section_map = {
+            section["name"]: {
+                item["name"]: item["request"] for item in section.get("item", [])
+            }
+            for section in collection["item"]
+        }
+
+        users_requests = section_map["Usuários do painel"]
+        modules_requests = section_map["Módulos do painel"]
+        audit_requests = section_map["Logs de auditoria"]
+
+        self.assertEqual(
+            users_requests["Detalhar usuário"]["url"],
+            "http://testserver/api/v1/panel/users/:id/",
+        )
+        self.assertEqual(
+            users_requests["Atualizar usuário"]["url"],
+            "http://testserver/api/v1/panel/users/{{user_id}}/",
+        )
+        self.assertEqual(
+            modules_requests["Atualizar módulo"]["url"],
+            "http://testserver/api/v1/panel/modules/{{module_id}}/",
+        )
+        self.assertEqual(
+            audit_requests["Detalhar log de auditoria"]["url"],
+            "http://testserver/api/v1/core/audit-logs/{{audit_log_id}}/",
+        )
+        self.assertIn(
+            {"key": "Authorization", "value": "Bearer {{token}}", "type": "text"},
+            users_requests["Atualizar usuário"]["header"],
+        )
+        self.assertIn(
+            {"key": "Content-Type", "value": "application/json", "type": "text"},
+            users_requests["Atualizar usuário"]["header"],
+        )
+
 
 class AuditLogApiTests(TestCase):
     """Valida os endpoints Bearer para leitura dos logs de auditoria."""
