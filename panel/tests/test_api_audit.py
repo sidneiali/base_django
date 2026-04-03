@@ -5,9 +5,7 @@ from __future__ import annotations
 import json
 
 from core.models import (
-    ApiAccessProfile,
     ApiResourcePermission,
-    ApiToken,
     AuditLog,
     Module,
 )
@@ -16,43 +14,23 @@ from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 
+from .api_test_support import PanelApiTokenMixin
+
 User = get_user_model()
 
 
-class PanelApiAuditTests(TestCase):
+class PanelApiAuditTests(PanelApiTokenMixin, TestCase):
     """Valida a trilha de auditoria gerada pelos fluxos JSON do painel."""
-
-    def _issue_token(
-        self,
-        resource: str,
-        *,
-        username: str,
-        **permissions: bool,
-    ) -> tuple[str, str]:
-        """Cria um token Bearer ativo com permissões configuráveis no recurso."""
-
-        user = User.objects.create_user(
-            username=username,
-            email=f"{username}@example.com",
-            password="SenhaSegura@123",
-        )
-        access_profile = ApiAccessProfile.objects.create(user=user, api_enabled=True)
-        ApiResourcePermission.objects.create(
-            access_profile=access_profile,
-            resource=resource,
-            **permissions,
-        )
-        _token, raw_token = ApiToken.issue_for_user(user)
-        return username, raw_token
 
     def test_user_create_via_api_generates_audited_create_log(self) -> None:
         """Criar usuário pela API deve registrar criação com contexto completo."""
 
-        actor_username, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_USERS,
+        actor, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_USERS,
             username="api-users-audit",
             can_create=True,
         )
+        actor_username = actor.username
         AuditLog.objects.all().delete()
 
         response = self.client.post(
@@ -87,11 +65,12 @@ class PanelApiAuditTests(TestCase):
     def test_group_permission_update_via_api_generates_audited_m2m_log(self) -> None:
         """Atualizar permissões de grupo via API deve gerar log M2M auditável."""
 
-        actor_username, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_GROUPS,
+        actor, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_GROUPS,
             username="api-groups-audit",
             can_update=True,
         )
+        actor_username = actor.username
         group = Group.objects.create(name="Suporte API")
         permission = Permission.objects.get(codename="view_user")
         AuditLog.objects.all().delete()
@@ -129,11 +108,12 @@ class PanelApiAuditTests(TestCase):
     def test_module_delete_via_api_generates_audited_delete_log(self) -> None:
         """Excluir módulo pela API deve registrar o snapshot anterior do recurso."""
 
-        actor_username, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        actor, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             username="api-modules-audit",
             can_delete=True,
         )
+        actor_username = actor.username
         module = Module.objects.create(
             name="Módulo descartável",
             slug="modulo-descartavel",
@@ -175,11 +155,12 @@ class PanelApiAuditTests(TestCase):
     def test_blocked_module_delete_via_api_generates_denied_audit_log(self) -> None:
         """Bloqueio de exclusão de módulo deve virar evento auditável da API."""
 
-        actor_username, raw_token = self._issue_token(
-            ApiResourcePermission.Resource.PANEL_MODULES,
+        actor, raw_token = self._issue_token(
+            resource=ApiResourcePermission.Resource.PANEL_MODULES,
             username="api-modules-blocked",
             can_delete=True,
         )
+        actor_username = actor.username
         module = Module.objects.create(
             name="Módulos",
             slug="modulos",
