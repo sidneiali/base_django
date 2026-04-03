@@ -69,6 +69,59 @@ class PanelViewTests(TestCase):
         self.assertNotContains(response, "bruno")
         self.assertNotContains(response, "<!doctype html>", html=False)
 
+    def test_users_list_renders_disabled_actions_without_management_permissions(self) -> None:
+        """A listagem deve exibir ações desabilitadas quando faltar permissão."""
+
+        self._login_with_permissions("view_user")
+        User.objects.create_user(
+            username="ativo",
+            email="ativo@example.com",
+            password="SenhaSegura@123",
+            is_active=True,
+        )
+        User.objects.create_user(
+            username="inativo",
+            email="inativo@example.com",
+            password="SenhaSegura@123",
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_users_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="users-create-disabled"', html=False)
+        self.assertContains(response, 'data-teste="user-edit-disabled"', html=False)
+        self.assertContains(response, 'data-teste="user-toggle-disabled"', html=False)
+        self.assertContains(response, "Inativar")
+        self.assertContains(response, "Ativar")
+        self.assertContains(response, 'data-teste="user-delete-disabled"', html=False)
+
+    def test_users_list_renders_enabled_actions_with_management_permissions(self) -> None:
+        """A listagem deve expor ações reais quando o operador tiver permissão."""
+
+        self._login_with_permissions("view_user", "add_user", "change_user", "delete_user")
+        User.objects.create_user(
+            username="ativo",
+            email="ativo@example.com",
+            password="SenhaSegura@123",
+            is_active=True,
+        )
+        User.objects.create_user(
+            username="inativo",
+            email="inativo@example.com",
+            password="SenhaSegura@123",
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_users_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="users-create-link"', html=False)
+        self.assertContains(response, 'data-teste="user-edit-link"', html=False)
+        self.assertContains(response, 'data-teste="user-deactivate-submit"', html=False)
+        self.assertContains(response, 'data-teste="user-activate-submit"', html=False)
+        self.assertContains(response, 'data-teste="user-delete-link"', html=False)
+
     def test_user_create_htmx_creates_user_and_redirects(self) -> None:
         """Criar usuário via HTMX deve persistir e responder com HX-Location."""
 
@@ -96,6 +149,120 @@ class PanelViewTests(TestCase):
 
         created_user = User.objects.get(username="novo-painel")
         self.assertTrue(created_user.groups.filter(pk=group.pk).exists())
+
+    def test_user_deactivate_and_activate_toggle_state(self) -> None:
+        """A listagem deve permitir inativar e reativar usuários com POST."""
+
+        self._login_with_permissions("change_user")
+        user_obj = User.objects.create_user(
+            username="alternar",
+            email="alternar@example.com",
+            password="SenhaSegura@123",
+            is_active=True,
+        )
+
+        deactivate_response = self.client.post(
+            reverse("panel_user_deactivate", args=[user_obj.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(deactivate_response.status_code, 204)
+        user_obj.refresh_from_db()
+        self.assertFalse(user_obj.is_active)
+
+        activate_response = self.client.post(
+            reverse("panel_user_activate", args=[user_obj.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(activate_response.status_code, 204)
+        user_obj.refresh_from_db()
+        self.assertTrue(user_obj.is_active)
+
+    def test_user_activate_and_deactivate_require_change_permission(self) -> None:
+        """As ações rápidas devem respeitar a permissão de alteração do usuário."""
+
+        self._login_with_permissions("view_user")
+        user_obj = User.objects.create_user(
+            username="bloqueado",
+            email="bloqueado@example.com",
+            password="SenhaSegura@123",
+        )
+
+        deactivate_response = self.client.post(reverse("panel_user_deactivate", args=[user_obj.pk]))
+        activate_response = self.client.post(reverse("panel_user_activate", args=[user_obj.pk]))
+
+        self.assertEqual(deactivate_response.status_code, 403)
+        self.assertEqual(activate_response.status_code, 403)
+
+    def test_user_activate_and_deactivate_reject_get_requests(self) -> None:
+        """As ações rápidas de status devem aceitar apenas POST."""
+
+        self._login_with_permissions("change_user")
+        user_obj = User.objects.create_user(
+            username="somente-post",
+            email="somente-post@example.com",
+            password="SenhaSegura@123",
+        )
+
+        deactivate_response = self.client.get(reverse("panel_user_deactivate", args=[user_obj.pk]))
+        activate_response = self.client.get(reverse("panel_user_activate", args=[user_obj.pk]))
+
+        self.assertEqual(deactivate_response.status_code, 405)
+        self.assertEqual(activate_response.status_code, 405)
+
+    def test_user_delete_requires_delete_permission(self) -> None:
+        """A exclusão deve respeitar a permissão de delete do usuário."""
+
+        self._login_with_permissions("view_user")
+        user_obj = User.objects.create_user(
+            username="sem-delete",
+            email="sem-delete@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.get(reverse("panel_user_delete", args=[user_obj.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_delete_confirmation_renders_for_common_user(self) -> None:
+        """A tela de confirmação deve abrir para um usuário comum."""
+
+        self._login_with_permissions("delete_user")
+        user_obj = User.objects.create_user(
+            username="descartavel",
+            email="descartavel@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.get(reverse("panel_user_delete", args=[user_obj.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-page-title="Excluir usuário: descartavel"',
+            html=False,
+        )
+        self.assertContains(response, "Esta ação remove o usuário do painel.")
+        self.assertContains(response, "Excluir usuário")
+
+    def test_user_delete_removes_common_user(self) -> None:
+        """Usuários comuns podem ser excluídos pelo painel com POST."""
+
+        self._login_with_permissions("delete_user")
+        user_obj = User.objects.create_user(
+            username="remover",
+            email="remover@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.post(
+            reverse("panel_user_delete", args=[user_obj.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(User.objects.filter(pk=user_obj.pk).exists())
 
     def test_groups_list_excludes_protected_groups(self) -> None:
         """A listagem de grupos deve ocultar grupos protegidos do painel."""

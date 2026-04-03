@@ -2,7 +2,11 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Usuários</h3>
-            <a href="{% url 'panel_user_create' %}" class="btn btn-primary" data-teste="users-create-link">Novo usuário</a>
+            {% if perms.auth.add_user %}
+                <a href="{% url 'panel_user_create' %}" class="btn btn-primary" data-teste="users-create-link">Novo usuário</a>
+            {% else %}
+                <button type="button" class="btn btn-primary" disabled data-teste="users-create-disabled">Novo usuário</button>
+            {% endif %}
         </div>
 
         <div class="card-body border-bottom">
@@ -56,9 +60,54 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'panel_user_update' user_obj.pk %}" class="btn btn-sm btn-primary" data-teste="user-edit-link">
-                                    Editar
-                                </a>
+                                <div class="btn-list justify-content-end flex-wrap">
+                                    {% if perms.auth.change_user %}
+                                        <a href="{% url 'panel_user_update' user_obj.pk %}" class="btn btn-sm btn-primary" data-teste="user-edit-link">
+                                            Editar
+                                        </a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="user-edit-disabled">
+                                            Editar
+                                        </button>
+                                    {% endif %}
+
+                                    {% if perms.auth.change_user %}
+                                        {% if user_obj.is_active %}
+                                            <form method="post" action="{% url 'panel_user_deactivate' user_obj.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" data-teste="user-deactivate-submit">
+                                                    Inativar
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{% url 'panel_user_activate' user_obj.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success" data-teste="user-activate-submit">
+                                                    Ativar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm {% if user_obj.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                            disabled
+                                            data-teste="user-toggle-disabled"
+                                        >
+                                            {% if user_obj.is_active %}Inativar{% else %}Ativar{% endif %}
+                                        </button>
+                                    {% endif %}
+
+                                    {% if perms.auth.delete_user %}
+                                        <a href="{% url 'panel_user_delete' user_obj.pk %}" class="btn btn-sm btn-outline-danger" data-teste="user-delete-link">
+                                            Excluir
+                                        </a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="user-delete-disabled">
+                                            Excluir
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                     {% empty %}

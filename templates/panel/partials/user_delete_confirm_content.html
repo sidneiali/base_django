@@ -1,0 +1,50 @@
+<div data-page-title="{{ page_title }}" data-teste="user-delete-confirm-page">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Usuário</div>
+                    <div class="fw-semibold">{{ user_obj.username }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Status</div>
+                    <div>
+                        {% if user_obj.is_active %}
+                            <span class="badge bg-success-lt">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-danger-lt">Inativo</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Nome</div>
+                    <div>{{ user_obj.first_name }} {{ user_obj.last_name|default:"" }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">E-mail</div>
+                    <div>{{ user_obj.email|default:"-" }}</div>
+                </div>
+            </div>
+
+            <div class="alert alert-danger">
+                Esta ação remove o usuário do painel. Ela não pode ser desfeita.
+            </div>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" data-teste="user-delete-confirm-submit">
+                    Excluir usuário
+                </button>
+            </form>
+            <a href="{% url 'panel_users_list' %}" class="btn btn-outline-secondary" data-teste="user-delete-cancel-link">
+                Voltar
+            </a>
+        </div>
+    </div>
+</div>

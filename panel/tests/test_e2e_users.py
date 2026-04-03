@@ -30,6 +30,35 @@ class PanelUsersE2ESmokeTests(PanelE2EBase):
         self.assertIn("ana-e2e", self.browser.page_source)
         self.assertNotIn("bruno-e2e", self.browser.page_source)
 
+    def test_users_list_shows_disabled_actions_without_management_permissions(self) -> None:
+        """Operador só com leitura deve ver ações desabilitadas na listagem."""
+
+        self._grant_permissions("view_user")
+        users_page = UsersListPage(self)
+        self.factory.create_user("ativo-e2e")
+        inactive_user = self.factory.create_user("inativo-e2e")
+        inactive_user.is_active = False
+        inactive_user.save(update_fields=["is_active"])
+
+        self._login()
+        users_page.open()
+
+        self.assertIsNotNone(users_page.find("users-create-disabled").get_attribute("disabled"))
+
+        active_edit = users_page.row_action("ativo-e2e", "user-edit-disabled")
+        active_toggle = users_page.row_action("ativo-e2e", "user-toggle-disabled")
+        active_delete = users_page.row_action("ativo-e2e", "user-delete-disabled")
+        inactive_toggle = users_page.row_action("inativo-e2e", "user-toggle-disabled")
+
+        self.assertEqual(active_edit.text, "Editar")
+        self.assertEqual(active_toggle.text, "Inativar")
+        self.assertEqual(active_delete.text, "Excluir")
+        self.assertEqual(inactive_toggle.text, "Ativar")
+        self.assertIsNotNone(active_edit.get_attribute("disabled"))
+        self.assertIsNotNone(active_toggle.get_attribute("disabled"))
+        self.assertIsNotNone(active_delete.get_attribute("disabled"))
+        self.assertIsNotNone(inactive_toggle.get_attribute("disabled"))
+
     def test_user_create_with_group_smoke(self) -> None:
         """O operador deve conseguir criar usuário e associar grupo pela dual-list."""
 

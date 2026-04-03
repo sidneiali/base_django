@@ -1,14 +1,26 @@
 """Views do domínio de usuários do painel."""
 
+from __future__ import annotations
+
 from core.htmx import htmx_location, is_htmx_request, render_page
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from ..dual_list import build_dual_list_choices
 from .forms import PanelUserForm
+
+
+def _redirect_users_list(request: HttpRequest) -> HttpResponse:
+    """Redireciona para a listagem, respeitando navegação HTMX quando ativa."""
+
+    if is_htmx_request(request):
+        return htmx_location(reverse("panel_users_list"))
+    return redirect("panel_users_list")
 
 
 @login_required
@@ -53,9 +65,7 @@ def user_create(request):
 
     if request.method == "POST" and form.is_valid():
         form.save()
-        if is_htmx_request(request):
-            return htmx_location(reverse("panel_users_list"))
-        return redirect("panel_users_list")
+        return _redirect_users_list(request)
 
     available, chosen = build_dual_list_choices(form, "groups")
 
@@ -83,9 +93,7 @@ def user_update(request, pk: int):
 
     if request.method == "POST" and form.is_valid():
         form.save()
-        if is_htmx_request(request):
-            return htmx_location(reverse("panel_users_list"))
-        return redirect("panel_users_list")
+        return _redirect_users_list(request)
 
     available, chosen = build_dual_list_choices(form, "groups")
 
@@ -100,5 +108,53 @@ def user_update(request, pk: int):
             "user_obj": user_obj,
             "groups_available": available,
             "groups_chosen": chosen,
+        },
+    )
+
+
+@login_required
+@permission_required("auth.change_user", raise_exception=True)
+@require_POST
+def user_activate(request: HttpRequest, pk: int) -> HttpResponse:
+    """Ativa um usuário comum existente."""
+
+    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
+    if not user_obj.is_active:
+        user_obj.is_active = True
+        user_obj.save(update_fields=["is_active"])
+    return _redirect_users_list(request)
+
+
+@login_required
+@permission_required("auth.change_user", raise_exception=True)
+@require_POST
+def user_deactivate(request: HttpRequest, pk: int) -> HttpResponse:
+    """Inativa um usuário comum existente."""
+
+    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
+    if user_obj.is_active:
+        user_obj.is_active = False
+        user_obj.save(update_fields=["is_active"])
+    return _redirect_users_list(request)
+
+
+@login_required
+@permission_required("auth.delete_user", raise_exception=True)
+def user_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    """Confirma e executa a exclusão de um usuário comum do painel."""
+
+    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
+
+    if request.method == "POST":
+        user_obj.delete()
+        return _redirect_users_list(request)
+
+    return render_page(
+        request,
+        "panel/user_delete_confirm.html",
+        "panel/partials/user_delete_confirm_content.html",
+        {
+            "page_title": f"Excluir usuário: {user_obj.username}",
+            "user_obj": user_obj,
         },
     )

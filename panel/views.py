@@ -15,7 +15,14 @@ from .modules.views import (
     module_update,
     modules_list,
 )
-from .users.views import user_create, user_update, users_list
+from .users.views import (
+    user_activate,
+    user_create,
+    user_deactivate,
+    user_delete,
+    user_update,
+    users_list,
+)
 
 __all__ = [
     "audit_log_detail",
@@ -31,7 +38,10 @@ __all__ = [
     "module_delete",
     "module_update",
     "modules_list",
+    "user_activate",
     "user_create",
+    "user_deactivate",
+    "user_delete",
     "user_update",
     "users_list",
 ]

@@ -32,6 +32,10 @@ class UsersListPage(CrudListPage):
         form.wait_until_loaded()
         return form
 
+    def row_action(self, username: str, testid: str):
+        row = self.row(username)
+        return row.find_element(*self.locator_by_testid(testid))
+
 
 class UserFormPage(CrudFormPage):
     """Fluxos recorrentes do formulário de usuários."""
