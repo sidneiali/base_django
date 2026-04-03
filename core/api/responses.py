@@ -101,6 +101,24 @@ def api_collection_response(
     return api_success_response(request, data=items, status=status, meta=meta)
 
 
+def api_deleted_response(
+    request,
+    *,
+    resource: str,
+    object_id: int,
+) -> JsonResponse:
+    """Retorna um envelope padronizado para exclusões bem-sucedidas."""
+
+    return api_success_response(
+        request,
+        data={
+            "deleted": True,
+            "resource": resource,
+            "id": object_id,
+        },
+    )
+
+
 def api_error_response(
     detail: str,
     *,

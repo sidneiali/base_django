@@ -324,7 +324,11 @@ class PanelHtmlApiAuditParityTests(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {raw_token}",
         )
 
-        self.assertEqual(api_response.status_code, 204)
+        self.assertEqual(api_response.status_code, 200)
+        self.assertEqual(
+            api_response.json()["data"],
+            {"deleted": True, "resource": "panel.modules", "id": api_module.pk},
+        )
         api_log = AuditLog.objects.get(
             action=AuditLog.ACTION_DELETE,
             content_type__app_label="core",

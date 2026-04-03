@@ -14,6 +14,7 @@ from core.api.queries import (
 )
 from core.api.responses import (
     api_collection_response,
+    api_deleted_response,
     api_error_response,
     api_success_response,
 )
@@ -251,8 +252,13 @@ def user_detail(request: HttpRequest, pk: int) -> HttpResponse:
         return api_success_response(request, data=_serialize_user(updated_user))
 
     if request.method == "DELETE":
+        user_id = user.pk
         user.delete()
-        return HttpResponse(status=204)
+        return api_deleted_response(
+            request,
+            resource="panel.users",
+            object_id=user_id,
+        )
 
     return api_error_response(
         "Método não permitido para este endpoint.",

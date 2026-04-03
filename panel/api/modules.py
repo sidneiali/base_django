@@ -14,6 +14,7 @@ from core.api.queries import (
 )
 from core.api.responses import (
     api_collection_response,
+    api_deleted_response,
     api_error_response,
     api_success_response,
 )
@@ -404,8 +405,13 @@ def module_detail(request: HttpRequest, pk: int) -> HttpResponse:
                 status=400,
                 request=request,
             )
+        module_id = module.pk
         module.delete()
-        return HttpResponse(status=204)
+        return api_deleted_response(
+            request,
+            resource="panel.modules",
+            object_id=module_id,
+        )
 
     return api_error_response(
         "Método não permitido para este endpoint.",

@@ -456,7 +456,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
                                 "    timeout=30,\n"
                                 ")\n\n"
-                                "print(response.status_code)"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
                             ),
                         },
                     ],
@@ -464,7 +465,14 @@ def build_openapi_schema(request) -> dict[str, object]:
                         {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
                     ],
                     "responses": {
-                        "204": {"description": "Usuário removido."},
+                        "200": {
+                            "description": "Usuário removido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/DeleteEnvelope"}
+                                }
+                            },
+                        },
                         "404": {
                             "description": "Usuário não encontrado.",
                             "content": {
@@ -749,7 +757,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
                                 "    timeout=30,\n"
                                 ")\n\n"
-                                "print(response.status_code)"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
                             ),
                         },
                     ],
@@ -757,8 +766,13 @@ def build_openapi_schema(request) -> dict[str, object]:
                         {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
                     ],
                     "responses": {
-                        "204": {
+                        "200": {
                             "description": "Grupo removido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/DeleteEnvelope"}
+                                }
+                            },
                         },
                         "404": {
                             "description": "Grupo não encontrado.",
@@ -1050,7 +1064,8 @@ def build_openapi_schema(request) -> dict[str, object]:
                                 '    headers={"Authorization": "Bearer SEU_TOKEN"},\n'
                                 "    timeout=30,\n"
                                 ")\n\n"
-                                "print(response.status_code)"
+                                "print(response.status_code)\n"
+                                "print(response.json())"
                             ),
                         },
                     ],
@@ -1058,7 +1073,14 @@ def build_openapi_schema(request) -> dict[str, object]:
                         {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
                     ],
                     "responses": {
-                        "204": {"description": "Módulo removido."},
+                        "200": {
+                            "description": "Módulo removido.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/DeleteEnvelope"}
+                                }
+                            },
+                        },
                         "400": {
                             "description": "Exclusão não permitida pelo ciclo de vida do módulo.",
                             "content": {
@@ -1688,6 +1710,23 @@ def build_openapi_schema(request) -> dict[str, object]:
                             "items": {"$ref": "#/components/schemas/AuditLogSummary"},
                         },
                         "meta": {"$ref": "#/components/schemas/ApiCollectionMeta"},
+                    },
+                    "required": ["data", "meta"],
+                },
+                "DeletePayload": {
+                    "type": "object",
+                    "properties": {
+                        "deleted": {"type": "boolean"},
+                        "resource": {"type": "string"},
+                        "id": {"type": "integer"},
+                    },
+                    "required": ["deleted", "resource", "id"],
+                },
+                "DeleteEnvelope": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"$ref": "#/components/schemas/DeletePayload"},
+                        "meta": {"$ref": "#/components/schemas/ApiMeta"},
                     },
                     "required": ["data", "meta"],
                 },

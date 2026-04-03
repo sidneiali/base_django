@@ -13,6 +13,7 @@ from core.api.queries import (
 )
 from core.api.responses import (
     api_collection_response,
+    api_deleted_response,
     api_error_response,
     api_success_response,
 )
@@ -238,8 +239,13 @@ def group_detail(request: HttpRequest, pk: int) -> HttpResponse:
         return api_success_response(request, data=_serialize_group(updated_group))
 
     if request.method == "DELETE":
+        group_id = group.pk
         group.delete()
-        return HttpResponse(status=204)
+        return api_deleted_response(
+            request,
+            resource="panel.groups",
+            object_id=group_id,
+        )
 
     return api_error_response(
         "Método não permitido para este endpoint.",

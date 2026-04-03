@@ -201,6 +201,37 @@ class PanelApiOperationalTests(TestCase):
                 self.assertEqual(response.status_code, 403)
                 self.assertEqual(response.json()["error"]["code"], "forbidden")
 
+    def test_detail_delete_returns_enveloped_success_for_each_resource(self) -> None:
+        """DELETE bem-sucedido deve preservar envelope JSON e contexto básico."""
+
+        for case in self._resource_cases():
+            with self.subTest(resource=case["label"]):
+                target = case["factory"]()
+                detail_url = reverse(str(case["detail_url_name"]), args=[target.pk])
+                raw_token = self._issue_token(
+                    str(case["resource"]),
+                    can_delete=True,
+                )
+
+                response = self.client.delete(
+                    detail_url,
+                    HTTP_AUTHORIZATION=f"Bearer {raw_token}",
+                )
+
+                self.assertEqual(response.status_code, 200)
+                payload = response.json()
+                self.assertEqual(
+                    payload["data"],
+                    {
+                        "deleted": True,
+                        "resource": str(case["resource"]),
+                        "id": target.pk,
+                    },
+                )
+                self.assertEqual(payload["meta"]["method"], "DELETE")
+                self.assertEqual(payload["meta"]["path"], detail_url)
+                self.assertEqual(payload["meta"]["request_id"], response["X-Request-ID"])
+
     def test_collection_rejects_invalid_json_for_each_resource(self) -> None:
         """POST da coleção deve rejeitar corpo JSON inválido nos três recursos."""
 

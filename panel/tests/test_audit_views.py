@@ -257,6 +257,75 @@ class PanelAuditViewTests(TestCase):
             html=False,
         )
 
+    def test_audit_detail_shows_related_event_previews(self) -> None:
+        """O detalhe deve resumir outros eventos do mesmo ator e da mesma requisição."""
+
+        actor = self._login_with_audit_permission()
+        other_user = User.objects.create_user(
+            username="outro-relacionado",
+            email="outro-relacionado@example.com",
+            password="SenhaSegura@123",
+        )
+        target_log = self._create_audit_log(
+            action=AuditLog.ACTION_UPDATE,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento principal",
+            request_id="req-related-preview",
+            created_at=timezone.now(),
+        )
+        actor_related = self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento do mesmo ator",
+            request_id="req-actor-only",
+            created_at=timezone.now() - timedelta(minutes=1),
+        )
+        request_related = self._create_audit_log(
+            action=AuditLog.ACTION_DELETE,
+            actor=other_user,
+            actor_identifier=other_user.username,
+            object_repr="Evento da mesma requisição",
+            request_id="req-related-preview",
+            created_at=timezone.now() - timedelta(minutes=2),
+        )
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN_FAILED,
+            actor=other_user,
+            actor_identifier=other_user.username,
+            object_repr="Evento fora do contexto",
+            request_id="req-unrelated",
+            created_at=timezone.now() - timedelta(minutes=3),
+        )
+
+        response = self.client.get(reverse("panel_audit_log_detail", args=[target_log.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-teste="audit-related-section"',
+            html=False,
+            count=2,
+        )
+        self.assertContains(response, 'data-related-scope="actor"', html=False)
+        self.assertContains(response, 'data-related-scope="request"', html=False)
+        self.assertContains(response, "Evento do mesmo ator")
+        self.assertContains(response, "Evento da mesma requisição")
+        self.assertNotContains(response, "Evento fora do contexto")
+        self.assertContains(
+            response,
+            reverse("panel_audit_log_detail", args=[actor_related.pk])
+            + "?actor=operador-auditoria",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            reverse("panel_audit_log_detail", args=[request_related.pk])
+            + "?object_query=req-related-preview",
+            html=False,
+        )
+
     def test_audit_detail_returns_404_for_unknown_event(self) -> None:
         """A abertura de um log inexistente deve responder 404."""
 
@@ -322,6 +391,48 @@ class PanelAuditViewTests(TestCase):
             + "?actor=operador-auditoria&amp;object_query=req-export-link",
             html=False,
         )
+        self.assertContains(
+            response,
+            'data-teste="audit-export-csv"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-teste="audit-export-json"',
+            html=False,
+        )
+        self.assertContains(response, 'hx-boost="false"', html=False, count=2)
+        self.assertContains(response, "download", html=False, count=2)
+
+    def test_audit_export_without_filters_returns_full_file(self) -> None:
+        """A exportação sem filtros deve responder 200 e incluir os eventos disponíveis."""
+
+        actor = self._login_with_audit_permission()
+        self._create_audit_log(
+            action=AuditLog.ACTION_LOGIN,
+            actor=actor,
+            actor_identifier=actor.username,
+            object_repr="Evento sem filtro",
+            request_id="req-export-all",
+            created_at=timezone.now(),
+        )
+
+        csv_response = self.client.get(reverse("panel_audit_logs_export_csv"))
+        json_response = self.client.get(reverse("panel_audit_logs_export_json"))
+
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertEqual(csv_response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn("attachment; filename=", csv_response["Content-Disposition"])
+        self.assertIn("Evento sem filtro", csv_response.content.decode("utf-8"))
+
+        self.assertEqual(json_response.status_code, 200)
+        self.assertEqual(json_response["Content-Type"], "application/json; charset=utf-8")
+        self.assertIn("attachment; filename=", json_response["Content-Disposition"])
+        payload = json_response.json()
+        self.assertEqual(payload["filters"]["actor"], "")
+        self.assertEqual(payload["filters"]["object_query"], "")
+        self.assertEqual(payload["count"], 1)
+        self.assertEqual(payload["results"][0]["request_id"], "req-export-all")
 
     def test_audit_list_exposes_quick_links_for_actor_and_request_id(self) -> None:
         """Cada linha deve permitir pivot rápido por ator e request id."""

@@ -52,6 +52,8 @@
                     <a
                         href="{% url 'panel_audit_logs_export_csv' %}{{ current_query }}"
                         class="btn btn-outline-success"
+                        hx-boost="false"
+                        download
                         data-teste="audit-export-csv"
                     >
                         Exportar CSV
@@ -59,6 +61,8 @@
                     <a
                         href="{% url 'panel_audit_logs_export_json' %}{{ current_query }}"
                         class="btn btn-outline-secondary"
+                        hx-boost="false"
+                        download
                         data-teste="audit-export-json"
                     >
                         Exportar JSON
@@ -159,6 +163,7 @@
                             class="btn btn-outline-secondary btn-sm"
                             hx-get="?page=1{{ page_query }}"
                             hx-push-url="true"
+                            data-teste="audit-page-first"
                         >
                             Primeira
                         </a>
@@ -169,6 +174,7 @@
                             class="btn btn-outline-secondary btn-sm"
                             hx-get="?page={{ page_obj.previous_page_number }}{{ page_query }}"
                             hx-push-url="true"
+                            data-teste="audit-page-prev"
                         >
                             Anterior
                         </a>
@@ -184,6 +190,8 @@
                                 class="btn btn-outline-secondary btn-sm"
                                 hx-get="?page={{ page_number }}{{ page_query }}"
                                 hx-push-url="true"
+                                data-teste="audit-page-number"
+                                data-page-number="{{ page_number }}"
                             >
                                 {{ page_number }}
                             </a>
@@ -195,6 +203,7 @@
                             class="btn btn-outline-secondary btn-sm"
                             hx-get="?page={{ page_obj.next_page_number }}{{ page_query }}"
                             hx-push-url="true"
+                            data-teste="audit-page-next"
                         >
                             Próxima
                         </a>
@@ -205,6 +214,7 @@
                             class="btn btn-outline-secondary btn-sm"
                             hx-get="?page={{ page_obj.paginator.num_pages }}{{ page_query }}"
                             hx-push-url="true"
+                            data-teste="audit-page-last"
                         >
                             Última
                         </a>

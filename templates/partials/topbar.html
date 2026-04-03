@@ -48,12 +48,13 @@
                   role="button"
                   aria-expanded="false"
                   aria-controls="topbar-acessos"
+                  data-teste="topbar-shortcuts-toggle"
                 >
                   <span>Acessos</span>
                   <span class="nav-link-toggle"></span>
                 </button>
 
-                <div class="collapse topbar-settings-collapse" id="topbar-acessos">
+                <div class="collapse topbar-settings-collapse" id="topbar-acessos" data-teste="topbar-shortcuts-panel">
                   {% for group_name, group_shortcuts in topbar_shortcuts.items %}
                     <div class="dropdown-header">{{ group_name }}</div>
                     {% for shortcut in group_shortcuts %}
@@ -62,6 +63,7 @@
                         href="{{ shortcut.url }}"
                         data-topbar-close-menu="true"
                         data-topbar-shortcut="{{ shortcut.key }}"
+                        data-teste="topbar-shortcut-link"
                       >
                         {{ shortcut.label }}
                       </a>

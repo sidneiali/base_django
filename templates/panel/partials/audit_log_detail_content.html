@@ -115,6 +115,132 @@
         </div>
     </div>
 
+    {% if related_actor_section or related_request_section %}
+        <div class="row g-3 mb-3">
+            {% if related_actor_section %}
+                <div class="col-lg-6">
+                    <div
+                        class="card h-100"
+                        data-teste="audit-related-section"
+                        data-related-scope="{{ related_actor_section.scope }}"
+                    >
+                        <div class="card-header d-flex justify-content-between align-items-center gap-3">
+                            <div>
+                                <h3 class="card-title mb-1">{{ related_actor_section.title }}</h3>
+                                <div class="text-secondary small" data-teste="audit-related-count">
+                                    {{ related_actor_section.count_label }}
+                                </div>
+                            </div>
+                            <a
+                                href="{{ related_actor_section.list_url }}"
+                                class="btn btn-sm btn-outline-primary"
+                                data-teste="audit-related-list-link"
+                            >
+                                {{ related_actor_section.list_label }}
+                            </a>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for item in related_actor_section.items %}
+                                <div class="list-group-item" data-teste="audit-related-item">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div>
+                                            <div class="fw-semibold">{{ item.audit_log.object_repr|default:"Evento" }}</div>
+                                            <div class="text-secondary small">
+                                                {{ item.audit_log.created_at|date:"d/m/Y H:i:s" }}
+                                                ·
+                                                {{ item.audit_log.request_method|default:"-" }}
+                                                {{ item.audit_log.path|default:"-" }}
+                                            </div>
+                                            <div class="text-secondary small">
+                                                Request ID:
+                                                <code>{{ item.audit_log.request_id|default:"-" }}</code>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end gap-2">
+                                            <span class="badge bg-blue-lt">{{ item.audit_log.action_label }}</span>
+                                            <a
+                                                href="{{ item.detail_url }}"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-teste="audit-related-detail-link"
+                                            >
+                                                Abrir detalhe
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="list-group-item text-secondary" data-teste="audit-related-empty">
+                                    {{ related_actor_section.empty_message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if related_request_section %}
+                <div class="col-lg-6">
+                    <div
+                        class="card h-100"
+                        data-teste="audit-related-section"
+                        data-related-scope="{{ related_request_section.scope }}"
+                    >
+                        <div class="card-header d-flex justify-content-between align-items-center gap-3">
+                            <div>
+                                <h3 class="card-title mb-1">{{ related_request_section.title }}</h3>
+                                <div class="text-secondary small" data-teste="audit-related-count">
+                                    {{ related_request_section.count_label }}
+                                </div>
+                            </div>
+                            <a
+                                href="{{ related_request_section.list_url }}"
+                                class="btn btn-sm btn-outline-primary"
+                                data-teste="audit-related-list-link"
+                            >
+                                {{ related_request_section.list_label }}
+                            </a>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for item in related_request_section.items %}
+                                <div class="list-group-item" data-teste="audit-related-item">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div>
+                                            <div class="fw-semibold">{{ item.audit_log.object_repr|default:"Evento" }}</div>
+                                            <div class="text-secondary small">
+                                                {{ item.audit_log.created_at|date:"d/m/Y H:i:s" }}
+                                                ·
+                                                {{ item.audit_log.request_method|default:"-" }}
+                                                {{ item.audit_log.path|default:"-" }}
+                                            </div>
+                                            <div class="text-secondary small">
+                                                Ator:
+                                                <span class="fw-semibold">{{ item.audit_log.actor_display }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end gap-2">
+                                            <span class="badge bg-blue-lt">{{ item.audit_log.action_label }}</span>
+                                            <a
+                                                href="{{ item.detail_url }}"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-teste="audit-related-detail-link"
+                                            >
+                                                Abrir detalhe
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="list-group-item text-secondary" data-teste="audit-related-empty">
+                                    {{ related_request_section.empty_message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <div class="row g-3">
         <div class="col-12">
             <div class="card">

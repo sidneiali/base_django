@@ -20,6 +20,10 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Setup Edge
+        id: setup-edge
+        uses: browser-actions/setup-edge@v1
+
       - name: Install dependencies
         run: uv sync --extra dev
 
@@ -31,6 +35,12 @@ jobs:
 
       - name: Pytest
         run: uv run pytest
+
+      - name: Pytest E2E
+        env:
+          E2E_EDGE_BINARY: ${{ steps.setup-edge.outputs.edge-path }}
+          E2E_HEADLESS: "1"
+        run: uv run pytest -m e2e
 
       - name: Django check
         run: uv run python manage.py check

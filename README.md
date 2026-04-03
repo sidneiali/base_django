@@ -5,7 +5,7 @@ Base de sistema em Django com:
 - autenticação por login
 - dashboard orientado a módulos
 - controle de acesso por permissões do Django
-- painel interno para gestão de usuários e grupos
+- painel interno para gestão de usuários, grupos, módulos e auditoria
 - interface em Tabler com assets locais em `static/vendor/tabler`
 
 O projeto foi pensado como ponto de partida para sistemas administrativos em que cada área do produto pode ser cadastrada como um módulo e liberada por grupo/permissão.
@@ -25,10 +25,9 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 Com `uv`:
 
 ```bash
-uv sync --no-install-project
-# opcional: instala lint, testes e tipagem
-# uv sync --no-install-project --extra dev
+uv sync --extra dev
 uv run python manage.py migrate
+uv run python manage.py seed_initial_modules
 uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
@@ -40,8 +39,9 @@ python -m venv .venv
 .venv\Scripts\activate
 python -m pip install django django-bootstrap5 "psycopg[binary]"
 # opcional: instala lint, testes e tipagem
-# python -m pip install pytest pytest-django ruff mypy django-stubs
+# python -m pip install pytest pytest-django ruff mypy django-stubs selenium
 python manage.py migrate
+python manage.py seed_initial_modules
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -52,6 +52,19 @@ Depois acesse:
 
 - `http://127.0.0.1:8000/login/`
 - `http://127.0.0.1:8000/admin/`
+
+## Onboarding rápido
+
+Fluxo sugerido para validar a base logo no primeiro dia:
+
+1. sincronizar dependências com `uv sync --extra dev`
+2. aplicar migrations com `uv run python manage.py migrate`
+3. popular os módulos internos com `uv run python manage.py seed_initial_modules`
+4. subir a aplicação com `uv run python manage.py runserver`
+5. validar backend com `uv run pytest`
+6. validar shell autenticado com `uv run pytest -m e2e`
+
+Se a tarefa tocar topbar, auditoria HTML, HTMX, downloads no shell ou seletores `data-teste`, trate `uv run pytest -m e2e` como parte do fluxo normal.
 
 ## Recuperação de senha e e-mail
 
@@ -168,11 +181,22 @@ O repositório agora possui pipeline em [ci.yml](c:\Users\sidne\OneDrive\Desktop
 - `uv run ruff check config core panel`
 - `uv run mypy config core panel`
 - `uv run pytest`
+- `uv run pytest -m e2e`
 - `uv run python manage.py check`
 - `uv run python manage.py check --deploy`
 - `uv run python manage.py collectstatic --noinput`
 
+No GitHub Actions, o runner instala o Microsoft Edge antes da etapa E2E e injeta `E2E_EDGE_BINARY` automaticamente para a suíte Selenium.
+
 ## Testes
+
+Matriz canônica:
+
+- `uv run pytest`: suíte padrão de domínio, views, API, formulários e regressões HTTP
+- `uv run pytest -m e2e`: smoke tests de navegador real com Edge
+- `uv run python manage.py check`: validação estrutural do projeto Django
+- `uv run python manage.py check --deploy`: smoke de configuração de produção
+- `uv run ruff check config core panel`: lint principal
 
 Suite padrão:
 
@@ -181,7 +205,9 @@ uv run pytest
 ```
 
 Os smoke tests E2E com Selenium ficam marcados como `e2e` e não entram na suite padrão.
+Eles agora estão quebrados por domínio em `panel/tests/test_e2e_auth.py`, `panel/tests/test_e2e_audit.py`, `panel/tests/test_e2e_users.py`, `panel/tests/test_e2e_groups.py` e `panel/tests/test_e2e_modules.py`, com base compartilhada em `panel/tests/e2e_support.py`.
 Nos templates cobertos por E2E, prefira seletores estáveis com `data-teste` para evitar acoplamento com texto visível ou estrutura incidental de CSS.
+Links de download dentro do shell autenticado, como as exportações CSV/JSON da auditoria, devem escapar do `hx-boost` para o navegador tratar o retorno como arquivo.
 
 Para rodar só os testes E2E:
 
@@ -189,33 +215,48 @@ Para rodar só os testes E2E:
 uv run pytest -m e2e
 ```
 
-O primeiro corte usa Microsoft Edge em modo headless. Se o binário não estiver em um dos caminhos padrão do Windows, defina:
+No ambiente local, os testes abrem o Microsoft Edge em modo visível por padrão. No CI, o workflow força `E2E_HEADLESS=1` para manter o gate estável. Se o binário não estiver em um dos caminhos padrão do Windows, defina:
 
 ```text
 E2E_EDGE_BINARY=C:\caminho\para\msedge.exe
 ```
 
-Para assistir o navegador executando os testes, rode em modo visível:
+Se quiser forçar modo headless também localmente:
 
 ```bash
-$env:E2E_HEADLESS="0"
+$env:E2E_HEADLESS="1"
 uv run pytest -m e2e
 ```
 
 Se quiser desacelerar a execução para acompanhar melhor:
 
 ```bash
-$env:E2E_HEADLESS="0"
 $env:E2E_SLOW_MO_MS="350"
 uv run pytest -m e2e
+```
+
+Para depurar um recorte específico da suíte localmente:
+
+```bash
+uv run pytest -m e2e -k audit
+uv run pytest -m e2e -k auth
+uv run pytest -m e2e -k users
+uv run pytest -m e2e -k groups
+uv run pytest -m e2e -k modules
+uv run pytest panel/tests/test_e2e_audit.py -m e2e
 ```
 
 Hoje os smoke tests cobrem:
 
 - login e logout reais no navegador
 - navegação da topbar para `Minha senha` via HTMX
+- atalho de `Auditoria` pela área de acessos da topbar
 - filtros reais da auditoria HTML
 - drill-down da auditoria com retorno para a lista preservando contexto básico
+- atalhos do detalhe por ator e pela mesma requisição
+- previews de eventos relacionados no detalhe com abertura de outro drill-down mantendo contexto derivado
+- exportações CSV/JSON da auditoria com validação de filtros e headers de anexo no navegador
+- pivots rápidos, limpeza de filtros e paginação da auditoria com filtros preservados
 - listagem, filtro, edição e ciclo básico de ativar/inativar de módulos
 - listagem, filtro, criação e edição de usuários com dual-list de grupos
 - listagem, filtro, criação e edição de grupos com dual-list de permissões
@@ -240,9 +281,10 @@ Fluxo principal:
 ```text
 config/     configuração global, settings e rotas principais
 core/       módulos centrais, dashboard, API, auditoria e shell autenticado
-panel/      telas e endpoints internos para usuários e grupos
+panel/      telas e endpoints internos para usuários, grupos, módulos e auditoria
 templates/  layout base, login, dashboard, páginas e partials
 static/     CSS customizado
+.codex/     plano ativo, regras locais e checklist de saída do repositório
 ```
 
 ## Modelo central: Module
@@ -429,9 +471,9 @@ Permissões exigidas por tela:
 - grupos: `auth.view_group`, `auth.add_group`, `auth.change_group`
 - auditoria: `core.view_auditlog`
 
-Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica, exportar a listagem filtrada em CSV/JSON, pivotar rapidamente por ator ou `request_id` e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request e objeto associado.
+Na tela de auditoria, operadores podem filtrar eventos por ator, ação e data, navegar por paginação mais rica, exportar a listagem filtrada em CSV/JSON, pivotar rapidamente por ator ou `request_id` e abrir o detalhe completo de cada evento com `before`, `after`, `changes`, `metadata`, request, objeto associado e previews de eventos relacionados do mesmo ator e da mesma requisição.
 
-Na API do painel, o projeto agora expõe recursos versionados para usuários, grupos e módulos, todos protegidos por Bearer token, envelope JSON padronizado e matriz CRUD por recurso.
+Na API do painel, o projeto agora expõe recursos versionados para usuários, grupos e módulos, todos protegidos por Bearer token, envelope JSON padronizado e matriz CRUD por recurso. Inclusive nos fluxos de exclusão, a resposta preserva `data` e `meta`, com `request_id` e um resumo estável do recurso removido.
 
 ## Arquivos importantes
 
@@ -449,11 +491,14 @@ Na API do painel, o projeto agora expõe recursos versionados para usuários, gr
 
 - a página de entrada do módulo em [`templates/module_page.html`](c:\Users\sidne\OneDrive\Desktop\base_django\templates\module_page.html) continua genérica, mas agora já exibe metadados úteis do módulo enquanto a área final ainda está em preparação
 - o sidebar autenticado reutiliza a mesma estrutura agrupada de módulos do dashboard via [`core/context_processors.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\context_processors.py) e [`core/navigation.py`](c:\Users\sidne\OneDrive\Desktop\base_django\core\navigation.py), evitando recalcular a navegação duas vezes no mesmo request
-- os testes agora vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), mas ainda faltam mais cenários de erro, edição e paridade HTML/API
-- o painel agora já possui CRUD HTML para módulos com ativação segura e exclusão protegida, e a API do painel também já cobre módulos com paridade JSON básica
-- a API do painel agora cobre usuários, grupos e módulos; os próximos ganhos de paridade passam a ser cenários de erro, auditoria e fluxos mais avançados
+- os testes vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), com suite padrão separada dos smoke tests E2E executados no CI
+- a API do painel já cobre usuários, grupos e módulos com envelope JSON padronizado também nos fluxos de exclusão
+- a auditoria HTML já entrega filtros, drill-down com previews relacionados, pivots rápidos e exportação CSV/JSON com download normal do navegador dentro do shell autenticado
+- `core/navigation.py` segue funcional e coeso, mas continua sendo um ponto de observação se atalhos e regras de visibilidade crescerem mais
 
 ## Próximos passos sugeridos
 
 - evoluir os módulos iniciais além de `Usuários` e `Grupos`
-- ampliar a cobertura para erros de validação, `403`, redirects e fluxos de edição
+- avaliar uma camada de page objects ou outro apoio se a suíte E2E continuar crescendo rápido
+- extrair a navegação do shell para um pacote mais dedicado se topbar, atalhos e regras de visibilidade ficarem mais densos
+- continuar usando `.codex/PLANS.md`, `.codex/AGENTS.md` e `.codex/CHECKLIST.md` como contrato local de onboarding e execução
