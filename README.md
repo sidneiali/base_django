@@ -290,7 +290,6 @@ core/       módulos centrais, dashboard, API, auditoria e shell autenticado
 panel/      telas e endpoints internos para usuários, grupos, módulos e auditoria
 templates/  layout base, login, dashboard, páginas e partials
 static/     CSS customizado
-.codex/     plano ativo, regras locais e checklist de saída do repositório
 ```
 
 ## Modelo central: Module
@@ -507,4 +506,3 @@ Na API do painel, o projeto agora expõe recursos versionados para usuários, gr
 - evoluir os módulos iniciais além de `Usuários` e `Grupos`
 - avaliar uma camada de page objects ou outro apoio se a suíte E2E continuar crescendo rápido
 - extrair a navegação do shell para um pacote mais dedicado se topbar, atalhos e regras de visibilidade ficarem mais densos
-- continuar usando `.codex/PLANS.md`, `.codex/AGENTS.md` e `.codex/CHECKLIST.md` como contrato local de onboarding e execução
