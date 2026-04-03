@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import timedelta
 from unittest.mock import patch
 
 from core.models import AuditLog
@@ -13,11 +12,15 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from .audit_test_support import AuditTestDataFactory
+
 User = get_user_model()
 
 
 class PanelAuditViewTests(TestCase):
     """Valida permissão e filtros da auditoria HTML."""
+
+    audit_factory: AuditTestDataFactory
 
     def _login_with_audit_permission(self) -> AbstractUser:
         """Autentica um operador com acesso de leitura aos logs."""
@@ -30,33 +33,8 @@ class PanelAuditViewTests(TestCase):
         user.user_permissions.add(Permission.objects.get(codename="view_auditlog"))
         self.client.force_login(user)
         AuditLog.objects.all().delete()
+        self.audit_factory = AuditTestDataFactory()
         return user
-
-    def _create_audit_log(
-        self,
-        *,
-        action: str,
-        actor: Any,
-        actor_identifier: str,
-        object_repr: str,
-        request_id: str,
-        created_at: datetime,
-    ) -> AuditLog:
-        """Cria um log manual para cenários de listagem e filtros."""
-
-        audit_log = AuditLog.objects.create(
-            action=action,
-            actor=actor,
-            actor_identifier=actor_identifier,
-            object_repr=object_repr,
-            object_verbose_name="Evento",
-            request_method="GET",
-            path="/painel/auditoria/",
-            metadata={"request_id": request_id},
-        )
-        AuditLog.objects.filter(pk=audit_log.pk).update(created_at=created_at)
-        audit_log.refresh_from_db()
-        return audit_log
 
     def test_audit_list_requires_view_permission(self) -> None:
         """Usuário autenticado sem permissão não pode consultar auditoria."""
@@ -107,7 +85,7 @@ class PanelAuditViewTests(TestCase):
         actor = self._login_with_audit_permission()
         now = timezone.now()
         today = timezone.localdate(now).isoformat()
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=actor,
             actor_identifier=actor.username,
@@ -115,7 +93,7 @@ class PanelAuditViewTests(TestCase):
             request_id="req-match",
             created_at=now,
         )
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
             actor=actor,
             actor_identifier=actor.username,
@@ -123,7 +101,7 @@ class PanelAuditViewTests(TestCase):
             request_id="req-update",
             created_at=now,
         )
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=None,
             actor_identifier="legacy-user",
@@ -174,12 +152,12 @@ class PanelAuditViewTests(TestCase):
         """O detalhe deve exibir drill-down e manter o retorno para a lista filtrada."""
 
         actor = self._login_with_audit_permission()
-        actor_for_log: Any = actor
-        audit_log = AuditLog.objects.create(
+        audit_log = self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
-            actor=actor_for_log,
+            actor=actor,
             actor_identifier=actor.username,
             object_repr="Usuário alterado",
+            request_id="req-detail",
             object_verbose_name="Usuário",
             object_id="42",
             request_method="PATCH",
@@ -188,7 +166,6 @@ class PanelAuditViewTests(TestCase):
             before={"email": "antes@example.com"},
             after={"email": "depois@example.com"},
             changes={"email": {"before": "antes@example.com", "after": "depois@example.com"}},
-            metadata={"request_id": "req-detail"},
         )
 
         response = self.client.get(
@@ -211,7 +188,7 @@ class PanelAuditViewTests(TestCase):
         """O detalhe deve devolver só o conteúdo central quando for HTMX."""
 
         actor = self._login_with_audit_permission()
-        audit_log = self._create_audit_log(
+        audit_log = self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
             actor=actor,
             actor_identifier=actor.username,
@@ -234,7 +211,7 @@ class PanelAuditViewTests(TestCase):
         """O detalhe deve oferecer atalhos por ator e pela mesma requisição."""
 
         actor = self._login_with_audit_permission()
-        audit_log = self._create_audit_log(
+        audit_log = self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
             actor=actor,
             actor_identifier=actor.username,
@@ -261,45 +238,23 @@ class PanelAuditViewTests(TestCase):
         """O detalhe deve resumir outros eventos do mesmo ator e da mesma requisição."""
 
         actor = self._login_with_audit_permission()
-        other_user = User.objects.create_user(
-            username="outro-relacionado",
-            email="outro-relacionado@example.com",
-            password="SenhaSegura@123",
-        )
-        target_log = self._create_audit_log(
-            action=AuditLog.ACTION_UPDATE,
+        other_user = self.audit_factory.create_actor("outro-relacionado")
+        scenario = self.audit_factory.create_related_scenario(
             actor=actor,
             actor_identifier=actor.username,
-            object_repr="Evento principal",
+            other_actor=other_user,
+            other_actor_identifier=other_user.username,
+            target_object_repr="Evento principal",
             request_id="req-related-preview",
-            created_at=timezone.now(),
-        )
-        actor_related = self._create_audit_log(
-            action=AuditLog.ACTION_LOGIN,
-            actor=actor,
-            actor_identifier=actor.username,
-            object_repr="Evento do mesmo ator",
-            request_id="req-actor-only",
-            created_at=timezone.now() - timedelta(minutes=1),
-        )
-        request_related = self._create_audit_log(
-            action=AuditLog.ACTION_DELETE,
-            actor=other_user,
-            actor_identifier=other_user.username,
-            object_repr="Evento da mesma requisição",
-            request_id="req-related-preview",
-            created_at=timezone.now() - timedelta(minutes=2),
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_LOGIN_FAILED,
-            actor=other_user,
-            actor_identifier=other_user.username,
-            object_repr="Evento fora do contexto",
-            request_id="req-unrelated",
-            created_at=timezone.now() - timedelta(minutes=3),
+            actor_related_object_repr="Evento do mesmo ator",
+            actor_related_request_id="req-actor-only",
+            request_related_object_repr="Evento da mesma requisição",
+            unrelated_object_repr="Evento fora do contexto",
         )
 
-        response = self.client.get(reverse("panel_audit_log_detail", args=[target_log.pk]))
+        response = self.client.get(
+            reverse("panel_audit_log_detail", args=[scenario.target_log.pk])
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -315,13 +270,13 @@ class PanelAuditViewTests(TestCase):
         self.assertNotContains(response, "Evento fora do contexto")
         self.assertContains(
             response,
-            reverse("panel_audit_log_detail", args=[actor_related.pk])
+            reverse("panel_audit_log_detail", args=[scenario.actor_related_log.pk])
             + "?actor=operador-auditoria",
             html=False,
         )
         self.assertContains(
             response,
-            reverse("panel_audit_log_detail", args=[request_related.pk])
+            reverse("panel_audit_log_detail", args=[scenario.request_related_log.pk])
             + "?object_query=req-related-preview",
             html=False,
         )
@@ -343,7 +298,7 @@ class PanelAuditViewTests(TestCase):
 
         with patch("panel.audit.views.AUDIT_PAGE_SIZE", 2):
             for index in range(5):
-                self._create_audit_log(
+                self.audit_factory.create_log(
                     action=AuditLog.ACTION_LOGIN,
                     actor=actor,
                     actor_identifier=actor.username,
@@ -364,7 +319,7 @@ class PanelAuditViewTests(TestCase):
         """A listagem deve expor exportações CSV/JSON preservando a query atual."""
 
         actor = self._login_with_audit_permission()
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=actor,
             actor_identifier=actor.username,
@@ -408,7 +363,7 @@ class PanelAuditViewTests(TestCase):
         """A exportação sem filtros deve responder 200 e incluir os eventos disponíveis."""
 
         actor = self._login_with_audit_permission()
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=actor,
             actor_identifier=actor.username,
@@ -438,7 +393,7 @@ class PanelAuditViewTests(TestCase):
         """Cada linha deve permitir pivot rápido por ator e request id."""
 
         actor = self._login_with_audit_permission()
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=actor,
             actor_identifier=actor.username,
@@ -466,7 +421,7 @@ class PanelAuditViewTests(TestCase):
 
         actor = self._login_with_audit_permission()
         now = timezone.now()
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_LOGIN,
             actor=actor,
             actor_identifier=actor.username,
@@ -474,7 +429,7 @@ class PanelAuditViewTests(TestCase):
             request_id="req-export-match",
             created_at=now,
         )
-        self._create_audit_log(
+        self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
             actor=actor,
             actor_identifier=actor.username,
@@ -500,19 +455,18 @@ class PanelAuditViewTests(TestCase):
         """A exportação JSON deve incluir metadados do filtro e os resultados serializados."""
 
         actor = self._login_with_audit_permission()
-        actor_for_log: Any = actor
-        audit_log = AuditLog.objects.create(
+        audit_log = self.audit_factory.create_log(
             action=AuditLog.ACTION_UPDATE,
-            actor=actor_for_log,
+            actor=actor,
             actor_identifier=actor.username,
             object_repr="Evento JSON",
+            request_id="req-export-json",
             object_verbose_name="Usuário",
             request_method="PATCH",
             path="/painel/usuarios/7/editar/",
             before={"email": "antes@example.com"},
             after={"email": "depois@example.com"},
             changes={"email": {"before": "antes@example.com", "after": "depois@example.com"}},
-            metadata={"request_id": "req-export-json"},
         )
 
         response = self.client.get(

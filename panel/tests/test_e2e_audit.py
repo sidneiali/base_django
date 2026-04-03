@@ -13,7 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
 from .e2e_pages import AuditDetailPage, AuditListPage
-from .e2e_support import PanelE2EBase, User
+from .e2e_support import PanelE2EBase
 
 pytestmark = pytest.mark.e2e
 
@@ -96,11 +96,7 @@ class PanelAuditE2ESmokeTests(PanelE2EBase):
 
         self._grant_permissions("view_auditlog")
         audit_list = AuditListPage(self)
-        other_user = User.objects.create_user(
-            username="outro-auditor-e2e",
-            email="outro-auditor-e2e@example.com",
-            password="SenhaSegura@123",
-        )
+        other_user = self.audit_factory.create_actor("outro-auditor-e2e")
         self._create_audit_log(
             action=AuditLog.ACTION_UPDATE,
             actor_identifier=self.username,
@@ -179,11 +175,7 @@ class PanelAuditE2ESmokeTests(PanelE2EBase):
                 created_at=base_time - timedelta(minutes=index)
             )
 
-        other_user = User.objects.create_user(
-            username="pagina-outro-e2e",
-            email="pagina-outro-e2e@example.com",
-            password="SenhaSegura@123",
-        )
+        other_user = self.audit_factory.create_actor("pagina-outro-e2e")
         self._create_audit_log(
             action=AuditLog.ACTION_LOGIN,
             actor=other_user,
@@ -278,47 +270,31 @@ class PanelAuditE2ESmokeTests(PanelE2EBase):
 
         self._grant_permissions("view_auditlog")
         audit_detail = AuditDetailPage(self)
-        other_user = User.objects.create_user(
-            username="detalhe-outro-e2e",
-            email="detalhe-outro-e2e@example.com",
-            password="SenhaSegura@123",
-        )
-        target_log = self._create_audit_log(
-            action=AuditLog.ACTION_UPDATE,
+        other_user = self.audit_factory.create_actor("detalhe-outro-e2e")
+        scenario = self.audit_factory.create_related_scenario(
+            actor=self._test_user(),
             actor_identifier=self.username,
-            object_repr="Evento alvo do detalhe",
+            other_actor=other_user,
+            other_actor_identifier=other_user.username,
+            target_object_repr="Evento alvo do detalhe",
             request_id="req-detail-related",
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_LOGIN,
-            actor_identifier=self.username,
-            object_repr="Evento do mesmo ator",
-            request_id="req-detail-actor-only",
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_UPDATE,
-            actor=other_user,
-            actor_identifier=other_user.username,
-            object_repr="Evento da mesma requisição",
-            request_id="req-detail-related",
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_LOGIN,
-            actor=other_user,
-            actor_identifier=other_user.username,
-            object_repr="Evento fora do atalho",
-            request_id="req-detail-unrelated",
+            actor_related_object_repr="Evento do mesmo ator",
+            actor_related_request_id="req-detail-actor-only",
+            request_related_object_repr="Evento da mesma requisição",
+            request_related_action=AuditLog.ACTION_UPDATE,
+            unrelated_object_repr="Evento fora do atalho",
+            unrelated_action=AuditLog.ACTION_LOGIN,
         )
 
         self._login()
-        audit_detail.open(target_log)
+        audit_detail.open(scenario.target_log)
         audit_detail.open_actor_filtered_list()
 
         AuditListPage(self).wait_for_url_fragment("actor=e2e-user")
         self.assertIn("Evento do mesmo ator", self.browser.page_source)
         self.assertNotIn("Evento fora do atalho", self.browser.page_source)
 
-        audit_detail.open(target_log)
+        audit_detail.open(scenario.target_log)
         audit_detail.open_request_filtered_list()
 
         AuditListPage(self).wait_for_url_fragment("object_query=req-detail-related")
@@ -330,33 +306,21 @@ class PanelAuditE2ESmokeTests(PanelE2EBase):
 
         self._grant_permissions("view_auditlog")
         audit_detail = AuditDetailPage(self)
-        other_user = User.objects.create_user(
-            username="preview-outro-e2e",
-            email="preview-outro-e2e@example.com",
-            password="SenhaSegura@123",
-        )
-        target_log = self._create_audit_log(
-            action=AuditLog.ACTION_UPDATE,
+        other_user = self.audit_factory.create_actor("preview-outro-e2e")
+        scenario = self.audit_factory.create_related_scenario(
+            actor=self._test_user(),
             actor_identifier=self.username,
-            object_repr="Evento principal da prévia",
+            other_actor=other_user,
+            other_actor_identifier=other_user.username,
+            target_object_repr="Evento principal da prévia",
             request_id="req-preview-related",
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_LOGIN,
-            actor_identifier=self.username,
-            object_repr="Prévia do mesmo ator",
-            request_id="req-preview-actor-only",
-        )
-        self._create_audit_log(
-            action=AuditLog.ACTION_DELETE,
-            actor=other_user,
-            actor_identifier=other_user.username,
-            object_repr="Prévia da mesma requisição",
-            request_id="req-preview-related",
+            actor_related_object_repr="Prévia do mesmo ator",
+            actor_related_request_id="req-preview-actor-only",
+            request_related_object_repr="Prévia da mesma requisição",
         )
 
         self._login()
-        audit_detail.open(target_log)
+        audit_detail.open(scenario.target_log)
 
         actor_section = audit_detail.related_section("actor")
         self.assertIn("Prévia do mesmo ator", actor_section.text)
@@ -367,7 +331,7 @@ class PanelAuditE2ESmokeTests(PanelE2EBase):
         audit_detail.wait_for_url_fragment("actor=e2e-user")
         self.assertIn("Prévia do mesmo ator", self.browser.page_source)
 
-        audit_detail.open(target_log)
+        audit_detail.open(scenario.target_log)
 
         request_section = audit_detail.related_section("request")
         self.assertIn("Prévia da mesma requisição", request_section.text)

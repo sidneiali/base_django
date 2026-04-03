@@ -23,6 +23,8 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from .audit_test_support import AuditTestDataFactory
+
 User = get_user_model()
 
 
@@ -170,6 +172,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
     browser: WebDriver
     wait: WebDriverWait
     factory: PanelE2EDataFactory
+    audit_factory: AuditTestDataFactory
     username = "e2e-user"
     password = "SenhaSegura@123"
     headless = False
@@ -226,6 +229,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
 
         self.browser.delete_all_cookies()
         self.factory = PanelE2EDataFactory(default_password=self.password)
+        self.audit_factory = AuditTestDataFactory(default_password=self.password)
         User.objects.filter(username=self.username).delete()
         User.objects.create_user(
             username=self.username,
@@ -406,7 +410,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
     ) -> AuditLog:
         """Cria um evento de auditoria controlado para os smoke tests."""
 
-        return AuditLog.objects.create(
+        return self.audit_factory.create_log(
             action=action,
             actor=actor if actor is not None else self._test_user(),
             actor_identifier=actor_identifier,
@@ -414,7 +418,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
             object_verbose_name="Evento",
             request_method="GET",
             path="/painel/auditoria/",
-            metadata={"request_id": request_id},
+            request_id=request_id,
         )
 
     def _audit_row_locator(self, request_id: str) -> tuple[str, str]:
