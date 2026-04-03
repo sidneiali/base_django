@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from core.middleware.paths import is_operational_health_path, is_rate_limited_path
 from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken, AuditLog
 
 User = get_user_model()
@@ -72,6 +73,28 @@ class ApiOperationalSecurityTests(TestCase):
         self.assertTrue(payload["data"]["timestamp"].endswith("-03:00"))
         self.assertTrue(payload["data"]["rate_limit"]["enabled"])
         self.assertEqual(payload["meta"]["request_id"], response["X-Request-ID"])
+
+    def test_health_endpoints_stay_out_of_rate_limit(self):
+        """Os healthchecks leves nao devem consumir bucket nem retornar 429."""
+
+        first_response = self.client.get(reverse("api_core_health"))
+        second_response = self.client.get(reverse("api_core_health"))
+        versioned_response = self.client.get(reverse("api_v1_core_health"))
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(versioned_response.status_code, 200)
+        self.assertNotIn("X-RateLimit-Limit", first_response)
+        self.assertNotIn("X-RateLimit-Limit", second_response)
+        self.assertNotIn("X-RateLimit-Limit", versioned_response)
+        self.assertTrue(is_operational_health_path("/api/core/health/"))
+        self.assertTrue(is_operational_health_path("/api/v1/core/health/"))
+        self.assertFalse(is_rate_limited_path("/api/core/health/"))
+        self.assertFalse(is_rate_limited_path("/api/v1/core/health/"))
+        self.assertTrue(is_rate_limited_path(reverse("api_core_me")))
+        self.assertFalse(
+            AuditLog.objects.filter(action=AuditLog.ACTION_RATE_LIMITED).exists()
+        )
 
     def test_invalid_token_attempt_is_logged(self):
         """Token inválido deve gerar 401 e log de acesso negado."""

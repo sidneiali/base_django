@@ -1,5 +1,12 @@
 """Regras de roteamento usadas pelos middlewares da API."""
 
+OPERATIONAL_HEALTH_PATHS = frozenset(
+    {
+        "/api/core/health/",
+        "/api/v1/core/health/",
+    }
+)
+
 
 def is_json_api_request(path: str) -> bool:
     """Indica se a rota pertence aos endpoints JSON protegidos/operacionais."""
@@ -21,9 +28,15 @@ def is_json_api_request(path: str) -> bool:
     )
 
 
+def is_operational_health_path(path: str) -> bool:
+    """Identifica os healthchecks leves que ficam fora de controles extras."""
+
+    return path in OPERATIONAL_HEALTH_PATHS
+
+
 def is_rate_limited_path(path: str) -> bool:
     """Define quais rotas JSON entram no controle de rate limit."""
 
     if not is_json_api_request(path):
         return False
-    return path not in {"/api/core/health/", "/api/v1/core/health/"}
+    return not is_operational_health_path(path)

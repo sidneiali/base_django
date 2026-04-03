@@ -172,7 +172,13 @@ curl http://127.0.0.1:8000/api/v1/core/health/
 
 Esse endpoint responde com `status`, `timestamp`, `timezone`, dados básicos de rate limit e `request_id`, o que já atende monitoramento simples e smoke checks de plataforma.
 
-Por ora, o projeto mantém apenas esse `healthcheck` leve. Um endpoint separado de `readiness` passa a fazer mais sentido quando houver dependências operacionais adicionais, como fila, cache distribuído ou integrações obrigatórias para o boot.
+Esse `healthcheck` continua publico e fica fora do controle extra de rate limit para manter o probing operacional simples.
+
+Por ora, o projeto mantém apenas esse `healthcheck` leve. Um endpoint separado de `readiness` passa a fazer mais sentido quando houver dependências operacionais concretas que precisem sinalizacao distinta, como:
+
+- fila obrigatoria para processamento assincrono
+- cache distribuido critico para boot ou para rotas essenciais
+- integracoes externas sem as quais a aplicacao nao consegue operar normalmente
 
 ## CI
 
