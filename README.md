@@ -645,6 +645,7 @@ Na API do painel, o projeto agora expõe recursos versionados para usuários, gr
 - os testes vivem em [`core/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\core\tests) e [`panel/tests`](c:\Users\sidne\OneDrive\Desktop\base_django\panel\tests), com suite padrão separada dos smoke tests E2E executados no CI
 - a API do painel já cobre usuários, grupos e módulos com envelope JSON padronizado também nos fluxos de exclusão
 - a auditoria HTML já entrega filtros, drill-down com previews relacionados, pivots rápidos e exportação CSV/JSON com download normal do navegador dentro do shell autenticado
+- a base não adotou `soft delete` global; a avaliação atual ficou registrada em [`docs/soft_delete_evaluation.md`](c:\Users\sidne\OneDrive\Desktop\base_django\docs\soft_delete_evaluation.md), e a recomendação de hoje é manter exclusão física com auditoria explícita
 - `core/navigation.py` segue funcional e coeso, mas continua sendo um ponto de observação se atalhos e regras de visibilidade crescerem mais
 
 ## Próximos passos sugeridos
