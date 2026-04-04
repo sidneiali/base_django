@@ -1,0 +1,164 @@
+<div data-page-title="{{ page_title }}" data-teste="admin-accounts-page">
+    <div class="card">
+        <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div>
+                <h3 class="card-title mb-0">{{ page_title }}</h3>
+                <p class="text-secondary mb-0">Área segura para contas staff e superusuárias.</p>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a
+                    href="{% url 'panel_admin_account_create' %}"
+                    class="btn btn-primary"
+                    data-teste="admin-accounts-create-link"
+                >
+                    Nova conta administrativa
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body border-bottom">
+            <form method="get" class="row g-2" hx-push-url="true" data-teste="admin-accounts-filter-form">
+                <div class="col-12 col-md-8">
+                    <label class="visually-hidden" for="id_admin_accounts_query">Pesquisar contas administrativas</label>
+                    <input
+                        id="id_admin_accounts_query"
+                        type="search"
+                        name="q"
+                        value="{{ query }}"
+                        class="form-control"
+                        placeholder="Pesquisar por usuário, nome ou e-mail"
+                        data-teste="admin-accounts-query"
+                    >
+                </div>
+                <div class="col-12 col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary" data-teste="admin-accounts-filter-submit">Pesquisar</button>
+                    <a href="{% url 'panel_admin_accounts_list' %}" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table" data-teste="admin-accounts-table">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>E-mail</th>
+                        <th>Papéis</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in admin_account_rows %}
+                        {% with admin_account=row.user %}
+                            <tr data-teste="admin-account-row" data-username="{{ admin_account.username }}">
+                                <td>
+                                    <div class="fw-semibold">{{ admin_account.username }}</div>
+                                    <div class="text-secondary small">
+                                        {{ admin_account.first_name }} {{ admin_account.last_name|default:"" }}
+                                    </div>
+                                    {% if admin_account.pk == request.user.pk %}
+                                        <span class="badge bg-blue-lt mt-1">Você</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ admin_account.email|default:"-" }}</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if admin_account.is_superuser %}
+                                            <span class="badge bg-red-lt">Superusuário</span>
+                                        {% endif %}
+                                        {% if admin_account.is_staff %}
+                                            <span class="badge bg-azure-lt">Staff</span>
+                                        {% endif %}
+                                        <span class="badge bg-secondary-lt">{{ admin_account.groups.count }} grupo(s)</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if admin_account.is_active %}
+                                        <span class="badge bg-success-lt">Ativa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-lt">Inativa</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-list justify-content-end">
+                                        <a
+                                            href="{% url 'panel_admin_account_update' admin_account.pk %}"
+                                            class="btn btn-sm btn-primary"
+                                            data-teste="admin-account-edit-link"
+                                        >
+                                            Editar
+                                        </a>
+
+                                        {% if admin_account.is_active %}
+                                            {% if row.toggle_block_reason %}
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-warning"
+                                                    disabled
+                                                    title="{{ row.toggle_block_reason }}"
+                                                    data-teste="admin-account-toggle-disabled"
+                                                >
+                                                    Inativar
+                                                </button>
+                                            {% else %}
+                                                <form method="post" action="{% url 'panel_admin_account_deactivate' admin_account.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        data-teste="admin-account-deactivate-submit"
+                                                    >
+                                                        Inativar
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
+                                            <form method="post" action="{% url 'panel_admin_account_activate' admin_account.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-sm btn-outline-success"
+                                                    data-teste="admin-account-activate-submit"
+                                                >
+                                                    Ativar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if row.delete_block_reason %}
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                disabled
+                                                title="{{ row.delete_block_reason }}"
+                                                data-teste="admin-account-delete-disabled"
+                                            >
+                                                Excluir
+                                            </button>
+                                        {% else %}
+                                            <a
+                                                href="{% url 'panel_admin_account_delete' admin_account.pk %}"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-teste="admin-account-delete-link"
+                                            >
+                                                Excluir
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-secondary py-4">
+                                Nenhuma conta administrativa encontrada.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

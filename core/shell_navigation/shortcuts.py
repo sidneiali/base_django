@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Final
 
-from django.conf import settings
 from django.urls import reverse
 
 from .types import TopbarShortcutGroups, TopbarShortcutItem
@@ -50,12 +49,12 @@ def build_topbar_shortcuts_for_user(user: Any) -> TopbarShortcutGroups:
             )
         )
 
-    if user.is_superuser and getattr(settings, "ENABLE_DJANGO_ADMIN", True):
+    if user.is_superuser:
         grouped["Administração"].append(
             TopbarShortcutItem(
                 key="admin-users",
-                label="Super Usuário",
-                url=reverse("admin:auth_user_changelist"),
+                label="Contas administrativas",
+                url=reverse("panel_admin_accounts_list"),
             )
         )
 

@@ -1,0 +1,80 @@
+<div data-page-title="{{ page_title }}" data-teste="admin-account-delete-confirm-page">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Usuário</div>
+                    <div class="fw-semibold">{{ admin_account.username }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Status</div>
+                    <div>
+                        {% if admin_account.is_active %}
+                            <span class="badge bg-success-lt">Ativa</span>
+                        {% else %}
+                            <span class="badge bg-danger-lt">Inativa</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Papéis</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% if admin_account.is_superuser %}
+                            <span class="badge bg-red-lt">Superusuário</span>
+                        {% endif %}
+                        {% if admin_account.is_staff %}
+                            <span class="badge bg-azure-lt">Staff</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">E-mail</div>
+                    <div>{{ admin_account.email|default:"-" }}</div>
+                </div>
+            </div>
+
+            {% if block_reason %}
+                <div class="alert alert-warning mb-0">{{ block_reason }}</div>
+            {% else %}
+                <div class="alert alert-danger mb-0">
+                    Esta ação remove a conta administrativa do sistema. Ela não pode ser desfeita.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                {% if block_reason %}
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                        disabled
+                        data-teste="admin-account-delete-disabled-submit"
+                    >
+                        Excluir conta administrativa
+                    </button>
+                {% else %}
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                        data-teste="admin-account-delete-confirm-submit"
+                    >
+                        Excluir conta administrativa
+                    </button>
+                {% endif %}
+            </form>
+            <a
+                href="{% url 'panel_admin_accounts_list' %}"
+                class="btn btn-outline-secondary"
+                data-teste="admin-account-delete-cancel-link"
+            >
+                Voltar
+            </a>
+        </div>
+    </div>
+</div>

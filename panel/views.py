@@ -1,5 +1,13 @@
 """Fachada compatível para as views do painel."""
 
+from .admin_accounts.views import (
+    admin_account_activate,
+    admin_account_create,
+    admin_account_deactivate,
+    admin_account_delete,
+    admin_account_update,
+    admin_accounts_list,
+)
 from .audit.views import (
     audit_log_detail,
     audit_logs_export_csv,
@@ -30,6 +38,12 @@ from .users.views import (
 )
 
 __all__ = [
+    "admin_account_activate",
+    "admin_account_create",
+    "admin_account_deactivate",
+    "admin_account_delete",
+    "admin_account_update",
+    "admin_accounts_list",
     "audit_log_detail",
     "audit_logs_export_csv",
     "audit_logs_export_json",

@@ -215,7 +215,7 @@ class SidebarNavigationTests(TestCase):
         self.assertContains(response, reverse("panel_login_security_list"))
         self.assertContains(response, reverse("panel_audit_logs_list"))
         self.assertContains(response, reverse("api_docs"))
-        self.assertContains(response, reverse("admin:auth_user_changelist"))
+        self.assertContains(response, reverse("panel_admin_accounts_list"))
 
     def test_topbar_shortcuts_follow_permissions_when_modules_are_absent(self):
         """O topo deve continuar útil mesmo quando a navegação por módulos ainda não foi seedada."""
@@ -262,8 +262,8 @@ class SidebarNavigationTests(TestCase):
         )
 
     @override_settings(ENABLE_DJANGO_ADMIN=False)
-    def test_topbar_hides_admin_shortcut_when_admin_is_disabled(self):
-        """O shell não deve sugerir o admin quando ele estiver desativado."""
+    def test_topbar_keeps_admin_accounts_shortcut_when_admin_is_disabled(self):
+        """O shell deve manter a trilha do painel mesmo com `/admin/` desligado."""
 
         user = User.objects.create_superuser(
             username="admin-off",
@@ -275,11 +275,12 @@ class SidebarNavigationTests(TestCase):
         response = self.client.get(reverse("dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(
+        self.assertContains(
             response,
             'data-topbar-shortcut="admin-users"',
             html=False,
         )
+        self.assertContains(response, reverse("panel_admin_accounts_list"))
 
     def test_seeded_api_docs_module_stays_out_of_dashboard_cards(self) -> None:
         """Documentação da API deve nascer no sidebar, mas não nos cards do dashboard."""

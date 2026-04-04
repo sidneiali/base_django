@@ -462,6 +462,24 @@ class PanelE2EBase(StaticLiveServerTestCase):
             EC.presence_of_element_located(self._user_row_locator(username))
         )
 
+    def _admin_account_row_locator(self, username: str) -> tuple[str, str]:
+        """Monta o locator da linha da tabela correspondente à conta informada."""
+
+        selector = (
+            '[data-teste="admin-account-row"]'
+            f'[data-username="{username}"]'
+        )
+        return (By.CSS_SELECTOR, selector)
+
+    def _admin_account_row(self, username: str):
+        """Localiza a linha da tabela correspondente à conta informada."""
+
+        return self.wait.until(
+            EC.presence_of_element_located(
+                self._admin_account_row_locator(username)
+            )
+        )
+
     def _group_row_locator(self, group_name: str) -> tuple[str, str]:
         """Monta o locator da linha da tabela correspondente ao grupo informado."""
 

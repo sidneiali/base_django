@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.urls import reverse
 from selenium.webdriver.remote.webelement import WebElement
 
+from .admin_accounts import AdminAccountsListPage
 from .audit import AuditListPage
 from .base import BasePageObject
 from .login_security import LoginSecurityPage
@@ -54,3 +55,10 @@ class TopbarPage(BasePageObject):
         login_security_link.click()
         self.pause()
         LoginSecurityPage(self.test_case).wait_until_loaded()
+
+    def go_to_admin_accounts(self) -> None:
+        self.open_shortcuts()
+        admin_accounts_link = self.shortcut("admin-users")
+        admin_accounts_link.click()
+        self.pause()
+        AdminAccountsListPage(self.test_case).wait_until_loaded()

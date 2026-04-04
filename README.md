@@ -194,12 +194,13 @@ Quando houver mais de uma regra aplicável para o mesmo operador, a aplicação 
 O painel interno já cobre a operação diária de:
 
 - usuários comuns
+- contas administrativas de `staff` e `superuser`
 - grupos editáveis
 - segurança de login do `django-axes`
 - módulos
 - auditoria
 
-Neste corte, grupos também ganharam exclusão própria no painel, as listas de grupos e módulos passaram a seguir o mesmo padrão visual de usuários, e a operação do `django-axes` passou a existir no próprio painel em `/painel/seguranca/login/`. Quando a pessoa não tem permissão de gestão, os botões continuam visíveis, mas desabilitados.
+Neste corte, grupos também ganharam exclusão própria no painel, as listas de grupos e módulos passaram a seguir o mesmo padrão visual de usuários, a operação do `django-axes` passou a existir no próprio painel em `/painel/seguranca/login/`, e a gestão de contas administrativas saiu do `/admin/` para `/painel/administracao/usuarios/`. Quando a pessoa não tem permissão de gestão, ou quando a ação é bloqueada por regra operacional crítica, os botões continuam visíveis, mas desabilitados.
 
 Se o ambiente já tinha o banco seedado antes dessa atualização, rode novamente:
 
@@ -213,7 +214,7 @@ Para desligar `/admin/` com mais segurança em produção:
 
 1. garantir que a operação cotidiana do time passa só pelo `/painel/`
 2. definir `ENABLE_DJANGO_ADMIN=False`
-3. manter bootstrap extraordinário via `manage.py createsuperuser` e shell administrativo para cenários fora da superfície do painel
+3. manter `manage.py createsuperuser` apenas como bootstrap inicial ou trilha de contingência
 
 ## Deploy de produção
 
@@ -546,7 +547,9 @@ Esse comando mostra a lista atual e pergunta qual modulo deve ser removido.
 O app [`panel`](c:\Users\sidne\OneDrive\Desktop\base_django\panel) oferece uma camada mais amigável para administração:
 
 - usuários comuns podem ser criados e editados sem virar `staff` ou `superuser`
+- superusuários podem gerenciar contas administrativas em `/painel/administracao/usuarios/`, incluindo grupos, permissões diretas, acesso à API e preferências de interface
 - módulos do dashboard podem ser cadastrados, editados e publicados sem depender do admin
+- a operação do `django-axes` também existe no painel em `/painel/seguranca/login/`
 - módulos canônicos do seed podem ser inativados, mas não podem ser excluídos pelo painel
 - módulos customizados precisam estar inativos antes de poderem ser excluídos com segurança
 - grupos protegidos não aparecem para edição: `Superadmin`, `Root` e `Infra`

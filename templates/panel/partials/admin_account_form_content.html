@@ -1,0 +1,316 @@
+<div data-page-title="{{ page_title }}" data-teste="admin-account-form-page">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <form method="post" class="row g-3" data-teste="admin-account-form">
+                {% csrf_token %}
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.username.id_for_label }}">
+                        {{ form.username.label }}
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.email.id_for_label }}">
+                        {{ form.email.label }}
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.help_text %}
+                        <small class="form-hint">{{ form.email.help_text }}</small>
+                    {% endif %}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.first_name.id_for_label }}">
+                        {{ form.first_name.label }}
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.last_name.id_for_label }}">
+                        {{ form.last_name.label }}
+                    </label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if admin_account %}
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="{{ form.password.id_for_label }}">
+                            {{ form.password.label }}
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.help_text %}
+                            <small class="form-hint">{{ form.password.help_text }}</small>
+                        {% endif %}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-6">
+                        <div class="alert alert-info mb-0" data-teste="admin-account-first-access-invite-info">
+                            A conta receberá por e-mail um link para definir a senha do primeiro acesso.
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="col-12 col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.is_staff }}
+                        <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                            {{ form.is_staff.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.is_superuser }}
+                        <label class="form-check-label" for="{{ form.is_superuser.id_for_label }}">
+                            {{ form.is_superuser.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.auto_refresh_enabled }}
+                        <label class="form-check-label" for="{{ form.auto_refresh_enabled.id_for_label }}">
+                            {{ form.auto_refresh_enabled.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.auto_refresh_interval.id_for_label }}">
+                        {{ form.auto_refresh_interval.label }}
+                    </label>
+                    {{ form.auto_refresh_interval }}
+                    {% if form.auto_refresh_interval.help_text %}
+                        <small class="form-hint">{{ form.auto_refresh_interval.help_text }}</small>
+                    {% endif %}
+                    {% if form.auto_refresh_interval.errors %}
+                        <div class="invalid-feedback d-block">{{ form.auto_refresh_interval.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="{{ form.session_idle_timeout_minutes.id_for_label }}">
+                        {{ form.session_idle_timeout_minutes.label }}
+                    </label>
+                    {{ form.session_idle_timeout_minutes }}
+                    {% if form.session_idle_timeout_minutes.help_text %}
+                        <small class="form-hint">{{ form.session_idle_timeout_minutes.help_text }}</small>
+                    {% endif %}
+                    {% if form.session_idle_timeout_minutes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.session_idle_timeout_minutes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
+                    <div class="border rounded-3 p-3">
+                        <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                            <div>
+                                <h4 class="card-title mb-1">Acesso à API</h4>
+                                <p class="text-secondary mb-0">
+                                    A conta administrativa também pode operar a API por token e por matriz CRUD.
+                                </p>
+                            </div>
+
+                            <div class="form-check m-0">
+                                {{ form.api_enabled }}
+                                <label class="form-check-label" for="{{ form.api_enabled.id_for_label }}">
+                                    {{ form.api_enabled.label }}
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if form.api_enabled.help_text %}
+                            <small class="form-hint d-block mb-3">{{ form.api_enabled.help_text }}</small>
+                        {% endif %}
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-vcenter mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Recurso</th>
+                                        <th class="text-center">Criar</th>
+                                        <th class="text-center">Ler</th>
+                                        <th class="text-center">Editar</th>
+                                        <th class="text-center">Excluir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in api_permission_rows %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ row.label }}</td>
+                                            {% for item in row.fields %}
+                                                <td class="text-center">
+                                                    {% if item.is_supported %}
+                                                        <div class="form-check d-inline-flex m-0">
+                                                            {{ item.field }}
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-secondary">-</span>
+                                                    {% endif %}
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">{{ form.groups.label }}</label>
+
+                    <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list data-teste="admin-account-groups-dual-list">
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Disponíveis</div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm mb-2"
+                                placeholder="Filtrar grupos..."
+                                data-dual-list-filter
+                                data-teste="admin-account-groups-filter"
+                            >
+                            <select
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-available
+                                data-teste="admin-account-groups-available"
+                            >
+                                {% for pk, label in groups_available %}
+                                    <option value="{{ pk }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-flex flex-column justify-content-center gap-2 flex-shrink-0 dual-list-actions-col">
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add data-teste="admin-account-groups-add">Adicionar →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove data-teste="admin-account-groups-remove">← Remover</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all data-teste="admin-account-groups-add-all">Todos →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all data-teste="admin-account-groups-remove-all">← Nenhum</button>
+                        </div>
+
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Selecionados</div>
+                            <div class="dual-list-spacer"></div>
+                            <select
+                                id="id_groups"
+                                name="groups"
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-chosen
+                                data-teste="admin-account-groups-chosen"
+                            >
+                                {% for pk, label in groups_chosen %}
+                                    <option value="{{ pk }}" selected>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if form.groups.errors %}
+                        <div class="invalid-feedback d-block">{{ form.groups.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">{{ form.user_permissions.label }}</label>
+
+                    <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list data-teste="admin-account-permissions-dual-list">
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Disponíveis</div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm mb-2"
+                                placeholder="Filtrar permissões..."
+                                data-dual-list-filter
+                                data-teste="admin-account-permissions-filter"
+                            >
+                            <select
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-available
+                                data-teste="admin-account-permissions-available"
+                            >
+                                {% for pk, label in permissions_available %}
+                                    <option value="{{ pk }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-flex flex-column justify-content-center gap-2 flex-shrink-0 dual-list-actions-col">
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add data-teste="admin-account-permissions-add">Adicionar →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove data-teste="admin-account-permissions-remove">← Remover</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-dual-list-add-all data-teste="admin-account-permissions-add-all">Todos →</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dual-list-remove-all data-teste="admin-account-permissions-remove-all">← Nenhum</button>
+                        </div>
+
+                        <div class="d-flex flex-column flex-grow-1 dual-list-col">
+                            <div class="text-secondary small mb-1">Selecionadas</div>
+                            <div class="dual-list-spacer"></div>
+                            <select
+                                id="id_user_permissions"
+                                name="user_permissions"
+                                class="form-select flex-grow-1 dual-list-select"
+                                multiple
+                                data-dual-list-chosen
+                                data-teste="admin-account-permissions-chosen"
+                            >
+                                {% for pk, label in permissions_chosen %}
+                                    <option value="{{ pk }}" selected>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if form.user_permissions.errors %}
+                        <div class="invalid-feedback d-block">{{ form.user_permissions.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" data-teste="admin-account-save-submit">Salvar</button>
+                    <a href="{% url 'panel_admin_accounts_list' %}" class="btn btn-outline-secondary" data-teste="admin-account-cancel-link">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

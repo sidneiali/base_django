@@ -3,6 +3,12 @@
 from django.urls import path
 
 from .views import (
+                    admin_account_activate,
+                    admin_account_create,
+                    admin_account_deactivate,
+                    admin_account_delete,
+                    admin_account_update,
+                    admin_accounts_list,
                     audit_log_detail,
                     audit_logs_export_csv,
                     audit_logs_export_json,
@@ -29,6 +35,36 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "administracao/usuarios/",
+        admin_accounts_list,
+        name="panel_admin_accounts_list",
+    ),
+    path(
+        "administracao/usuarios/novo/",
+        admin_account_create,
+        name="panel_admin_account_create",
+    ),
+    path(
+        "administracao/usuarios/<int:pk>/ativar/",
+        admin_account_activate,
+        name="panel_admin_account_activate",
+    ),
+    path(
+        "administracao/usuarios/<int:pk>/inativar/",
+        admin_account_deactivate,
+        name="panel_admin_account_deactivate",
+    ),
+    path(
+        "administracao/usuarios/<int:pk>/excluir/",
+        admin_account_delete,
+        name="panel_admin_account_delete",
+    ),
+    path(
+        "administracao/usuarios/<int:pk>/editar/",
+        admin_account_update,
+        name="panel_admin_account_update",
+    ),
     path("auditoria/", audit_logs_list, name="panel_audit_logs_list"),
     path(
         "auditoria/exportar/csv/",
