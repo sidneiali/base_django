@@ -9,6 +9,10 @@
     <link href="{% static 'vendor/tabler/css/tabler.min.css' %}" rel="stylesheet">
     <link href="{% static 'vendor/tabler/icons/tabler-icons.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/app.css' %}" rel="stylesheet">
+    <meta
+        name="htmx-config"
+        content='{"includeIndicatorStyles": false}'
+    >
 
     {% block extra_head %}{% endblock %}
 </head>

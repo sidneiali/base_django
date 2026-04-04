@@ -12,6 +12,8 @@ dependencies = [
     "django>=6.0,<7.0",
     "django-bootstrap5>=26.2,<27.0",
     "django-axes[ipware]>=8.3,<9.0",
+    "django-cors-headers>=4.4,<5.0",
+    "django-csp>=4.0,<5.0",
     "psycopg[binary]>=3.2,<4.0",
 ]
 

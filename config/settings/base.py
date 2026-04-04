@@ -6,6 +6,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
+from csp.constants import NONE, SELF, UNSAFE_INLINE
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
@@ -118,6 +120,40 @@ def build_https_settings(force_https: bool) -> dict[str, object]:
     return settings
 
 
+def build_content_security_policy(
+    *,
+    force_https: bool,
+) -> dict[str, dict[str, object]]:
+    """Monta uma CSP segura sem reabrir o shell e as docs públicas."""
+
+    directives: dict[str, object] = {
+        "default-src": [SELF],
+        "base-uri": [SELF],
+        "connect-src": [SELF],
+        "font-src": [SELF],
+        "form-action": [SELF],
+        "frame-ancestors": [NONE],
+        "img-src": [SELF, "data:"],
+        "object-src": [NONE],
+        "script-src": [SELF],
+        "script-src-attr": [NONE],
+        "script-src-elem": [SELF],
+        "style-src": [SELF],
+        "style-src-attr": [UNSAFE_INLINE],
+        "style-src-elem": [SELF],
+    }
+
+    if force_https:
+        directives["upgrade-insecure-requests"] = True
+
+    return {
+        "CONTENT_SECURITY_POLICY": {
+            "EXCLUDE_URL_PREFIXES": ["/admin/"],
+            "DIRECTIVES": directives,
+        }
+    }
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
@@ -132,6 +168,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "axes",
+    "corsheaders",
+    "csp",
     "django_bootstrap5",
     "core",
     "panel",
@@ -139,6 +177,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "csp.middleware.CSPMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'core.middleware.RequestIdMiddleware',
@@ -242,6 +282,17 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", True)
 API_RATE_LIMIT_ENABLED = env_bool("API_RATE_LIMIT_ENABLED", True)
 API_RATE_LIMIT_REQUESTS = env_int("API_RATE_LIMIT_REQUESTS", 120)
 API_RATE_LIMIT_WINDOW_SECONDS = env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
+
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
+CORS_ALLOWED_ORIGINS: list[str] = env_list("CORS_ALLOWED_ORIGINS", [])
+CORS_ALLOWED_ORIGIN_REGEXES: list[str] = env_list(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    [],
+)
+CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", False)
+CORS_URLS_REGEX = env_str("CORS_URLS_REGEX", r"^/api/.*$")
+CORS_ALLOW_HEADERS = (*default_headers, "x-request-id")
+CORS_EXPOSE_HEADERS = ("X-Request-ID",)
 
 AXES_ENABLED = env_bool("AXES_ENABLED", True)
 AXES_FAILURE_LIMIT = env_int("AXES_FAILURE_LIMIT", 5)

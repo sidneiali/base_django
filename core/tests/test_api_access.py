@@ -48,6 +48,8 @@ class ApiDocsTests(TestCase):
         self.assertContains(response, 'data-endpoint-link="api-health"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-me"', html=False)
         self.assertContains(response, 'data-endpoint-link="api-users-list"', html=False)
+        self.assertContains(response, "/static/js/api_docs.js")
+        self.assertNotContains(response, "(() => {", html=False)
 
     def test_openapi_json_is_public_and_versioned(self):
         """A spec pública deve expor os paths versionados da API."""

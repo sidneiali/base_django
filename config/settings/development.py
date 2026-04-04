@@ -27,3 +27,6 @@ EMAIL_BACKEND = base_settings.env_str(
 
 APP_FORCE_HTTPS = base_settings.env_bool("APP_FORCE_HTTPS", False)
 globals().update(base_settings.build_https_settings(APP_FORCE_HTTPS))
+globals().update(
+    base_settings.build_content_security_policy(force_https=APP_FORCE_HTTPS)
+)

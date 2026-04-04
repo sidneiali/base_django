@@ -156,8 +156,7 @@
         const textarea = document.createElement("textarea");
         textarea.value = value;
         textarea.setAttribute("readonly", "readonly");
-        textarea.style.position = "absolute";
-        textarea.style.left = "-9999px";
+        textarea.className = "clipboard-fallback-textarea";
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand("copy");

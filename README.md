@@ -15,6 +15,9 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 - Python 3.13+
 - Django
 - django-bootstrap5
+- django-axes
+- django-cors-headers
+- django-csp
 - SQLite em desenvolvimento
 - PostgreSQL em produção
 - GitHub Actions para CI
@@ -37,7 +40,7 @@ Com `pip`:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-python -m pip install django django-bootstrap5 "psycopg[binary]"
+python -m pip install django django-bootstrap5 django-axes[ipware] django-cors-headers django-csp "psycopg[binary]"
 # opcional: instala lint, testes e tipagem
 # python -m pip install pytest pytest-django ruff mypy django-stubs selenium
 python manage.py migrate
@@ -148,6 +151,26 @@ Quando o IP ultrapassa o limite configurado, a própria tela de login responde c
 O acesso público do shell usa o e-mail da conta como identificador principal no formulário de login.
 
 Quando um usuário novo é criado pelo painel interno, a aplicação envia automaticamente um e-mail de primeiro acesso com o link para definir a senha inicial.
+
+## Headers HTTP seguros
+
+O projeto agora publica uma `Content-Security-Policy` explícita fora do admin do Django, mantendo:
+
+- scripts locais apenas
+- formulários e conexões restritos à própria origem
+- bloqueio de `frame` e `object`
+- `upgrade-insecure-requests` automático quando `APP_FORCE_HTTPS=True`
+
+Para não abrir CORS por engano em toda a aplicação, o suporte com `django-cors-headers` ficou restrito à superfície `/api/` e nasce fechado por padrão.
+
+Variáveis mais úteis:
+
+- `CORS_ALLOW_ALL_ORIGINS=False`
+- `CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173`
+- `CORS_ALLOWED_ORIGIN_REGEXES=`
+- `CORS_ALLOW_CREDENTIALS=False`
+
+Por padrão, a API expõe `X-Request-ID` para clientes browser autorizados via CORS.
 
 ## Sessão inativa
 

@@ -28,6 +28,8 @@ dependencies = [
     { name = "django" },
     { name = "django-axes", extra = ["ipware"] },
     { name = "django-bootstrap5" },
+    { name = "django-cors-headers" },
+    { name = "django-csp" },
     { name = "psycopg", extra = ["binary"] },
 ]
 
@@ -46,6 +48,8 @@ requires-dist = [
     { name = "django", specifier = ">=6.0,<7.0" },
     { name = "django-axes", extras = ["ipware"], specifier = ">=8.3,<9.0" },
     { name = "django-bootstrap5", specifier = ">=26.2,<27.0" },
+    { name = "django-cors-headers", specifier = ">=4.4,<5.0" },
+    { name = "django-csp", specifier = ">=4.0,<5.0" },
     { name = "django-stubs", marker = "extra == 'dev'", specifier = ">=5.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4.0" },
@@ -136,6 +140,32 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f8/31/bd9e6acdf959d5e19757026c206a6bdfceec3001ee85bb1f9799ce304f87/django_bootstrap5-26.2.tar.gz", hash = "sha256:12331059c8230ba372ffaad990a706151e1ad8f721a870aa2e862cf6746f0d33", size = 51468, upload-time = "2026-02-08T11:47:19.067Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7a/79/d4b547849a86f450b1f1fb77f306da5d7844aba45f4aa10450d375fc26f5/django_bootstrap5-26.2-py3-none-any.whl", hash = "sha256:179af37c59f4e9b1070fc650f30961c5d903c2c0ad60280ad5b63ed394f68658", size = 26851, upload-time = "2026-02-08T11:47:20.198Z" },
+]
+
+[[package]]
+name = "django-cors-headers"
+version = "4.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/21/39/55822b15b7ec87410f34cd16ce04065ff390e50f9e29f31d6d116fc80456/django_cors_headers-4.9.0.tar.gz", hash = "sha256:fe5d7cb59fdc2c8c646ce84b727ac2bca8912a247e6e68e1fb507372178e59e8", size = 21458, upload-time = "2025-09-18T10:40:52.326Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/d8/19ed1e47badf477d17fb177c1c19b5a21da0fd2d9f093f23be3fb86c5fab/django_cors_headers-4.9.0-py3-none-any.whl", hash = "sha256:15c7f20727f90044dcee2216a9fd7303741a864865f0c3657e28b7056f61b449", size = 12809, upload-time = "2025-09-18T10:40:50.843Z" },
+]
+
+[[package]]
+name = "django-csp"
+version = "4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/db/23567744dff2169aadb095f726088074476b24dfff5a759ffcf6389cf401/django_csp-4.0.tar.gz", hash = "sha256:b27010bb702eb20a3dad329178df2b61a2b82d338b70fbdc13c3a3bd28712833", size = 20028, upload-time = "2025-04-02T16:41:46.721Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/a4/736ab90ee527a23e194d1ce7358c6bcced66381ced83c28268b4aea236f7/django_csp-4.0-py3-none-any.whl", hash = "sha256:d5a0a05463a6b75a4f1fc1828c58c89af8db9364d09fc6e12f122b4d7f3d00dc", size = 25689, upload-time = "2025-04-02T16:41:45.689Z" },
 ]
 
 [[package]]
