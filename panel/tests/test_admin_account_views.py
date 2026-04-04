@@ -55,7 +55,7 @@ class PanelAdminAccountViewTests(TestCase):
         )
 
     def test_admin_accounts_list_filters_results_and_excludes_common_users(self) -> None:
-        """A listagem deve mostrar só contas administrativas e filtrar por texto."""
+        """A listagem deve seguir o filtro textual e refletir a busca corrente."""
 
         self._login_as_superuser()
         User.objects.create_user(
@@ -79,12 +79,32 @@ class PanelAdminAccountViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            'data-page-title="Contas administrativas"',
+            'data-page-title="Contas e privilégios administrativos"',
             html=False,
         )
         self.assertContains(response, "financeiro-admin")
         self.assertNotContains(response, "comum")
         self.assertNotContains(response, "<!doctype html>", html=False)
+
+    def test_admin_accounts_list_shows_common_users_for_future_promotion(self) -> None:
+        """A área deve listar usuários comuns para permitir promoção posterior."""
+
+        self._login_as_superuser()
+        common_user = User.objects.create_user(
+            username="candidato-admin",
+            email="candidato-admin@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.get(reverse("panel_admin_accounts_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'data-username="{common_user.username}"',
+            html=False,
+        )
+        self.assertContains(response, "Usuário comum")
 
     def test_admin_accounts_list_disables_self_dangerous_actions(self) -> None:
         """A conta logada deve seguir visível, mas com ações perigosas desabilitadas."""
@@ -205,6 +225,38 @@ class PanelAdminAccountViewTests(TestCase):
         self.assertTrue(admin_account.is_superuser)
         self.assertEqual(admin_account.last_name, "Promovido")
         self.assertTrue(admin_account.user_permissions.filter(pk=permission.pk).exists())
+
+    def test_admin_account_update_can_promote_common_user_without_recreating_it(
+        self,
+    ) -> None:
+        """Um usuário comum existente deve poder ser promovido pela área privilegiada."""
+
+        self._login_as_superuser()
+        common_user = User.objects.create_user(
+            username="ja-existente",
+            email="ja-existente@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.post(
+            reverse("panel_admin_account_update", args=[common_user.pk]),
+            {
+                "username": "ja-existente",
+                "first_name": "Já",
+                "last_name": "Promovido",
+                "email": "ja-existente@example.com",
+                "is_active": "on",
+                "is_staff": "on",
+                "auto_refresh_interval": "30",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        common_user.refresh_from_db()
+        self.assertTrue(common_user.is_staff)
+        self.assertFalse(common_user.is_superuser)
+        self.assertEqual(common_user.last_name, "Promovido")
 
     def test_admin_account_deactivate_rejects_own_account(self) -> None:
         """A ação rápida não pode inativar a própria conta administrativa logada."""

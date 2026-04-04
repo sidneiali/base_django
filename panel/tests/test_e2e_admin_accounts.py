@@ -69,3 +69,27 @@ class PanelAdminAccountsE2ESmokeTests(PanelE2EBase):
         created_user = User.objects.get(username="novo-admin-e2e")
         self.assertTrue(created_user.is_staff)
         self.assertFalse(created_user.is_superuser)
+
+    def test_superuser_can_promote_existing_common_user_from_same_screen(self) -> None:
+        """A área deve permitir promover um usuário comum sem recriar a conta."""
+
+        self._elevate_current_user_to_superuser()
+        topbar = TopbarPage(self)
+        common_user = self.factory.create_user(
+            "usuario-existente-e2e",
+            email="usuario-existente-e2e@example.com",
+        )
+
+        self._login()
+        topbar.go_to_admin_accounts()
+
+        admin_accounts_page = AdminAccountsListPage(self)
+        admin_accounts_page.wait_for_table_text("usuario-existente-e2e")
+        admin_form = admin_accounts_page.open_edit_form("usuario-existente-e2e")
+        admin_form.set_staff(checked=True)
+
+        admin_accounts_page = admin_form.save()
+        admin_accounts_page.wait_for_table_text("usuario-existente-e2e")
+
+        common_user.refresh_from_db()
+        self.assertTrue(common_user.is_staff)

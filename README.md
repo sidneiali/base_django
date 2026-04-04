@@ -551,6 +551,7 @@ O app [`panel`](c:\Users\sidne\OneDrive\Desktop\base_django\panel) oferece uma c
 - usuários comuns podem ser criados e editados sem virar `staff` ou `superuser`
 - operadores também podem reenviar a recuperação de senha para usuários comuns, com tela de confirmação antes do disparo do e-mail
 - superusuários podem gerenciar contas administrativas em `/painel/administracao/usuarios/`, incluindo grupos, permissões diretas, acesso à API e preferências de interface
+- a mesma área privilegiada também lista usuários comuns para que eles possam ser promovidos a `staff` ou `superuser` sem recriar a conta
 - a mesma área administrativa também permite reenviar a recuperação de senha para contas `staff` e `superuser`
 - módulos do dashboard podem ser cadastrados, editados e publicados sem depender do admin
 - a operação do `django-axes` também existe no painel em `/painel/seguranca/login/`

@@ -24,11 +24,11 @@ from .forms import PanelAdminAccountForm
 from .services import (
     AdminAccountOperationBlockedError,
     activate_admin_account,
-    administrative_users_queryset,
     build_admin_account_list_rows,
     deactivate_admin_account,
     delete_admin_account,
     get_admin_account_delete_block_reason,
+    superuser_management_queryset,
 )
 
 
@@ -40,12 +40,12 @@ def _ensure_admin_accounts_access(user: object) -> None:
 
 
 def _admin_accounts_queryset():
-    """Retorna a queryset padrão da área de contas administrativas."""
+    """Retorna a queryset padrão da área de gestão privilegiada."""
 
     return (
-        administrative_users_queryset()
+        superuser_management_queryset()
         .prefetch_related("groups", "user_permissions")
-        .order_by("username")
+        .order_by("-is_superuser", "-is_staff", "username")
     )
 
 
@@ -124,7 +124,7 @@ def admin_accounts_list(request: HttpRequest) -> HttpResponse:
         "panel/admin_account_list.html",
         "panel/partials/admin_account_list_content.html",
         {
-            "page_title": "Contas administrativas",
+            "page_title": "Contas e privilégios administrativos",
             "query": query,
             "admin_account_rows": rows,
         },
@@ -156,7 +156,7 @@ def admin_account_create(request: HttpRequest) -> HttpResponse:
         "panel/partials/admin_account_form_content.html",
         _build_admin_account_form_context(
             form=form,
-            page_title="Nova conta administrativa",
+            page_title="Nova conta com privilégios",
         ),
     )
 
@@ -184,7 +184,7 @@ def admin_account_update(request: HttpRequest, pk: int) -> HttpResponse:
         "panel/partials/admin_account_form_content.html",
         _build_admin_account_form_context(
             form=form,
-            page_title=f"Editar conta administrativa: {admin_account.username}",
+            page_title=f"Editar privilégios: {admin_account.username}",
             admin_account=admin_account,
         ),
     )
@@ -240,9 +240,7 @@ def admin_account_delete(request: HttpRequest, pk: int) -> HttpResponse:
         "panel/admin_account_delete_confirm.html",
         "panel/partials/admin_account_delete_confirm_content.html",
         {
-            "page_title": (
-                f"Excluir conta administrativa: {admin_account.username}"
-            ),
+            "page_title": f"Excluir conta do painel: {admin_account.username}",
             "admin_account": admin_account,
             "block_reason": block_reason,
         },

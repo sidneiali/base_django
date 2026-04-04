@@ -22,6 +22,12 @@ class AdminAccountListRow:
     delete_block_reason: str
 
 
+def superuser_management_queryset() -> QuerySet[User]:
+    """Retorna todas as contas que um superusuário pode promover ou revisar."""
+
+    return User.objects.all()
+
+
 def administrative_users_queryset() -> QuerySet[User]:
     """Retorna apenas as contas administrativas gerenciáveis no painel."""
 
@@ -102,7 +108,7 @@ def build_admin_account_list_rows(
     rows: list[AdminAccountListRow] = []
     for user in users:
         toggle_block_reason = ""
-        if user.is_active:
+        if user.is_active and (user.is_staff or user.is_superuser):
             toggle_block_reason = get_admin_account_transition_block_reason(
                 user,
                 acting_user=acting_user,
@@ -138,15 +144,16 @@ def deactivate_admin_account(
 ) -> None:
     """Inativa uma conta administrativa respeitando as travas operacionais."""
 
-    reason = get_admin_account_transition_block_reason(
-        user,
-        acting_user=acting_user,
-        next_is_active=False,
-        next_is_staff=user.is_staff,
-        next_is_superuser=user.is_superuser,
-    )
-    if reason:
-        raise AdminAccountOperationBlockedError(reason)
+    if user.is_staff or user.is_superuser:
+        reason = get_admin_account_transition_block_reason(
+            user,
+            acting_user=acting_user,
+            next_is_active=False,
+            next_is_staff=user.is_staff,
+            next_is_superuser=user.is_superuser,
+        )
+        if reason:
+            raise AdminAccountOperationBlockedError(reason)
 
     if user.is_active:
         user.is_active = False

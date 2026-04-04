@@ -3,7 +3,7 @@
         <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
             <div>
                 <h3 class="card-title mb-0">{{ page_title }}</h3>
-                <p class="text-secondary mb-0">Área segura para contas staff e superusuárias.</p>
+                <p class="text-secondary mb-0">Superusuários podem revisar qualquer conta e promover usuários comuns quando necessário.</p>
             </div>
 
             <div class="d-flex gap-2">
@@ -70,6 +70,9 @@
                                         {% endif %}
                                         {% if admin_account.is_staff %}
                                             <span class="badge bg-azure-lt">Staff</span>
+                                        {% endif %}
+                                        {% if not admin_account.is_staff and not admin_account.is_superuser %}
+                                            <span class="badge bg-secondary-lt">Usuário comum</span>
                                         {% endif %}
                                         <span class="badge bg-secondary-lt">{{ admin_account.groups.count }} grupo(s)</span>
                                     </div>
