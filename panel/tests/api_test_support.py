@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken
+from core.tests.factories import UserFactory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
@@ -30,7 +31,7 @@ class PanelApiTokenMixin:
         resolved_username = username or "api-client"
         if username is None and User.objects.filter(username=resolved_username).exists():
             resolved_username = f"{resolved_username}-{User.objects.count()}"
-        user = User.objects.create_user(
+        user = UserFactory.create(
             username=resolved_username,
             email=email or f"{resolved_username}@example.com",
             password="SenhaSegura@123",

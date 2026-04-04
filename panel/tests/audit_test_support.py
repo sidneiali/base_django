@@ -7,10 +7,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from core.models import AuditLog
-from django.contrib.auth import get_user_model
+from core.tests.factories import AuditLogFactory, UserFactory
 from django.utils import timezone
-
-User = get_user_model()
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +48,7 @@ class AuditTestDataFactory:
     ) -> Any:
         """Cria um ator previsível para cenários de auditoria."""
 
-        return User.objects.create_user(
+        return UserFactory.create(
             username=username,
             email=email or f"{username}@example.com",
             password=password or self.default_password,
@@ -83,7 +81,7 @@ class AuditTestDataFactory:
         if metadata:
             payload_metadata.update(metadata)
 
-        audit_log = AuditLog.objects.create(
+        audit_log = AuditLogFactory.create(
             action=action,
             actor=actor,
             actor_identifier=actor_identifier,
@@ -97,11 +95,8 @@ class AuditTestDataFactory:
             after={} if after is None else after,
             changes={} if changes is None else changes,
             metadata=payload_metadata,
+            created_at=created_at,
         )
-
-        if created_at is not None:
-            AuditLog.objects.filter(pk=audit_log.pk).update(created_at=created_at)
-            audit_log.refresh_from_db()
 
         return audit_log
 

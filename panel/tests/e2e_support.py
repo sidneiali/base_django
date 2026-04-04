@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from core.models import AuditLog, Module
+from core.tests.factories import GroupFactory, ModuleFactory, UserFactory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -47,16 +48,14 @@ class PanelE2EDataFactory:
     ) -> Any:
         """Cria um usuário com defaults previsíveis para os cenários E2E."""
 
-        user = User.objects.create_user(
+        user = UserFactory.create(
             username=username,
             email=email or f"{username}@example.com",
             password=password or self.default_password,
             first_name=first_name,
             last_name=last_name,
+            groups=list(groups),
         )
-        group_list = list(groups)
-        if group_list:
-            user.groups.add(*group_list)
         permission_codename_list = list(permission_codenames)
         if permission_codename_list:
             permissions = Permission.objects.filter(
@@ -73,7 +72,7 @@ class PanelE2EDataFactory:
     ) -> Group:
         """Cria um grupo com permissões opcionais."""
 
-        group = Group.objects.create(name=name)
+        group = GroupFactory.create(name=name)
         permission_codename_list = list(permission_codenames)
         if permission_codename_list:
             permissions = Permission.objects.filter(
@@ -100,7 +99,7 @@ class PanelE2EDataFactory:
     ) -> Module:
         """Cria um módulo com defaults úteis para os smoke tests."""
 
-        return Module.objects.create(
+        return ModuleFactory.create(
             name=name,
             slug=slug,
             description=description,
@@ -232,7 +231,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
         self.factory = PanelE2EDataFactory(default_password=self.password)
         self.audit_factory = AuditTestDataFactory(default_password=self.password)
         User.objects.filter(username=self.username).delete()
-        User.objects.create_user(
+        UserFactory.create(
             username=self.username,
             email=self.email,
             password=self.password,

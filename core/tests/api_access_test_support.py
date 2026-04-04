@@ -8,12 +8,8 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-
 from core.models import ApiAccessProfile, ApiResourcePermission, ApiToken
-
-User = get_user_model()
+from core.tests.factories import GroupFactory, UserFactory
 
 
 class TokenIssueParams(Protocol):
@@ -63,15 +59,14 @@ class ApiAccessFactory:
         Returns:
             Tupla (user, raw_token).
         """
-        user = User.objects.create_user(
+        user = UserFactory.create(
             username=username,
             email=email,
-            password="SenhaSegura@123",
         )
 
         if groups:
             for group_name in groups:
-                group, _created = Group.objects.get_or_create(name=group_name)
+                group = GroupFactory.create(name=group_name)
                 user.groups.add(group)
 
         access_profile = ApiAccessProfile.objects.create(

@@ -21,6 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "django-stubs>=5.2",
+    "factory_boy>=3.3,<4.0",
     "mypy>=1.11",
     "pytest>=8.0",
     "pytest-django>=4.8",
@@ -56,6 +57,10 @@ plugins = ["mypy_django_plugin.main"]
 exclude = ["core/migrations/"]
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["factory", "factory.*"]
+ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"

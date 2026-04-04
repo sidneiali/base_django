@@ -7,10 +7,9 @@ import json
 from core.models import (
     ApiResourcePermission,
     AuditLog,
-    Module,
 )
+from core.tests.factories import GroupFactory, ModuleFactory, UserFactory
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
@@ -30,7 +29,7 @@ class PanelApiOperationalTests(PanelApiTokenMixin, TestCase):
     def _create_user_target(self) -> HasPk:
         """Cria um usuário comum editável pela API."""
 
-        return User.objects.create_user(
+        return UserFactory.create(
             username=f"target-user-{User.objects.count()}",
             email=f"target-user-{User.objects.count()}@example.com",
             password="SenhaSegura@123",
@@ -39,21 +38,12 @@ class PanelApiOperationalTests(PanelApiTokenMixin, TestCase):
     def _create_group_target(self) -> HasPk:
         """Cria um grupo editável pela API."""
 
-        return Group.objects.create(name=f"Grupo {Group.objects.count() + 1}")
+        return GroupFactory.create()
 
     def _create_module_target(self) -> HasPk:
         """Cria um módulo customizado seguro para edição e exclusão."""
 
-        return Module.objects.create(
-            name=f"Módulo {Module.objects.count() + 1}",
-            slug=f"modulo-{Module.objects.count() + 1}",
-            description="Módulo operacional de teste",
-            icon="ti ti-layout-grid",
-            url_name="module_entry",
-            app_label="",
-            permission_codename="",
-            menu_group="Teste",
-            order=10,
+        return ModuleFactory.create(
             is_active=False,
         )
 
