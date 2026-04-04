@@ -8,6 +8,7 @@ from .views import (
                     audit_logs_export_json,
                     audit_logs_list,
                     group_create,
+                    group_delete,
                     group_update,
                     groups_list,
                     module_activate,
@@ -51,5 +52,6 @@ urlpatterns = [
     path("usuarios/<int:pk>/editar/", user_update, name="panel_user_update"),
     path("grupos/", groups_list, name="panel_groups_list"),
     path("grupos/novo/", group_create, name="panel_group_create"),
+    path("grupos/<int:pk>/excluir/", group_delete, name="panel_group_delete"),
     path("grupos/<int:pk>/editar/", group_update, name="panel_group_update"),
 ]

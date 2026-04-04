@@ -3,12 +3,27 @@
 from core.htmx import htmx_location, is_htmx_request, render_page
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Group
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from ..constants import PROTECTED_GROUP_NAMES
 from ..dual_list import build_dual_list_choices
 from .forms import PanelGroupForm
+
+
+def _editable_groups_queryset():
+    """Retorna apenas os grupos que o painel pode gerenciar diretamente."""
+
+    return Group.objects.exclude(name__in=PROTECTED_GROUP_NAMES)
+
+
+def _redirect_groups_list(request: HttpRequest) -> HttpResponse:
+    """Redireciona para a listagem, respeitando navegação HTMX quando ativa."""
+
+    if is_htmx_request(request):
+        return htmx_location(reverse("panel_groups_list"))
+    return redirect("panel_groups_list")
 
 
 @login_required
@@ -19,7 +34,7 @@ def groups_list(request):
     query = request.GET.get("q", "").strip()
 
     groups = (
-        Group.objects.exclude(name__in=PROTECTED_GROUP_NAMES)
+        _editable_groups_queryset()
         .prefetch_related("permissions")
         .order_by("name")
     )
@@ -48,9 +63,7 @@ def group_create(request):
 
     if request.method == "POST" and form.is_valid():
         form.save()
-        if is_htmx_request(request):
-            return htmx_location(reverse("panel_groups_list"))
-        return redirect("panel_groups_list")
+        return _redirect_groups_list(request)
 
     available, chosen = build_dual_list_choices(form, "permissions")
 
@@ -72,17 +85,12 @@ def group_create(request):
 def group_update(request, pk: int):
     """Edita um grupo existente, exceto os grupos protegidos."""
 
-    group = get_object_or_404(
-        Group.objects.exclude(name__in=PROTECTED_GROUP_NAMES),
-        pk=pk,
-    )
+    group = get_object_or_404(_editable_groups_queryset(), pk=pk)
     form = PanelGroupForm(request.POST or None, instance=group)
 
     if request.method == "POST" and form.is_valid():
         form.save()
-        if is_htmx_request(request):
-            return htmx_location(reverse("panel_groups_list"))
-        return redirect("panel_groups_list")
+        return _redirect_groups_list(request)
 
     available, chosen = build_dual_list_choices(form, "permissions")
 
@@ -96,5 +104,27 @@ def group_update(request, pk: int):
             "group": group,
             "perm_available": available,
             "perm_chosen": chosen,
+        },
+    )
+
+
+@login_required
+@permission_required("auth.delete_group", raise_exception=True)
+def group_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    """Confirma e executa a exclusão de um grupo editável do painel."""
+
+    group = get_object_or_404(_editable_groups_queryset(), pk=pk)
+
+    if request.method == "POST":
+        group.delete()
+        return _redirect_groups_list(request)
+
+    return render_page(
+        request,
+        "panel/group_delete_confirm.html",
+        "panel/partials/group_delete_confirm_content.html",
+        {
+            "page_title": f"Excluir grupo: {group.name}",
+            "group": group,
         },
     )

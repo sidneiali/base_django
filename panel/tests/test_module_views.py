@@ -88,6 +88,83 @@ class PanelModuleViewTests(TestCase):
         self.assertNotContains(response, "CRM")
         self.assertNotContains(response, "<!doctype html>", html=False)
 
+    def test_modules_list_renders_disabled_actions_without_management_permissions(self) -> None:
+        """A listagem deve manter ações visíveis, porém desabilitadas, em modo leitura."""
+
+        self._login_with_permissions("view_module")
+        Module.objects.create(
+            name="Financeiro",
+            slug="financeiro",
+            description="Painel financeiro",
+            icon="ti ti-cash",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+        Module.objects.create(
+            name="CRM",
+            slug="crm",
+            description="Painel comercial",
+            icon="ti ti-users",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=20,
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_modules_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="modules-create-disabled"', html=False)
+        self.assertContains(response, 'data-teste="module-edit-disabled"', html=False)
+        self.assertContains(response, 'data-teste="module-toggle-disabled"', html=False)
+        self.assertContains(response, "Inativar")
+        self.assertContains(response, "Ativar")
+        self.assertContains(response, 'data-teste="module-delete-disabled"', html=False)
+
+    def test_modules_list_renders_enabled_actions_with_management_permissions(self) -> None:
+        """A listagem deve expor ações reais quando o operador puder gerenciar módulos."""
+
+        self._login_with_permissions("view_module", "add_module", "change_module", "delete_module")
+        Module.objects.create(
+            name="Financeiro",
+            slug="financeiro",
+            description="Painel financeiro",
+            icon="ti ti-cash",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+        Module.objects.create(
+            name="CRM",
+            slug="crm",
+            description="Painel comercial",
+            icon="ti ti-users",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=20,
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("panel_modules_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="modules-create-link"', html=False)
+        self.assertContains(response, 'data-teste="module-edit-link"', html=False)
+        self.assertContains(response, 'data-teste="module-deactivate-submit"', html=False)
+        self.assertContains(response, 'data-teste="module-activate-submit"', html=False)
+        self.assertContains(response, 'data-teste="module-delete-link"', html=False)
+
     def test_module_create_htmx_creates_module_and_redirects(self) -> None:
         """Criar módulo via HTMX deve persistir e responder com HX-Location."""
 

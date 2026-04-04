@@ -56,6 +56,14 @@ Depois acesse:
 - `http://127.0.0.1:8000/login/`
 - `http://127.0.0.1:8000/admin/`
 
+Se quiser derrubar a superfície do Django admin em um ambiente, use:
+
+```text
+ENABLE_DJANGO_ADMIN=False
+```
+
+Com essa flag, qualquer rota sob `/admin/` passa a responder `404`.
+
 ## Onboarding rápido
 
 Fluxo sugerido para validar a base logo no primeiro dia:
@@ -180,6 +188,23 @@ O painel agora permite configurar a duração máxima de sessão inativa:
 - por grupo, na tela de grupos
 
 Quando houver mais de uma regra aplicável para o mesmo operador, a aplicação usa o menor valor configurado entre usuário e grupos.
+
+## Retirada do /admin
+
+O painel interno já cobre a operação diária de:
+
+- usuários comuns
+- grupos editáveis
+- módulos
+- auditoria
+
+Neste corte, grupos também ganharam exclusão própria no painel e as listas de grupos e módulos passaram a seguir o mesmo padrão visual de usuários: quando a pessoa não tem permissão de gestão, os botões continuam visíveis, mas desabilitados.
+
+Para desligar `/admin/` com mais segurança em produção:
+
+1. garantir que a operação cotidiana do time passa só pelo `/painel/`
+2. definir `ENABLE_DJANGO_ADMIN=False`
+3. manter bootstrap extraordinário via `manage.py createsuperuser` e shell administrativo para cenários fora da superfície do painel
 
 ## Deploy de produção
 

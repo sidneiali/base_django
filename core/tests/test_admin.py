@@ -1,7 +1,7 @@
 """Testes do admin customizado do app core."""
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 User = get_user_model()
@@ -23,3 +23,13 @@ class UserAdminTests(TestCase):
         response = self.client.get(reverse("admin:auth_user_add"))
 
         self.assertEqual(response.status_code, 200)
+
+    @override_settings(ENABLE_DJANGO_ADMIN=False)
+    def test_admin_routes_return_404_when_admin_is_disabled(self):
+        """A flag de configuração deve derrubar toda a superfície do admin."""
+
+        root_response = self.client.get("/admin/")
+        login_response = self.client.get("/admin/login/")
+
+        self.assertEqual(root_response.status_code, 404)
+        self.assertEqual(login_response.status_code, 404)

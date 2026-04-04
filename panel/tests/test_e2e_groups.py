@@ -31,6 +31,25 @@ class PanelGroupsE2ESmokeTests(PanelE2EBase):
         self.assertIn("Grupo Financeiro E2E", groups_page.table_text())
         self.assertNotIn("Grupo Comercial E2E", groups_page.table_text())
 
+    def test_groups_list_read_only_operator_sees_disabled_actions_smoke(self) -> None:
+        """O navegador real deve mostrar ações desabilitadas quando faltar gestão."""
+
+        self._grant_permissions("view_group")
+        groups_page = GroupsListPage(self)
+        self.factory.create_group("Grupo Somente Leitura E2E")
+
+        self._login()
+        groups_page.open()
+
+        self.assertTrue(groups_page.find("groups-create-disabled").is_displayed())
+        row = groups_page.row("Grupo Somente Leitura E2E")
+        self.assertTrue(
+            row.find_element(*groups_page.locator_by_testid("group-edit-disabled")).is_displayed()
+        )
+        self.assertTrue(
+            row.find_element(*groups_page.locator_by_testid("group-delete-disabled")).is_displayed()
+        )
+
     def test_group_create_with_permission_smoke(self) -> None:
         """O operador deve conseguir criar grupo e associar permissão pela dual-list."""
 

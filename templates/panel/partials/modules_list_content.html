@@ -2,7 +2,11 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Módulos</h3>
-            <a href="{% url 'panel_module_create' %}" class="btn btn-primary" data-teste="modules-create-link">Novo módulo</a>
+            {% if perms.core.add_module %}
+                <a href="{% url 'panel_module_create' %}" class="btn btn-primary" data-teste="modules-create-link">Novo módulo</a>
+            {% else %}
+                <button type="button" class="btn btn-primary" disabled data-teste="modules-create-disabled">Novo módulo</button>
+            {% endif %}
         </div>
 
         <div class="card-body border-bottom">
@@ -85,30 +89,53 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end flex-wrap">
-                                    <a href="{% url 'panel_module_update' module.pk %}" class="btn btn-sm btn-primary" data-teste="module-edit-link">
-                                        Editar
-                                    </a>
-                                    {% if module.is_active %}
-                                        <form method="post" action="{% url 'panel_module_deactivate' module.pk %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" data-teste="module-deactivate-submit">
-                                                Inativar
-                                            </button>
-                                        </form>
+                                    {% if perms.core.change_module %}
+                                        <a href="{% url 'panel_module_update' module.pk %}" class="btn btn-sm btn-primary" data-teste="module-edit-link">
+                                            Editar
+                                        </a>
                                     {% else %}
-                                        <form method="post" action="{% url 'panel_module_activate' module.pk %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-success" data-teste="module-activate-submit">
-                                                Ativar
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="module-edit-disabled">
+                                            Editar
+                                        </button>
+                                    {% endif %}
+                                    {% if perms.core.change_module %}
+                                        {% if module.is_active %}
+                                            <form method="post" action="{% url 'panel_module_deactivate' module.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" data-teste="module-deactivate-submit">
+                                                    Inativar
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{% url 'panel_module_activate' module.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success" data-teste="module-activate-submit">
+                                                    Ativar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm {% if module.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                            disabled
+                                            data-teste="module-toggle-disabled"
+                                        >
+                                            {% if module.is_active %}Inativar{% else %}Ativar{% endif %}
+                                        </button>
                                     {% endif %}
                                     <a href="{{ module.get_absolute_url }}" class="btn btn-sm btn-outline-secondary" data-teste="module-open-link">
                                         Abrir
                                     </a>
-                                    <a href="{% url 'panel_module_delete' module.pk %}" class="btn btn-sm btn-outline-danger" data-teste="module-delete-link">
-                                        Excluir
-                                    </a>
+                                    {% if perms.core.delete_module %}
+                                        <a href="{% url 'panel_module_delete' module.pk %}" class="btn btn-sm btn-outline-danger" data-teste="module-delete-link">
+                                            Excluir
+                                        </a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="module-delete-disabled">
+                                            Excluir
+                                        </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

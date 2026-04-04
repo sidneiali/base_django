@@ -175,12 +175,15 @@ INSTALLED_APPS = [
     "panel",
 ]
 
+ENABLE_DJANGO_ADMIN = env_bool("ENABLE_DJANGO_ADMIN", True)
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "csp.middleware.CSPMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'core.middleware.AdminRouteDisableMiddleware',
     'core.middleware.RequestIdMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

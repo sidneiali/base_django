@@ -51,6 +51,57 @@ class PanelModulesE2ESmokeTests(PanelE2EBase):
         self.assertIn("E2E Financeiro", modules_page.table_text())
         self.assertNotIn("E2E CRM", modules_page.table_text())
 
+    def test_modules_list_read_only_operator_sees_disabled_actions_smoke(self) -> None:
+        """O navegador real deve mostrar ações desabilitadas quando faltar gestão."""
+
+        self._grant_permissions("view_module")
+        modules_page = ModulesListPage(self)
+        self.factory.create_module(
+            name="E2E Somente Leitura Ativo",
+            slug="e2e-somente-leitura-ativo",
+            description="Leitura",
+            icon="ti ti-layout-grid",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=10,
+            is_active=True,
+        )
+        self.factory.create_module(
+            name="E2E Somente Leitura Inativo",
+            slug="e2e-somente-leitura-inativo",
+            description="Leitura",
+            icon="ti ti-layout-grid",
+            url_name="module_entry",
+            app_label="",
+            permission_codename="",
+            menu_group="Operação",
+            order=20,
+            is_active=False,
+        )
+
+        self._login()
+        modules_page.open()
+
+        self.assertTrue(modules_page.find("modules-create-disabled").is_displayed())
+        active_row = modules_page.row("E2E Somente Leitura Ativo")
+        inactive_row = modules_page.row("E2E Somente Leitura Inativo")
+        self.assertTrue(
+            active_row.find_element(*modules_page.locator_by_testid("module-edit-disabled")).is_displayed()
+        )
+        self.assertTrue(
+            active_row.find_element(*modules_page.locator_by_testid("module-toggle-disabled")).is_displayed()
+        )
+        self.assertTrue(
+            active_row.find_element(*modules_page.locator_by_testid("module-delete-disabled")).is_displayed()
+        )
+        self.assertTrue(
+            inactive_row.find_element(*modules_page.locator_by_testid("module-toggle-disabled")).is_displayed()
+        )
+        self.assertIn("Inativar", active_row.text)
+        self.assertIn("Ativar", inactive_row.text)
+
     def test_module_create_and_toggle_status_smoke(self) -> None:
         """O operador deve conseguir criar, inativar e reativar um módulo no navegador."""
 

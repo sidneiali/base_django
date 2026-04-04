@@ -283,6 +283,32 @@ class PanelViewTests(TestCase):
         self.assertContains(response, "Analistas")
         self.assertNotContains(response, "Root")
 
+    def test_groups_list_renders_disabled_actions_without_management_permissions(self) -> None:
+        """A listagem deve manter ações visíveis, porém desabilitadas, em modo leitura."""
+
+        self._login_with_permissions("view_group")
+        Group.objects.create(name="Analistas")
+
+        response = self.client.get(reverse("panel_groups_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="groups-create-disabled"', html=False)
+        self.assertContains(response, 'data-teste="group-edit-disabled"', html=False)
+        self.assertContains(response, 'data-teste="group-delete-disabled"', html=False)
+
+    def test_groups_list_renders_enabled_actions_with_management_permissions(self) -> None:
+        """A listagem deve expor editar e excluir quando o operador puder gerenciar grupos."""
+
+        self._login_with_permissions("view_group", "add_group", "change_group", "delete_group")
+        Group.objects.create(name="Analistas")
+
+        response = self.client.get(reverse("panel_groups_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-teste="groups-create-link"', html=False)
+        self.assertContains(response, 'data-teste="group-edit-link"', html=False)
+        self.assertContains(response, 'data-teste="group-delete-link"', html=False)
+
     def test_group_create_htmx_creates_group_and_permissions(self) -> None:
         """Criar grupo via HTMX deve persistir permissões e redirecionar."""
 
@@ -304,3 +330,54 @@ class PanelViewTests(TestCase):
 
         group = Group.objects.get(name="Suporte")
         self.assertTrue(group.permissions.filter(pk=permission.pk).exists())
+
+    def test_group_delete_requires_delete_permission(self) -> None:
+        """A exclusão deve respeitar a permissão de delete do grupo."""
+
+        self._login_with_permissions("view_group")
+        group = Group.objects.create(name="Descartável")
+
+        response = self.client.get(reverse("panel_group_delete", args=[group.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_group_delete_confirmation_renders_for_editable_group(self) -> None:
+        """A confirmação deve abrir para grupos editáveis do painel."""
+
+        self._login_with_permissions("delete_group")
+        group = Group.objects.create(name="Legado")
+
+        response = self.client.get(reverse("panel_group_delete", args=[group.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-page-title="Excluir grupo: Legado"',
+            html=False,
+        )
+        self.assertContains(response, "Esta ação remove o grupo do painel.")
+        self.assertContains(response, "Excluir grupo")
+
+    def test_group_delete_removes_editable_group(self) -> None:
+        """Grupos editáveis podem ser excluídos com POST pelo painel."""
+
+        self._login_with_permissions("delete_group")
+        group = Group.objects.create(name="Temporário")
+
+        response = self.client.post(
+            reverse("panel_group_delete", args=[group.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Group.objects.filter(pk=group.pk).exists())
+
+    def test_group_delete_rejects_protected_group(self) -> None:
+        """Grupos protegidos continuam fora da superfície de exclusão do painel."""
+
+        self._login_with_permissions("delete_group")
+        protected_group = Group.objects.create(name="Root")
+
+        response = self.client.get(reverse("panel_group_delete", args=[protected_group.pk]))
+
+        self.assertEqual(response.status_code, 404)

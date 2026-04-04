@@ -1,4 +1,4 @@
-<div data-page-title="{{ page_title }}">
+<div data-page-title="{{ page_title }}" data-teste="module-delete-confirm-page">
     <div class="card">
         <div class="card-header">
             <h3 class="card-title mb-0">{{ page_title }}</h3>
@@ -49,12 +49,12 @@
             {% if not delete_block_reason %}
                 <form method="post" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
+                    <button type="submit" class="btn btn-danger" data-teste="module-delete-confirm-submit">
                         Excluir módulo
                     </button>
                 </form>
             {% endif %}
-            <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'panel_modules_list' %}" class="btn btn-outline-secondary" data-teste="module-delete-cancel-link">
                 Voltar
             </a>
         </div>

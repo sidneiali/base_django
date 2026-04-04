@@ -1,0 +1,36 @@
+<div data-page-title="{{ page_title }}" data-teste="group-delete-confirm-page">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ page_title }}</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Grupo</div>
+                    <div class="fw-semibold">{{ group.name }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small">Permissões</div>
+                    <div>{{ group.permissions.count }}</div>
+                </div>
+            </div>
+
+            <div class="alert alert-danger">
+                Esta ação remove o grupo do painel. Ela não pode ser desfeita.
+            </div>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" data-teste="group-delete-confirm-submit">
+                    Excluir grupo
+                </button>
+            </form>
+            <a href="{% url 'panel_groups_list' %}" class="btn btn-outline-secondary" data-teste="group-delete-cancel-link">
+                Voltar
+            </a>
+        </div>
+    </div>
+</div>
