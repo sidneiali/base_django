@@ -40,7 +40,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for user_obj in users %}
+                    {% for row in user_rows %}
+                        {% with user_obj=row.user %}
                         <tr data-teste="user-row" data-username="{{ user_obj.username }}">
                             <td>{{ user_obj.username }}</td>
                             <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
@@ -61,17 +62,17 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end flex-wrap">
-                                    {% if perms.auth.change_user %}
+                                    {% if perms.auth.change_user and not row.management_block_reason %}
                                         <a href="{% url 'panel_user_update' user_obj.pk %}" class="btn btn-sm btn-primary" data-teste="user-edit-link">
                                             Editar
                                         </a>
                                     {% else %}
-                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="user-edit-disabled">
+                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="user-edit-disabled" title="{{ row.management_block_reason }}">
                                             Editar
                                         </button>
                                     {% endif %}
 
-                                    {% if perms.auth.change_user %}
+                                    {% if perms.auth.change_user and not row.management_block_reason %}
                                         {% if user_obj.is_active %}
                                             <form method="post" action="{% url 'panel_user_deactivate' user_obj.pk %}" class="d-inline">
                                                 {% csrf_token %}
@@ -92,13 +93,14 @@
                                             type="button"
                                             class="btn btn-sm {% if user_obj.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
                                             disabled
+                                            title="{{ row.management_block_reason }}"
                                             data-teste="user-toggle-disabled"
                                         >
                                             {% if user_obj.is_active %}Inativar{% else %}Ativar{% endif %}
                                         </button>
                                     {% endif %}
 
-                                    {% if perms.auth.change_user and user_obj.email %}
+                                    {% if perms.auth.change_user and not row.password_reset_block_reason %}
                                         <a
                                             href="{% url 'panel_user_send_password_reset' user_obj.pk %}"
                                             class="btn btn-sm btn-outline-secondary"
@@ -111,24 +113,26 @@
                                             type="button"
                                             class="btn btn-sm btn-outline-secondary"
                                             disabled
+                                            title="{{ row.password_reset_block_reason }}"
                                             data-teste="user-password-reset-disabled"
                                         >
                                             Resetar senha
                                         </button>
                                     {% endif %}
 
-                                    {% if perms.auth.delete_user %}
+                                    {% if perms.auth.delete_user and not row.management_block_reason %}
                                         <a href="{% url 'panel_user_delete' user_obj.pk %}" class="btn btn-sm btn-outline-danger" data-teste="user-delete-link">
                                             Excluir
                                         </a>
                                     {% else %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="user-delete-disabled">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="user-delete-disabled" title="{{ row.management_block_reason }}">
                                             Excluir
                                         </button>
                                     {% endif %}
                                 </div>
                             </td>
                         </tr>
+                        {% endwith %}
                     {% empty %}
                         <tr>
                             <td colspan="6" class="text-center text-secondary">

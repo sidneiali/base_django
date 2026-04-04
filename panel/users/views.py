@@ -22,9 +22,11 @@ from ..mixins import (
 from .forms import PanelUserForm
 from .services import (
     UserInvitationDeliveryError,
+    build_common_user_list_rows,
     common_users_queryset,
     create_user_with_first_access_invitation,
     delete_common_user,
+    get_common_user_management_block_reason,
     get_common_user_password_reset_block_reason,
     save_common_user_form,
     send_common_user_password_reset,
@@ -55,7 +57,10 @@ class UserListView(
     def get_queryset(self):
         """Filtra a listagem por campos operacionais do usuário comum."""
 
-        users = common_users_queryset().prefetch_related("groups").order_by("username")
+        users = common_users_queryset().prefetch_related(
+            "groups__permissions",
+            "user_permissions",
+        ).order_by("username")
         query = self.get_query()
 
         if query:
@@ -73,6 +78,10 @@ class UserListView(
 
         context = super().get_context_data(**kwargs)
         context["query"] = self.get_query()
+        context["user_rows"] = build_common_user_list_rows(
+            context["users"],
+            acting_user=self.request.user,
+        )
         return context
 
 
@@ -89,6 +98,25 @@ class UserFormViewMixin(
         """Limita a edição à superfície de usuários comuns."""
 
         return common_users_queryset()
+
+    def get_form_kwargs(self):
+        """Injeta o operador atual para o formulário limitar a autonomia."""
+
+        kwargs = super().get_form_kwargs()
+        kwargs["acting_user"] = self.request.user
+        return kwargs
+
+    def get_object(self, queryset=None):
+        """Bloqueia edição de perfis acima do teto do operador atual."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_common_user_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
 
     def get_form_context(self, form: PanelUserForm) -> dict[str, object]:
         """Monta o contexto comum do formulário com API e dual-list."""
@@ -180,6 +208,18 @@ class UserStateUpdateView(
 
         return common_users_queryset()
 
+    def get_object(self, queryset=None):
+        """Bloqueia ações rápidas em perfis acima do teto do operador."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_common_user_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
+
     def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         """Atualiza o estado ativo do usuário e volta para a listagem."""
 
@@ -221,6 +261,18 @@ class UserDeleteView(
 
         return common_users_queryset()
 
+    def get_object(self, queryset=None):
+        """Bloqueia exclusão de perfis acima do teto do operador."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_common_user_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
+
     def get_page_title(self) -> str:
         """Monta o título contextual da confirmação de exclusão."""
 
@@ -257,6 +309,18 @@ class UserPasswordResetConfirmView(
         """Limita a recuperação à superfície de usuários comuns."""
 
         return common_users_queryset()
+
+    def get_object(self, queryset=None):
+        """Bloqueia recuperação em perfis acima do teto do operador."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_common_user_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
 
     def get_page_title(self) -> str:
         """Monta o título contextual da confirmação atual."""

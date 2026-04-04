@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from core.auth.services import (
     send_first_access_invitation_email,
     send_password_recovery_email,
@@ -10,9 +12,20 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import QuerySet
 
+from ..autonomy import PROFILE_SCOPE_BLOCK_REASON, user_within_actor_scope
+
 
 class UserInvitationDeliveryError(Exception):
     """Erro funcional ao criar um usuario com convite de primeiro acesso."""
+
+
+@dataclass(frozen=True, slots=True)
+class CommonUserListRow:
+    """Estado renderizável de uma linha da listagem de usuários comuns."""
+
+    user: User
+    management_block_reason: str
+    password_reset_block_reason: str
 
 
 def common_users_queryset() -> QuerySet[User]:
@@ -56,6 +69,44 @@ def delete_common_user(user: User) -> None:
     """Remove um usuário comum do painel."""
 
     user.delete()
+
+
+def get_common_user_management_block_reason(
+    user: User,
+    *,
+    acting_user: User | None,
+) -> str:
+    """Explica por que o usuário não pode ser operado por este operador."""
+
+    if not user_within_actor_scope(user, acting_user=acting_user):
+        return PROFILE_SCOPE_BLOCK_REASON
+    return ""
+
+
+def build_common_user_list_rows(
+    users,
+    *,
+    acting_user: User | None,
+) -> list[CommonUserListRow]:
+    """Monta as linhas renderizáveis da listagem de usuários comuns."""
+
+    rows: list[CommonUserListRow] = []
+    for user in users:
+        management_block_reason = get_common_user_management_block_reason(
+            user,
+            acting_user=acting_user,
+        )
+        rows.append(
+            CommonUserListRow(
+                user=user,
+                management_block_reason=management_block_reason,
+                password_reset_block_reason=(
+                    management_block_reason
+                    or get_common_user_password_reset_block_reason(user)
+                ),
+            )
+        )
+    return rows
 
 
 def get_common_user_password_reset_block_reason(user: User) -> str:

@@ -12,7 +12,19 @@ from core.preferences import (
 )
 from django import forms
 from django.contrib.auth.models import Group, Permission, User
+from django.db.models import QuerySet
 
+from ..autonomy import (
+    API_SCOPE_BLOCK_REASON,
+    DIRECT_PERMISSION_SCOPE_BLOCK_REASON,
+    GROUP_SCOPE_BLOCK_REASON,
+    api_payload_within_actor_scope,
+    filter_assignable_groups_queryset,
+    filter_assignable_permissions_queryset,
+    groups_within_actor_scope,
+    limit_api_fields_to_actor_scope,
+    permissions_within_actor_scope,
+)
 from ..groups.forms import PermissionMultipleChoiceField
 from .services import get_admin_account_transition_block_reason
 
@@ -196,6 +208,26 @@ class PanelAdminAccountForm(ApiAccessFormMixin, forms.ModelForm):
                     {"class": "form-check-input"}
                 )
 
+        groups_field = cast(forms.ModelMultipleChoiceField, self.fields["groups"])
+        groups_queryset = cast(QuerySet[Group], groups_field.queryset)
+        groups_field.queryset = filter_assignable_groups_queryset(
+            groups_queryset.prefetch_related("permissions"),
+            acting_user=self.acting_user,
+        )
+        permissions_field = cast(
+            PermissionMultipleChoiceField,
+            self.fields["user_permissions"],
+        )
+        permissions_queryset = cast(QuerySet[Permission], permissions_field.queryset)
+        permissions_field.queryset = filter_assignable_permissions_queryset(
+            permissions_queryset,
+            acting_user=self.acting_user,
+        )
+        limit_api_fields_to_actor_scope(
+            self.fields,
+            acting_user=self.acting_user,
+        )
+
         if not self.instance.pk:
             self.fields["email"].required = True
             self.fields["email"].help_text = (
@@ -246,6 +278,29 @@ class PanelAdminAccountForm(ApiAccessFormMixin, forms.ModelForm):
         )
         if block_reason:
             self.add_error(None, block_reason)
+
+        groups = cleaned_data.get("groups")
+        if groups is not None and not groups_within_actor_scope(
+            groups,
+            acting_user=self.acting_user,
+        ):
+            self.add_error("groups", GROUP_SCOPE_BLOCK_REASON)
+
+        user_permissions = cleaned_data.get("user_permissions")
+        if user_permissions is not None and not permissions_within_actor_scope(
+            user_permissions,
+            acting_user=self.acting_user,
+        ):
+            self.add_error(
+                "user_permissions",
+                DIRECT_PERMISSION_SCOPE_BLOCK_REASON,
+            )
+
+        if not api_payload_within_actor_scope(
+            self.build_api_access_payload(),
+            acting_user=self.acting_user,
+        ):
+            self.add_error(None, API_SCOPE_BLOCK_REASON)
 
         return cleaned_data
 

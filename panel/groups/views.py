@@ -1,6 +1,7 @@
 """Views do domínio de grupos do painel."""
 
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.urls import reverse_lazy
@@ -14,7 +15,12 @@ from ..mixins import (
     PanelSuccessRedirectMixin,
 )
 from .forms import PanelGroupForm
-from .services import delete_panel_group, editable_groups_queryset
+from .services import (
+    build_panel_group_list_rows,
+    delete_panel_group,
+    editable_groups_queryset,
+    get_panel_group_management_block_reason,
+)
 
 
 class GroupListView(
@@ -40,9 +46,7 @@ class GroupListView(
     def get_queryset(self) -> QuerySet[Group]:
         """Filtra a listagem por grupos editáveis e busca textual."""
 
-        groups = editable_groups_queryset().prefetch_related("permissions").order_by(
-            "name"
-        )
+        groups = editable_groups_queryset().prefetch_related("permissions").order_by("name")
         query = self.get_query()
 
         if query:
@@ -55,6 +59,10 @@ class GroupListView(
 
         context = super().get_context_data(**kwargs)
         context["query"] = self.get_query()
+        context["group_rows"] = build_panel_group_list_rows(
+            context["groups"],
+            acting_user=self.request.user,
+        )
         return context
 
 
@@ -70,6 +78,25 @@ class GroupFormViewMixin(
         """Limita a edição à superfície de grupos editáveis."""
 
         return editable_groups_queryset()
+
+    def get_form_kwargs(self):
+        """Injeta o operador atual para o formulário limitar a autonomia."""
+
+        kwargs = super().get_form_kwargs()
+        kwargs["acting_user"] = self.request.user
+        return kwargs
+
+    def get_object(self, queryset=None):
+        """Bloqueia edição de grupos acima do teto do operador."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_panel_group_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
 
     def get_form_context(self, form: PanelGroupForm) -> dict[str, object]:
         """Monta o contexto comum do formulário com a dual-list."""
@@ -151,6 +178,18 @@ class GroupDeleteView(
         """Limita a exclusão à superfície de grupos editáveis."""
 
         return editable_groups_queryset()
+
+    def get_object(self, queryset=None):
+        """Bloqueia exclusão de grupos acima do teto do operador."""
+
+        obj = super().get_object(queryset)
+        block_reason = get_panel_group_management_block_reason(
+            obj,
+            acting_user=self.request.user,
+        )
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        return obj
 
     def get_page_title(self) -> str:
         """Monta o título contextual da confirmação de exclusão."""

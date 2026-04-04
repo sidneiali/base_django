@@ -11,6 +11,11 @@ from django import forms
 from django.contrib.auth.models import Group, Permission
 from django.db.models import Model
 
+from ..autonomy import (
+    GROUP_SCOPE_BLOCK_REASON,
+    filter_assignable_permissions_queryset,
+    permissions_within_actor_scope,
+)
 from ..constants import (
     APP_LABEL_TRANSLATIONS,
     BLOCKED_PERMISSION_APP_LABELS,
@@ -138,10 +143,19 @@ class PanelGroupForm(forms.ModelForm):
             raise forms.ValidationError("Esse grupo é protegido.")
         return name
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, acting_user=None, **kwargs):
         """Preenche a configuracao de sessao do grupo quando houver valor salvo."""
 
+        self.acting_user = acting_user
         super().__init__(*args, **kwargs)
+        permissions_field = cast(
+            PermissionMultipleChoiceField,
+            self.fields["permissions"],
+        )
+        permissions_field.queryset = filter_assignable_permissions_queryset(
+            permissions_field.queryset,
+            acting_user=self.acting_user,
+        )
         if self.is_bound:
             return
 
@@ -149,6 +163,18 @@ class PanelGroupForm(forms.ModelForm):
         self.fields["session_idle_timeout_minutes"].initial = (
             preference.session_idle_timeout_minutes
         )
+
+    def clean(self) -> dict[str, object]:
+        """Impede que o grupo receba permissões acima do operador."""
+
+        cleaned_data = super().clean() or {}
+        permissions = cleaned_data.get("permissions")
+        if permissions is not None and not permissions_within_actor_scope(
+            permissions,
+            acting_user=self.acting_user,
+        ):
+            self.add_error("permissions", GROUP_SCOPE_BLOCK_REASON)
+        return cleaned_data
 
     def _get_group_preference(self) -> GroupInterfacePreference:
         """Retorna a preferencia persistida ou um objeto default em memoria."""

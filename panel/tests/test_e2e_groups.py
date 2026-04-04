@@ -53,7 +53,7 @@ class PanelGroupsE2ESmokeTests(PanelE2EBase):
     def test_group_create_with_permission_smoke(self) -> None:
         """O operador deve conseguir criar grupo e associar permissão pela dual-list."""
 
-        self._grant_permissions("view_group", "add_group")
+        self._grant_permissions("view_group", "add_group", "view_user")
         groups_page = GroupsListPage(self)
 
         self._login()
@@ -76,7 +76,12 @@ class PanelGroupsE2ESmokeTests(PanelE2EBase):
     def test_group_update_permissions_smoke(self) -> None:
         """O operador deve conseguir editar um grupo e trocar suas permissões."""
 
-        self._grant_permissions("view_group", "change_group")
+        self._grant_permissions(
+            "view_group",
+            "change_group",
+            "view_user",
+            "change_user",
+        )
         groups_page = GroupsListPage(self)
         group = self.factory.create_group(
             "Grupo Edição E2E",

@@ -241,6 +241,31 @@ class PanelViewTests(TestCase):
         self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
         self.assertIn("novo@example.com", mail.outbox[0].to)
 
+    def test_user_create_rejects_group_above_operator_scope(self) -> None:
+        """O operador não pode criar usuário em grupo acima da própria conta."""
+
+        self._login_with_permissions("add_user")
+        blocked_group = Group.objects.create(name="Grupo acima do teto")
+        blocked_group.permissions.add(Permission.objects.get(codename="delete_group"))
+
+        response = self.client.post(
+            reverse("panel_user_create"),
+            {
+                "username": "excesso-grupo",
+                "first_name": "Excesso",
+                "last_name": "Grupo",
+                "email": "excesso-grupo@example.com",
+                "is_active": "on",
+                "groups": [str(blocked_group.pk)],
+                "auto_refresh_interval": "30",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Faça uma escolha válida.")
+        self.assertFalse(User.objects.filter(username="excesso-grupo").exists())
+
     def test_user_deactivate_and_activate_toggle_state(self) -> None:
         """A listagem deve permitir inativar e reativar usuários com POST."""
 
@@ -380,6 +405,61 @@ class PanelViewTests(TestCase):
         self.assertEqual(password_reset_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
 
+    def test_users_list_disables_actions_for_profile_above_operator_scope(self) -> None:
+        """A listagem deve manter visível, porém travado, um perfil acima do operador."""
+
+        self._login_with_permissions("view_user", "change_user", "delete_user")
+        blocked_group = Group.objects.create(name="Gestão total")
+        blocked_group.permissions.add(Permission.objects.get(codename="delete_group"))
+        restricted_user = User.objects.create_user(
+            username="perfil-superior",
+            email="perfil-superior@example.com",
+            password="SenhaSegura@123",
+        )
+        restricted_user.groups.add(blocked_group)
+
+        response = self.client.get(reverse("panel_users_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "perfil-superior")
+        self.assertContains(
+            response,
+            'data-teste="user-edit-disabled"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "Você não pode criar ou editar um perfil com autonomia maior do que a da sua própria conta.",
+        )
+        self.assertNotContains(
+            response,
+            reverse("panel_user_update", args=[restricted_user.pk]),
+        )
+
+    def test_user_update_rejects_profile_above_operator_scope(self) -> None:
+        """O operador não pode editar um usuário com autonomia acima da sua conta."""
+
+        self._login_with_permissions("change_user")
+        blocked_group = Group.objects.create(name="Financeiro total")
+        blocked_group.permissions.add(Permission.objects.get(codename="delete_group"))
+        restricted_user = User.objects.create_user(
+            username="usuario-superior",
+            email="usuario-superior@example.com",
+            password="SenhaSegura@123",
+        )
+        restricted_user.groups.add(blocked_group)
+
+        response = self.client.get(
+            reverse("panel_user_update", args=[restricted_user.pk]),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(
+            response,
+            "Você não tem permissão para acessar este recurso.",
+            status_code=403,
+        )
+
     def test_groups_list_excludes_protected_groups(self) -> None:
         """A listagem de grupos deve ocultar grupos protegidos do painel."""
 
@@ -423,7 +503,7 @@ class PanelViewTests(TestCase):
         """Criar grupo via HTMX deve persistir permissões e redirecionar."""
 
         self._login_with_permissions("add_group")
-        permission = Permission.objects.get(codename="view_user")
+        permission = Permission.objects.get(codename="add_group")
 
         response = self.client.post(
             reverse("panel_group_create"),
@@ -440,6 +520,25 @@ class PanelViewTests(TestCase):
 
         group = Group.objects.get(name="Suporte")
         self.assertTrue(group.permissions.filter(pk=permission.pk).exists())
+
+    def test_group_create_rejects_permissions_above_operator_scope(self) -> None:
+        """O operador não pode criar grupo com permissão acima da própria conta."""
+
+        self._login_with_permissions("add_group")
+        blocked_permission = Permission.objects.get(codename="delete_user")
+
+        response = self.client.post(
+            reverse("panel_group_create"),
+            {
+                "name": "Grupo acima do teto",
+                "permissions": [str(blocked_permission.pk)],
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Faça uma escolha válida.")
+        self.assertFalse(Group.objects.filter(name="Grupo acima do teto").exists())
 
     def test_group_delete_requires_delete_permission(self) -> None:
         """A exclusão deve respeitar a permissão de delete do grupo."""
@@ -491,3 +590,46 @@ class PanelViewTests(TestCase):
         response = self.client.get(reverse("panel_group_delete", args=[protected_group.pk]))
 
         self.assertEqual(response.status_code, 404)
+
+    def test_groups_list_disables_actions_for_group_above_operator_scope(self) -> None:
+        """A listagem deve desabilitar ações quando o grupo exceder o operador."""
+
+        self._login_with_permissions("view_group", "change_group", "delete_group")
+        restricted_group = Group.objects.create(name="Grupo superior")
+        restricted_group.permissions.add(Permission.objects.get(codename="delete_user"))
+
+        response = self.client.get(reverse("panel_groups_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Grupo superior")
+        self.assertContains(
+            response,
+            'data-teste="group-edit-disabled"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "Você não pode atribuir ao grupo permissões que a sua própria conta não possui.",
+        )
+        self.assertNotContains(
+            response,
+            reverse("panel_group_update", args=[restricted_group.pk]),
+        )
+
+    def test_group_update_rejects_group_above_operator_scope(self) -> None:
+        """O operador não pode editar grupo com permissões acima da própria conta."""
+
+        self._login_with_permissions("change_group")
+        restricted_group = Group.objects.create(name="Grupo inacessível")
+        restricted_group.permissions.add(Permission.objects.get(codename="delete_user"))
+
+        response = self.client.get(
+            reverse("panel_group_update", args=[restricted_group.pk]),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(
+            response,
+            "Você não tem permissão para acessar este recurso.",
+            status_code=403,
+        )

@@ -57,7 +57,11 @@ class PanelHtmlApiAuditParityTests(PanelApiTokenMixin, TestCase):
 
         permission = Permission.objects.get(codename="view_user")
         html_client = Client()
-        html_actor = self._login_with_permissions(html_client, "change_group")
+        html_actor = self._login_with_permissions(
+            html_client,
+            "change_group",
+            "view_user",
+        )
         html_group = Group.objects.create(name="Suporte HTML")
 
         AuditLog.objects.all().delete()

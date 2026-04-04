@@ -1,16 +1,23 @@
 """Testes dos formulários do painel."""
 
+from core.api.access import (
+    build_default_api_permission_matrix,
+    save_user_api_access,
+)
 from core.models import (
     ApiAccessProfile,
     ApiResourcePermission,
     GroupInterfacePreference,
     UserInterfacePreference,
 )
-from django.contrib.auth.models import Permission
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 
 from panel.groups.forms import PanelGroupForm
 from panel.users.forms import PanelUserForm
+
+User = get_user_model()
 
 
 class PanelUserFormTests(TestCase):
@@ -117,6 +124,41 @@ class PanelUserFormTests(TestCase):
         preference = UserInterfacePreference.objects.get(user=user)
         self.assertEqual(preference.session_idle_timeout_minutes, 45)
 
+    def test_form_limits_groups_and_api_to_acting_user_scope(self):
+        """O operador só pode ver grupos e flags de API dentro do próprio teto."""
+
+        acting_user = User.objects.create_user(
+            username="operador-form-user",
+            email="operador-form-user@example.com",
+            password="SenhaSegura@123",
+        )
+        view_user_permission = Permission.objects.get(codename="view_user")
+        delete_user_permission = Permission.objects.get(codename="delete_user")
+        acting_user.user_permissions.add(view_user_permission)
+
+        api_permissions = build_default_api_permission_matrix()
+        api_permissions[ApiResourcePermission.Resource.PANEL_USERS]["can_read"] = True
+        save_user_api_access(
+            acting_user,
+            api_enabled=True,
+            permissions=api_permissions,
+        )
+
+        allowed_group = Group.objects.create(name="Leitura User")
+        allowed_group.permissions.add(view_user_permission)
+        blocked_group = Group.objects.create(name="Delete User")
+        blocked_group.permissions.add(delete_user_permission)
+
+        form = PanelUserForm(acting_user=acting_user)
+
+        self.assertQuerySetEqual(
+            form.fields["groups"].queryset.order_by("name"),
+            [allowed_group],
+            transform=lambda group: group,
+        )
+        self.assertFalse(form.fields["api_panel_users_read"].disabled)
+        self.assertTrue(form.fields["api_panel_users_delete"].disabled)
+
 
 class PanelGroupFormTests(TestCase):
     """Valida os campos extras do cadastro de grupos no painel."""
@@ -138,3 +180,28 @@ class PanelGroupFormTests(TestCase):
 
         preference = GroupInterfacePreference.objects.get(group=group)
         self.assertEqual(preference.session_idle_timeout_minutes, 20)
+
+    def test_form_limits_permissions_to_acting_user_scope(self):
+        """O operador só pode escolher permissões que já possui na própria conta."""
+
+        acting_user = User.objects.create_user(
+            username="operador-form-group",
+            email="operador-form-group@example.com",
+            password="SenhaSegura@123",
+        )
+        view_user_permission = Permission.objects.get(codename="view_user")
+        delete_user_permission = Permission.objects.get(codename="delete_user")
+        acting_user.user_permissions.add(view_user_permission)
+
+        form = PanelGroupForm(acting_user=acting_user)
+
+        self.assertQuerySetEqual(
+            form.fields["permissions"].queryset,
+            [view_user_permission],
+            transform=lambda permission: permission,
+            ordered=False,
+        )
+        self.assertNotIn(
+            delete_user_permission.pk,
+            form.fields["permissions"].queryset.values_list("pk", flat=True),
+        )

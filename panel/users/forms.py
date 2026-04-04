@@ -1,5 +1,7 @@
 """Formulário de usuários do painel."""
 
+from typing import cast
+
 from core.api.forms import ApiAccessFormMixin
 from core.models import UserInterfacePreference
 from core.preferences import (
@@ -8,7 +10,14 @@ from core.preferences import (
 )
 from django import forms
 from django.contrib.auth.models import Group, User
+from django.db.models import QuerySet
 
+from ..autonomy import (
+    API_SCOPE_BLOCK_REASON,
+    api_payload_within_actor_scope,
+    filter_assignable_groups_queryset,
+    limit_api_fields_to_actor_scope,
+)
 from ..constants import PROTECTED_GROUP_NAMES
 
 
@@ -118,9 +127,10 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
             "is_active": "Usuário ativo",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, acting_user: User | None = None, **kwargs):
         """Preenche os campos extras com as preferencias atuais do usuario."""
 
+        self.acting_user = acting_user
         super().__init__(*args, **kwargs)
         self.fields["auto_refresh_enabled"].widget.attrs.update(
             {
@@ -138,10 +148,22 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
             {"class": "form-check-input"}
         )
         for row in self.get_api_permission_rows():
-            for cell in row["fields"]:
-                cell["field"].field.widget.attrs.update(
+            for cell in cast(list[dict[str, object]], row["fields"]):
+                bound_field = cast(forms.BoundField, cell["field"])
+                bound_field.field.widget.attrs.update(
                     {"class": "form-check-input"}
                 )
+
+        groups_field = cast(forms.ModelMultipleChoiceField, self.fields["groups"])
+        groups_queryset = cast(QuerySet[Group], groups_field.queryset)
+        groups_field.queryset = filter_assignable_groups_queryset(
+            groups_queryset.prefetch_related("permissions"),
+            acting_user=self.acting_user,
+        )
+        limit_api_fields_to_actor_scope(
+            self.fields,
+            acting_user=self.acting_user,
+        )
 
         if not self.instance.pk:
             self.fields["email"].required = True
@@ -171,6 +193,12 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
                 "email",
                 "O e-mail é obrigatório para enviar o convite de primeiro acesso.",
             )
+
+        if not api_payload_within_actor_scope(
+            self.build_api_access_payload(),
+            acting_user=self.acting_user,
+        ):
+            self.add_error(None, API_SCOPE_BLOCK_REASON)
 
         return cleaned_data
 

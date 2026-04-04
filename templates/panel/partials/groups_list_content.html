@@ -37,34 +37,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for group in groups %}
+                    {% for row in group_rows %}
+                        {% with group=row.group %}
                         <tr data-teste="group-row" data-group-name="{{ group.name }}">
                             <td>{{ group.name }}</td>
                             <td>{{ group.permissions.count }}</td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end flex-wrap">
-                                    {% if perms.auth.change_group %}
+                                    {% if perms.auth.change_group and not row.management_block_reason %}
                                         <a href="{% url 'panel_group_update' group.pk %}" class="btn btn-sm btn-primary" data-teste="group-edit-link">
                                             Editar
                                         </a>
                                     {% else %}
-                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="group-edit-disabled">
+                                        <button type="button" class="btn btn-sm btn-primary" disabled data-teste="group-edit-disabled" title="{{ row.management_block_reason }}">
                                             Editar
                                         </button>
                                     {% endif %}
 
-                                    {% if perms.auth.delete_group %}
+                                    {% if perms.auth.delete_group and not row.management_block_reason %}
                                         <a href="{% url 'panel_group_delete' group.pk %}" class="btn btn-sm btn-outline-danger" data-teste="group-delete-link">
                                             Excluir
                                         </a>
                                     {% else %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="group-delete-disabled">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="group-delete-disabled" title="{{ row.management_block_reason }}">
                                             Excluir
                                         </button>
                                     {% endif %}
                                 </div>
                             </td>
                         </tr>
+                        {% endwith %}
                     {% empty %}
                         <tr>
                             <td colspan="3" class="text-center text-secondary">
