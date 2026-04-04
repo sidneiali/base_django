@@ -27,6 +27,12 @@
                             <h2 class="auth-cover-form-header__title" data-teste="login-title">Entrar na sua conta</h2>
                         </div>
 
+                        {% if axes_locked_out_message %}
+                            <div class="alert alert-warning" role="alert" data-teste="login-locked-out">
+                                {{ axes_locked_out_message }}
+                            </div>
+                        {% endif %}
+
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger" role="alert">
                                 {{ form.non_field_errors }}
@@ -86,7 +92,12 @@
                             </div>
 
                             <div class="form-footer">
-                                <button type="submit" class="btn btn-primary btn-lg w-100" data-teste="login-submit">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-lg w-100"
+                                    data-teste="login-submit"
+                                    {% if axes_locked_out %}disabled aria-disabled="true"{% endif %}
+                                >
                                     Entrar
                                 </button>
                             </div>

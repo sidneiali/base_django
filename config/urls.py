@@ -4,7 +4,8 @@ Centraliza as rotas do admin, autenticacao, dashboard, painel de gestao
 e o handler customizado para erro 403.
 """
 
-from core.forms import LoginForm, PasswordRecoveryConfirmForm, PasswordRecoveryForm
+from core.auth.views import PublicLoginView
+from core.forms import PasswordRecoveryConfirmForm, PasswordRecoveryForm
 from core.views import api_openapi, forbidden_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -24,10 +25,7 @@ urlpatterns = [
     path("api/v1/panel/", include("panel.api.urls_v1")),
     path(
         "login/",
-        auth_views.LoginView.as_view(
-            template_name="registration/login.html",
-            authentication_form=LoginForm,
-        ),
+        PublicLoginView.as_view(),
         name="login",
     ),
     path(

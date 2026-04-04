@@ -1,5 +1,8 @@
 """Testes dos fluxos públicos de autenticação."""
 
+from datetime import timedelta
+
+from axes.utils import reset  # type: ignore[import-untyped]
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
@@ -74,6 +77,76 @@ class LoginFlowTests(TestCase):
         self.assertEqual(failed_log.metadata.get("event"), "user_login_failed")
         self.assertEqual(failed_log.metadata["credentials"]["username"], "ana")
         self.assertNotIn("password", failed_log.metadata["credentials"])
+
+
+@override_settings(
+    AXES_FAILURE_LIMIT=2,
+    AXES_COOLOFF_TIME=timedelta(minutes=5),
+)
+class LoginLockoutTests(TestCase):
+    """Valida o bloqueio temporario do login HTML por IP."""
+
+    def setUp(self):
+        """Limpa tentativas anteriores do Axes entre os cenarios."""
+
+        super().setUp()
+        reset()
+
+    def tearDown(self):
+        """Evita que buckets do Axes vazem para outros testes."""
+
+        reset()
+        super().tearDown()
+
+    def test_lockout_reuses_login_template_and_blocks_even_valid_credentials(self):
+        """O login precisa travar no proprio HTML apos repetidas falhas."""
+
+        User.objects.create_user(
+            username="travado",
+            email="travado@example.com",
+            password="SenhaSegura@123",
+        )
+        AuditLog.objects.all().delete()
+
+        first_response = self.client.post(
+            reverse("login"),
+            {"username": "travado", "password": "errada"},
+        )
+        second_response = self.client.post(
+            reverse("login"),
+            {"username": "travado", "password": "errada"},
+        )
+        locked_response = self.client.post(
+            reverse("login"),
+            {"username": "travado", "password": "SenhaSegura@123"},
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 429)
+        self.assertEqual(locked_response.status_code, 429)
+        self.assertContains(
+            locked_response,
+            "Muitas tentativas de login falharam neste IP",
+            status_code=429,
+        )
+        self.assertContains(
+            locked_response,
+            "data-teste=\"login-locked-out\"",
+            status_code=429,
+        )
+        self.assertContains(
+            locked_response,
+            "disabled aria-disabled=\"true\"",
+            status_code=429,
+        )
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertFalse(
+            AuditLog.objects.filter(action=AuditLog.ACTION_LOGIN).exists()
+        )
+        self.assertGreaterEqual(
+            AuditLog.objects.filter(action=AuditLog.ACTION_LOGIN_FAILED).count(),
+            2,
+        )
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

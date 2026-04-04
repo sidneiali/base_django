@@ -132,6 +132,19 @@ SECURE_HSTS_SECONDS=31536000
 
 Com `APP_FORCE_HTTPS=True`, a aplicação passa a marcar cookies como seguros e habilita redirecionamento SSL/HSTS, o que é importante para o reset em produção.
 
+## Proteção contra brute force
+
+O login público agora usa `django-axes` para bloquear tentativas repetidas por IP.
+
+Variáveis mais importantes:
+
+- `AXES_ENABLED=True`
+- `AXES_FAILURE_LIMIT=5`
+- `AXES_COOLOFF_MINUTES=15`
+- `AXES_RESET_ON_SUCCESS=True`
+
+Quando o IP ultrapassa o limite configurado, a própria tela de login responde com `429` e mantém o layout normal, exibindo o aviso de bloqueio temporário.
+
 ## Deploy de produção
 
 Fluxo mínimo recomendado:

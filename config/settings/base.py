@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -130,6 +131,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "axes",
     "django_bootstrap5",
     "core",
     "panel",
@@ -147,6 +149,12 @@ MIDDLEWARE = [
     'core.middleware.ApiRateLimitMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "axes.middleware.AxesMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -233,3 +241,12 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", True)
 API_RATE_LIMIT_ENABLED = env_bool("API_RATE_LIMIT_ENABLED", True)
 API_RATE_LIMIT_REQUESTS = env_int("API_RATE_LIMIT_REQUESTS", 120)
 API_RATE_LIMIT_WINDOW_SECONDS = env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
+
+AXES_ENABLED = env_bool("AXES_ENABLED", True)
+AXES_FAILURE_LIMIT = env_int("AXES_FAILURE_LIMIT", 5)
+AXES_COOLOFF_TIME = timedelta(minutes=env_int("AXES_COOLOFF_MINUTES", 15))
+AXES_HTTP_RESPONSE_CODE = 429
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+AXES_LOCKOUT_CALLABLE = "core.auth.views.axes_lockout_response"
+AXES_RESET_ON_SUCCESS = env_bool("AXES_RESET_ON_SUCCESS", True)
+AXES_USERNAME_FORM_FIELD = "username"
