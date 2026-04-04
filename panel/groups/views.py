@@ -1,130 +1,171 @@
 """Views do domínio de grupos do painel."""
 
-from core.htmx import htmx_location, is_htmx_request, render_page
-from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Group
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.db.models import QuerySet
+from django.http import HttpResponse
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from ..constants import PROTECTED_GROUP_NAMES
 from ..dual_list import build_dual_list_choices
+from ..mixins import (
+    PanelLoginRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelPermissionRequiredMixin,
+    PanelSuccessRedirectMixin,
+)
 from .forms import PanelGroupForm
+from .services import delete_panel_group, editable_groups_queryset
 
 
-def _editable_groups_queryset():
-    """Retorna apenas os grupos que o painel pode gerenciar diretamente."""
+class GroupListView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    ListView,
+):
+    """Lista grupos editáveis do sistema com filtro por nome."""
 
-    return Group.objects.exclude(name__in=PROTECTED_GROUP_NAMES)
+    model = Group
+    context_object_name = "groups"
+    permission_required = "auth.view_group"
+    page_title = "Grupos"
+    template_name = "panel/groups_list.html"
+    partial_template_name = "panel/partials/groups_list_content.html"
+
+    def get_query(self) -> str:
+        """Normaliza o termo de busca textual da listagem."""
+
+        return self.request.GET.get("q", "").strip()
+
+    def get_queryset(self) -> QuerySet[Group]:
+        """Filtra a listagem por grupos editáveis e busca textual."""
+
+        groups = editable_groups_queryset().prefetch_related("permissions").order_by(
+            "name"
+        )
+        query = self.get_query()
+
+        if query:
+            groups = groups.filter(name__icontains=query)
+
+        return groups
+
+    def get_context_data(self, **kwargs):
+        """Expõe o termo de busca para o formulário HTMX da listagem."""
+
+        context = super().get_context_data(**kwargs)
+        context["query"] = self.get_query()
+        return context
 
 
-def _redirect_groups_list(request: HttpRequest) -> HttpResponse:
-    """Redireciona para a listagem, respeitando navegação HTMX quando ativa."""
+class GroupFormViewMixin(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+):
+    """Base compartilhada entre criação e edição HTML de grupos."""
 
-    if is_htmx_request(request):
-        return htmx_location(reverse("panel_groups_list"))
-    return redirect("panel_groups_list")
+    def get_queryset(self) -> QuerySet[Group]:
+        """Limita a edição à superfície de grupos editáveis."""
 
+        return editable_groups_queryset()
 
-@login_required
-@permission_required("auth.view_group", raise_exception=True)
-def groups_list(request):
-    """Lista grupos editaveis do sistema com filtro por nome."""
+    def get_form_context(self, form: PanelGroupForm) -> dict[str, object]:
+        """Monta o contexto comum do formulário com a dual-list."""
 
-    query = request.GET.get("q", "").strip()
-
-    groups = (
-        _editable_groups_queryset()
-        .prefetch_related("permissions")
-        .order_by("name")
-    )
-
-    if query:
-        groups = groups.filter(name__icontains=query)
-
-    return render_page(
-        request,
-        "panel/groups_list.html",
-        "panel/partials/groups_list_content.html",
-        {
-            "page_title": "Grupos",
-            "groups": groups,
-            "query": query,
-        },
-    )
-
-
-@login_required
-@permission_required("auth.add_group", raise_exception=True)
-def group_create(request):
-    """Cria um grupo novo com selecao filtrada de permissoes."""
-
-    form = PanelGroupForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        return _redirect_groups_list(request)
-
-    available, chosen = build_dual_list_choices(form, "permissions")
-
-    return render_page(
-        request,
-        "panel/group_form.html",
-        "panel/partials/group_form_content.html",
-        {
-            "page_title": "Novo grupo",
+        available, chosen = build_dual_list_choices(form, "permissions")
+        return {
             "form": form,
             "perm_available": available,
             "perm_chosen": chosen,
-        },
-    )
+        }
+
+    def get_context_data(self, **kwargs):
+        """Injeta o contexto expandido do formulário de grupos."""
+
+        context = super().get_context_data(**kwargs)
+        form = kwargs.get("form", self.get_form())
+        context.update(self.get_form_context(form))
+        return context
+
+    def form_valid(self, form: PanelGroupForm) -> HttpResponse:
+        """Persiste o grupo e devolve o redirect adequado ao shell."""
+
+        form.save()
+        return self.redirect_to_success_url()
 
 
-@login_required
-@permission_required("auth.change_group", raise_exception=True)
-def group_update(request, pk: int):
+class GroupCreateView(GroupFormViewMixin, CreateView):
+    """Cria um grupo novo com seleção filtrada de permissões."""
+
+    model = Group
+    form_class = PanelGroupForm
+    permission_required = "auth.add_group"
+    page_title = "Novo grupo"
+    template_name = "panel/group_form.html"
+    partial_template_name = "panel/partials/group_form_content.html"
+    success_url = reverse_lazy("panel_groups_list")
+
+
+class GroupUpdateView(GroupFormViewMixin, UpdateView):
     """Edita um grupo existente, exceto os grupos protegidos."""
 
-    group = get_object_or_404(_editable_groups_queryset(), pk=pk)
-    form = PanelGroupForm(request.POST or None, instance=group)
+    model = Group
+    form_class = PanelGroupForm
+    permission_required = "auth.change_group"
+    template_name = "panel/group_form.html"
+    partial_template_name = "panel/partials/group_form_content.html"
+    success_url = reverse_lazy("panel_groups_list")
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        return _redirect_groups_list(request)
+    def get_page_title(self) -> str:
+        """Monta o título contextual da edição atual."""
 
-    available, chosen = build_dual_list_choices(form, "permissions")
+        return f"Editar grupo: {self.object.name}"
 
-    return render_page(
-        request,
-        "panel/group_form.html",
-        "panel/partials/group_form_content.html",
-        {
-            "page_title": f"Editar grupo: {group.name}",
-            "form": form,
-            "group": group,
-            "perm_available": available,
-            "perm_chosen": chosen,
-        },
-    )
+    def get_form_context(self, form: PanelGroupForm) -> dict[str, object]:
+        """Expõe o grupo atual para o template manter o comportamento visual."""
+
+        context = super().get_form_context(form)
+        context["group"] = self.object
+        return context
 
 
-@login_required
-@permission_required("auth.delete_group", raise_exception=True)
-def group_delete(request: HttpRequest, pk: int) -> HttpResponse:
+class GroupDeleteView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+    DeleteView,
+):
     """Confirma e executa a exclusão de um grupo editável do painel."""
 
-    group = get_object_or_404(_editable_groups_queryset(), pk=pk)
+    model = Group
+    context_object_name = "group"
+    permission_required = "auth.delete_group"
+    template_name = "panel/group_delete_confirm.html"
+    partial_template_name = "panel/partials/group_delete_confirm_content.html"
+    success_url = reverse_lazy("panel_groups_list")
 
-    if request.method == "POST":
-        group.delete()
-        return _redirect_groups_list(request)
+    def get_queryset(self) -> QuerySet[Group]:
+        """Limita a exclusão à superfície de grupos editáveis."""
 
-    return render_page(
-        request,
-        "panel/group_delete_confirm.html",
-        "panel/partials/group_delete_confirm_content.html",
-        {
-            "page_title": f"Excluir grupo: {group.name}",
-            "group": group,
-        },
-    )
+        return editable_groups_queryset()
+
+    def get_page_title(self) -> str:
+        """Monta o título contextual da confirmação de exclusão."""
+
+        return f"Excluir grupo: {self.object.name}"
+
+    def post(self, request, *args, **kwargs) -> HttpResponse:
+        """Exclui o grupo editável e retorna para a listagem."""
+
+        self.object = self.get_object()
+        delete_panel_group(self.object)
+        return self.redirect_to_success_url()
+
+
+groups_list = GroupListView.as_view()
+group_create = GroupCreateView.as_view()
+group_update = GroupUpdateView.as_view()
+group_delete = GroupDeleteView.as_view()

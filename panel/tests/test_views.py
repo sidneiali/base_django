@@ -70,6 +70,28 @@ class PanelViewTests(TestCase):
         self.assertNotContains(response, "bruno")
         self.assertNotContains(response, "<!doctype html>", html=False)
 
+    def test_users_list_excludes_staff_accounts_from_common_area(self) -> None:
+        """Contas administrativas não devem reaparecer na área de usuários comuns."""
+
+        self._login_with_permissions("view_user")
+        User.objects.create_user(
+            username="comum",
+            email="comum@example.com",
+            password="SenhaSegura@123",
+        )
+        User.objects.create_user(
+            username="staff-area",
+            email="staff-area@example.com",
+            password="SenhaSegura@123",
+            is_staff=True,
+        )
+
+        response = self.client.get(reverse("panel_users_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "comum")
+        self.assertNotContains(response, "staff-area")
+
     def test_users_list_renders_disabled_actions_without_management_permissions(self) -> None:
         """A listagem deve exibir ações desabilitadas quando faltar permissão."""
 
@@ -332,6 +354,31 @@ class PanelViewTests(TestCase):
 
         self.assertEqual(response.status_code, 204)
         self.assertFalse(User.objects.filter(pk=user_obj.pk).exists())
+
+    def test_common_user_routes_reject_staff_accounts(self) -> None:
+        """A área comum não deve editar nem excluir contas administrativas."""
+
+        self._login_with_permissions("change_user", "delete_user")
+        staff_user = User.objects.create_user(
+            username="staff-restrito",
+            email="staff-restrito@example.com",
+            password="SenhaSegura@123",
+            is_staff=True,
+        )
+
+        update_response = self.client.get(
+            reverse("panel_user_update", args=[staff_user.pk]),
+        )
+        password_reset_response = self.client.get(
+            reverse("panel_user_send_password_reset", args=[staff_user.pk]),
+        )
+        delete_response = self.client.get(
+            reverse("panel_user_delete", args=[staff_user.pk]),
+        )
+
+        self.assertEqual(update_response.status_code, 404)
+        self.assertEqual(password_reset_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)
 
     def test_groups_list_excludes_protected_groups(self) -> None:
         """A listagem de grupos deve ocultar grupos protegidos do painel."""

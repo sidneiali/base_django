@@ -2,203 +2,297 @@
 
 from __future__ import annotations
 
-from core.auth.services import send_password_recovery_email
-from core.htmx import htmx_location, is_htmx_request, render_page
-from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic.base import TemplateResponseMixin
+from django.views.generic.detail import SingleObjectMixin
 
 from ..dual_list import build_dual_list_choices
+from ..mixins import (
+    PanelLoginRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelPermissionRequiredMixin,
+    PanelSuccessRedirectMixin,
+)
 from .forms import PanelUserForm
 from .services import (
     UserInvitationDeliveryError,
+    common_users_queryset,
     create_user_with_first_access_invitation,
+    delete_common_user,
+    get_common_user_password_reset_block_reason,
+    save_common_user_form,
+    send_common_user_password_reset,
+    set_common_user_active_state,
 )
 
 
-def _redirect_users_list(request: HttpRequest) -> HttpResponse:
-    """Redireciona para a listagem, respeitando navegação HTMX quando ativa."""
+class UserListView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    ListView,
+):
+    """Lista usuários comuns do sistema com filtro de busca textual."""
 
-    if is_htmx_request(request):
-        return htmx_location(reverse("panel_users_list"))
-    return redirect("panel_users_list")
+    model = User
+    context_object_name = "users"
+    permission_required = "auth.view_user"
+    page_title = "Usuários"
+    template_name = "panel/users_list.html"
+    partial_template_name = "panel/partials/users_list_content.html"
 
+    def get_query(self) -> str:
+        """Normaliza o termo de busca textual da listagem."""
 
-def _user_password_reset_block_reason(user: User) -> str:
-    """Explica por que o disparo de recuperação não pode acontecer."""
+        return self.request.GET.get("q", "").strip()
 
-    if not str(user.email or "").strip():
-        return "O usuário precisa ter um e-mail cadastrado para receber a recuperação."
-    return ""
+    def get_queryset(self):
+        """Filtra a listagem por campos operacionais do usuário comum."""
 
+        users = common_users_queryset().prefetch_related("groups").order_by("username")
+        query = self.get_query()
 
-@login_required
-@permission_required("auth.view_user", raise_exception=True)
-def users_list(request):
-    """Lista usuarios nao superusuarios com filtro de busca textual."""
+        if query:
+            users = users.filter(
+                Q(username__icontains=query)
+                | Q(first_name__icontains=query)
+                | Q(last_name__icontains=query)
+                | Q(email__icontains=query)
+            )
 
-    query = request.GET.get("q", "").strip()
+        return users
 
-    users = (
-        User.objects.filter(is_superuser=False)
-        .prefetch_related("groups")
-        .order_by("username")
-    )
+    def get_context_data(self, **kwargs):
+        """Expõe o termo de busca para o formulário HTMX da listagem."""
 
-    if query:
-        users = users.filter(
-            Q(username__icontains=query)
-            | Q(first_name__icontains=query)
-            | Q(last_name__icontains=query)
-            | Q(email__icontains=query)
-        )
-
-    return render_page(
-        request,
-        "panel/users_list.html",
-        "panel/partials/users_list_content.html",
-        {
-            "page_title": "Usuários",
-            "users": users,
-            "query": query,
-        },
-    )
+        context = super().get_context_data(**kwargs)
+        context["query"] = self.get_query()
+        return context
 
 
-@login_required
-@permission_required("auth.add_user", raise_exception=True)
-def user_create(request):
-    """Cria um novo usuario comum e envia convite de primeiro acesso."""
+class UserFormViewMixin(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+    TemplateResponseMixin,
+):
+    """Base compartilhada entre criação e edição HTML de usuários comuns."""
 
-    form = PanelUserForm(request.POST or None)
+    def get_queryset(self):
+        """Limita a edição à superfície de usuários comuns."""
 
-    if request.method == "POST" and form.is_valid():
+        return common_users_queryset()
+
+    def get_form_context(self, form: PanelUserForm) -> dict[str, object]:
+        """Monta o contexto comum do formulário com API e dual-list."""
+
+        available, chosen = build_dual_list_choices(form, "groups")
+        return {
+            "form": form,
+            "api_permission_rows": form.get_api_permission_rows(),
+            "groups_available": available,
+            "groups_chosen": chosen,
+        }
+
+    def get_context_data(self, **kwargs):
+        """Injeta o contexto expandido do formulário de usuários."""
+
+        context = super().get_context_data(**kwargs)
+        form = kwargs.get("form", self.get_form())
+        context.update(self.get_form_context(form))
+        return context
+
+    def form_valid(self, form: PanelUserForm) -> HttpResponse:
+        """Persiste o usuário comum e devolve o redirect adequado ao shell."""
+
         try:
-            create_user_with_first_access_invitation(form, request)
+            if getattr(self, "object", None) is None:
+                create_user_with_first_access_invitation(form, self.request)
+            else:
+                save_common_user_form(form)
         except UserInvitationDeliveryError as exc:
             form.add_error(None, str(exc))
-        else:
-            return _redirect_users_list(request)
+            return self.render_to_response(self.get_context_data(form=form))
 
-    available, chosen = build_dual_list_choices(form, "groups")
-
-    return render_page(
-        request,
-        "panel/user_form.html",
-        "panel/partials/user_form_content.html",
-        {
-            "page_title": "Novo usuário",
-            "form": form,
-            "api_permission_rows": form.get_api_permission_rows(),
-            "groups_available": available,
-            "groups_chosen": chosen,
-        },
-    )
+        return self.redirect_to_success_url()
 
 
-@login_required
-@permission_required("auth.change_user", raise_exception=True)
-def user_update(request, pk: int):
-    """Edita um usuario comum existente, sem expor superusuarios."""
+class UserCreateView(UserFormViewMixin, CreateView):
+    """Cria um novo usuário comum e envia convite de primeiro acesso."""
 
-    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
-    form = PanelUserForm(request.POST or None, instance=user_obj)
-
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        return _redirect_users_list(request)
-
-    available, chosen = build_dual_list_choices(form, "groups")
-
-    return render_page(
-        request,
-        "panel/user_form.html",
-        "panel/partials/user_form_content.html",
-        {
-            "page_title": f"Editar usuário: {user_obj.username}",
-            "form": form,
-            "api_permission_rows": form.get_api_permission_rows(),
-            "user_obj": user_obj,
-            "groups_available": available,
-            "groups_chosen": chosen,
-        },
-    )
+    model = User
+    form_class = PanelUserForm
+    permission_required = "auth.add_user"
+    page_title = "Novo usuário"
+    template_name = "panel/user_form.html"
+    partial_template_name = "panel/partials/user_form_content.html"
+    success_url = reverse_lazy("panel_users_list")
+    object = None
 
 
-@login_required
-@permission_required("auth.change_user", raise_exception=True)
-@require_POST
-def user_activate(request: HttpRequest, pk: int) -> HttpResponse:
+class UserUpdateView(UserFormViewMixin, UpdateView):
+    """Edita um usuário comum existente, sem expor contas administrativas."""
+
+    model = User
+    form_class = PanelUserForm
+    permission_required = "auth.change_user"
+    template_name = "panel/user_form.html"
+    partial_template_name = "panel/partials/user_form_content.html"
+    success_url = reverse_lazy("panel_users_list")
+
+    def get_page_title(self) -> str:
+        """Monta o título contextual da edição atual."""
+
+        return f"Editar usuário: {self.object.username}"
+
+    def get_form_context(self, form: PanelUserForm) -> dict[str, object]:
+        """Expõe o usuário atual para o template manter o comportamento visual."""
+
+        context = super().get_form_context(form)
+        context["user_obj"] = self.object
+        return context
+
+
+class UserStateUpdateView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelSuccessRedirectMixin,
+    SingleObjectMixin,
+    View,
+):
+    """Base compartilhada para ativar ou inativar usuários comuns via POST."""
+
+    model = User
+    permission_required = "auth.change_user"
+    success_url = reverse_lazy("panel_users_list")
+    active_state = True
+    http_method_names = ["post"]
+
+    def get_queryset(self):
+        """Limita a ação rápida à superfície de usuários comuns."""
+
+        return common_users_queryset()
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Atualiza o estado ativo do usuário e volta para a listagem."""
+
+        self.object = self.get_object()
+        set_common_user_active_state(self.object, is_active=self.active_state)
+        return self.redirect_to_success_url()
+
+
+class UserActivateView(UserStateUpdateView):
     """Ativa um usuário comum existente."""
 
-    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
-    if not user_obj.is_active:
-        user_obj.is_active = True
-        user_obj.save(update_fields=["is_active"])
-    return _redirect_users_list(request)
+    active_state = True
 
 
-@login_required
-@permission_required("auth.change_user", raise_exception=True)
-@require_POST
-def user_deactivate(request: HttpRequest, pk: int) -> HttpResponse:
+class UserDeactivateView(UserStateUpdateView):
     """Inativa um usuário comum existente."""
 
-    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
-    if user_obj.is_active:
-        user_obj.is_active = False
-        user_obj.save(update_fields=["is_active"])
-    return _redirect_users_list(request)
+    active_state = False
 
 
-@login_required
-@permission_required("auth.delete_user", raise_exception=True)
-def user_delete(request: HttpRequest, pk: int) -> HttpResponse:
+class UserDeleteView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+    DeleteView,
+):
     """Confirma e executa a exclusão de um usuário comum do painel."""
 
-    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
+    model = User
+    context_object_name = "user_obj"
+    permission_required = "auth.delete_user"
+    template_name = "panel/user_delete_confirm.html"
+    partial_template_name = "panel/partials/user_delete_confirm_content.html"
+    success_url = reverse_lazy("panel_users_list")
 
-    if request.method == "POST":
-        user_obj.delete()
-        return _redirect_users_list(request)
+    def get_queryset(self):
+        """Limita a exclusão à superfície de usuários comuns."""
 
-    return render_page(
-        request,
-        "panel/user_delete_confirm.html",
-        "panel/partials/user_delete_confirm_content.html",
-        {
-            "page_title": f"Excluir usuário: {user_obj.username}",
-            "user_obj": user_obj,
-        },
-    )
+        return common_users_queryset()
+
+    def get_page_title(self) -> str:
+        """Monta o título contextual da confirmação de exclusão."""
+
+        return f"Excluir usuário: {self.object.username}"
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Exclui o usuário comum e retorna para a listagem."""
+
+        self.object = self.get_object()
+        delete_common_user(self.object)
+        return self.redirect_to_success_url()
 
 
-@login_required
-@permission_required("auth.change_user", raise_exception=True)
-def user_send_password_reset(request: HttpRequest, pk: int) -> HttpResponse:
+class UserPasswordResetConfirmView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+    SingleObjectMixin,
+    TemplateResponseMixin,
+    View,
+):
     """Confirma e envia um e-mail de recuperação para um usuário comum."""
 
-    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
-    block_reason = _user_password_reset_block_reason(user_obj)
+    model = User
+    context_object_name = "user_obj"
+    permission_required = "auth.change_user"
+    template_name = "panel/user_password_reset_confirm.html"
+    partial_template_name = "panel/partials/user_password_reset_confirm_content.html"
+    success_url = reverse_lazy("panel_users_list")
+    http_method_names = ["get", "post"]
 
-    if request.method == "POST":
+    def get_queryset(self):
+        """Limita a recuperação à superfície de usuários comuns."""
+
+        return common_users_queryset()
+
+    def get_page_title(self) -> str:
+        """Monta o título contextual da confirmação atual."""
+
+        return f"Enviar recuperação de senha: {self.object.username}"
+
+    def get_context_data(self, **kwargs) -> dict[str, object]:
+        """Expõe o usuário e o motivo de bloqueio no template de confirmação."""
+
+        return {
+            "page_title": self.get_page_title(),
+            "user_obj": self.object,
+            "block_reason": get_common_user_password_reset_block_reason(self.object),
+        }
+
+    def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Renderiza a confirmação da recuperação para um usuário comum."""
+
+        self.object = self.get_object()
+        return self.render_to_response(self.get_context_data())
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Dispara a recuperação se o usuário comum tiver e-mail válido."""
+
+        self.object = self.get_object()
+        block_reason = get_common_user_password_reset_block_reason(self.object)
         if block_reason:
             raise PermissionDenied(block_reason)
-        send_password_recovery_email(request, user_obj)
-        return _redirect_users_list(request)
+        send_common_user_password_reset(request, self.object)
+        return self.redirect_to_success_url()
 
-    return render_page(
-        request,
-        "panel/user_password_reset_confirm.html",
-        "panel/partials/user_password_reset_confirm_content.html",
-        {
-            "page_title": f"Enviar recuperação de senha: {user_obj.username}",
-            "user_obj": user_obj,
-            "block_reason": block_reason,
-        },
-    )
+
+users_list = UserListView.as_view()
+user_create = UserCreateView.as_view()
+user_update = UserUpdateView.as_view()
+user_activate = UserActivateView.as_view()
+user_deactivate = UserDeactivateView.as_view()
+user_delete = UserDeleteView.as_view()
+user_send_password_reset = UserPasswordResetConfirmView.as_view()
