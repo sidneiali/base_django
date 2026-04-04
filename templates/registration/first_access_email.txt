@@ -1,0 +1,10 @@
+Olá,
+
+Uma conta foi criada para você no BaseApp.
+
+Para concluir o primeiro acesso e definir sua senha, use o link abaixo:
+{{ reset_url }}
+
+Se você não esperava este convite, pode ignorar este e-mail.
+
+BaseApp

@@ -6,7 +6,8 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, Group, Permission
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 User = get_user_model()
@@ -122,8 +123,9 @@ class PanelViewTests(TestCase):
         self.assertContains(response, 'data-teste="user-activate-submit"', html=False)
         self.assertContains(response, 'data-teste="user-delete-link"', html=False)
 
-    def test_user_create_htmx_creates_user_and_redirects(self) -> None:
-        """Criar usuário via HTMX deve persistir e responder com HX-Location."""
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_user_create_htmx_creates_user_and_sends_first_access_invite(self) -> None:
+        """Criar usuário via HTMX deve persistir e disparar o convite inicial."""
 
         self._login_with_permissions("add_user")
         group = Group.objects.create(name="Operação")
@@ -135,7 +137,6 @@ class PanelViewTests(TestCase):
                 "first_name": "Novo",
                 "last_name": "Usuário",
                 "email": "novo@example.com",
-                "password": "SenhaSegura@123",
                 "is_active": "on",
                 "groups": [str(group.pk)],
                 "auto_refresh_interval": "30",
@@ -149,6 +150,11 @@ class PanelViewTests(TestCase):
 
         created_user = User.objects.get(username="novo-painel")
         self.assertTrue(created_user.groups.filter(pk=group.pk).exists())
+        self.assertFalse(created_user.has_usable_password())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Primeiro acesso", mail.outbox[0].subject)
+        self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
+        self.assertIn("novo@example.com", mail.outbox[0].to)
 
     def test_user_deactivate_and_activate_toggle_state(self) -> None:
         """A listagem deve permitir inativar e reativar usuários com POST."""

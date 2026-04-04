@@ -48,18 +48,26 @@
                     {% endif %}
                 </div>
 
-                <div class="col-12 col-md-6">
-                    <label class="form-label" for="{{ form.password.id_for_label }}">
-                        {{ form.password.label }}
-                    </label>
-                    {{ form.password }}
-                    {% if form.password.help_text %}
-                        <small class="form-hint">{{ form.password.help_text }}</small>
-                    {% endif %}
-                    {% if form.password.errors %}
-                        <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
-                    {% endif %}
-                </div>
+                {% if user_obj %}
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="{{ form.password.id_for_label }}">
+                            {{ form.password.label }}
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.help_text %}
+                            <small class="form-hint">{{ form.password.help_text }}</small>
+                        {% endif %}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-6">
+                        <div class="alert alert-info mb-0" data-teste="user-first-access-invite-info">
+                            O novo usuário receberá por e-mail um link para definir a senha do primeiro acesso.
+                        </div>
+                    </div>
+                {% endif %}
 
                 <div class="col-12 col-md-6 d-flex align-items-end">
                     <div class="form-check">

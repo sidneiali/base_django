@@ -25,7 +25,7 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
             },
             render_value=False,
         ),
-        help_text="Preencha só se quiser trocar a senha. Na criação, obrigatório.",
+        help_text="Preencha só se quiser trocar a senha de um usuário existente.",
     )
 
     groups = forms.ModelMultipleChoiceField(
@@ -143,6 +143,13 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
                     {"class": "form-check-input"}
                 )
 
+        if not self.instance.pk:
+            self.fields["email"].required = True
+            self.fields["email"].help_text = (
+                "Obrigatório. O usuário receberá neste e-mail o link para definir "
+                "a senha do primeiro acesso."
+            )
+
         if self.is_bound:
             return
 
@@ -154,14 +161,16 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
         )
 
     def clean(self) -> dict[str, object]:
-        """Exige senha na criacao e permite troca opcional na edicao."""
+        """Exige e-mail na criação e permite troca opcional de senha na edição."""
 
         cleaned_data = super().clean() or {}
-        password = cleaned_data.get("password")
+        email = str(cleaned_data.get("email", "") or "").strip()
 
-        if not self.instance.pk and not password:
+        if not self.instance.pk and not email:
             self.add_error(
-                "password", "A senha é obrigatória para novos usuários.")
+                "email",
+                "O e-mail é obrigatório para enviar o convite de primeiro acesso.",
+            )
 
         return cleaned_data
 
@@ -178,7 +187,7 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
         user.is_staff = False
 
         password = self.cleaned_data.get("password")
-        if password:
+        if user.pk and password:
             user.set_password(password)
         elif not user.pk:
             user.set_unusable_password()

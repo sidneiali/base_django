@@ -13,6 +13,10 @@ from django.views.decorators.http import require_POST
 
 from ..dual_list import build_dual_list_choices
 from .forms import PanelUserForm
+from .services import (
+    UserInvitationDeliveryError,
+    create_user_with_first_access_invitation,
+)
 
 
 def _redirect_users_list(request: HttpRequest) -> HttpResponse:
@@ -59,13 +63,17 @@ def users_list(request):
 @login_required
 @permission_required("auth.add_user", raise_exception=True)
 def user_create(request):
-    """Cria um novo usuario comum e associa grupos selecionados."""
+    """Cria um novo usuario comum e envia convite de primeiro acesso."""
 
     form = PanelUserForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-        form.save()
-        return _redirect_users_list(request)
+        try:
+            create_user_with_first_access_invitation(form, request)
+        except UserInvitationDeliveryError as exc:
+            form.add_error(None, str(exc))
+        else:
+            return _redirect_users_list(request)
 
     available, chosen = build_dual_list_choices(form, "groups")
 

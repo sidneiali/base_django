@@ -75,7 +75,6 @@ class PanelUsersE2ESmokeTests(PanelE2EBase):
             email="novo-e2e@example.com",
             first_name="Novo",
             last_name="E2E",
-            password="SenhaSegura@123",
             auto_refresh_interval="30",
         )
         user_form.assign_group("Operação E2E")
@@ -85,6 +84,7 @@ class PanelUsersE2ESmokeTests(PanelE2EBase):
 
         created_user = User.objects.get(username="novo-e2e")
         self.assertEqual(created_user.email, "novo-e2e@example.com")
+        self.assertFalse(created_user.has_usable_password())
         self.assertTrue(created_user.groups.filter(name="Operação E2E").exists())
         self.assertIn("novo-e2e", self._user_row("novo-e2e").text)
 

@@ -25,7 +25,6 @@ class PanelUserFormTests(TestCase):
                 "first_name": "Usuário",
                 "last_name": "API",
                 "email": "integracao@example.com",
-                "password": "SenhaSegura@123",
                 "is_active": "on",
                 "auto_refresh_enabled": "on",
                 "auto_refresh_interval": "30",
@@ -45,6 +44,7 @@ class PanelUserFormTests(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
         user = form.save()
+        self.assertFalse(user.has_usable_password())
 
         access_profile = ApiAccessProfile.objects.get(user=user)
         self.assertTrue(access_profile.api_enabled)
@@ -78,6 +78,22 @@ class PanelUserFormTests(TestCase):
 
         preference = UserInterfacePreference.objects.get(user=user)
         self.assertIsNone(preference.session_idle_timeout_minutes)
+
+    def test_form_create_requires_email_for_first_access_invitation(self):
+        """Novos usuários precisam de e-mail para o convite inicial."""
+
+        form = PanelUserForm(
+            data={
+                "username": "sem-email",
+                "first_name": "Sem",
+                "last_name": "Email",
+                "password": "",
+                "auto_refresh_interval": "30",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
 
     def test_form_save_persists_user_session_idle_timeout(self):
         """Salvar o formulário deve persistir o timeout de sessão do usuário."""

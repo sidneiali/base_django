@@ -147,6 +147,8 @@ Quando o IP ultrapassa o limite configurado, a própria tela de login responde c
 
 O acesso público do shell usa o e-mail da conta como identificador principal no formulário de login.
 
+Quando um usuário novo é criado pelo painel interno, a aplicação envia automaticamente um e-mail de primeiro acesso com o link para definir a senha inicial.
+
 ## Sessão inativa
 
 O painel agora permite configurar a duração máxima de sessão inativa:
