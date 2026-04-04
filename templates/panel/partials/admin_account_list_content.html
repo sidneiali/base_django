@@ -127,6 +127,25 @@
                                             </form>
                                         {% endif %}
 
+                                        {% if admin_account.email %}
+                                            <a
+                                                href="{% url 'panel_admin_account_send_password_reset' admin_account.pk %}"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-teste="admin-account-password-reset-link"
+                                            >
+                                                Resetar senha
+                                            </a>
+                                        {% else %}
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                disabled
+                                                data-teste="admin-account-password-reset-disabled"
+                                            >
+                                                Resetar senha
+                                            </button>
+                                        {% endif %}
+
                                         {% if row.delete_block_reason %}
                                             <button
                                                 type="button"

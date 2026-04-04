@@ -6,7 +6,7 @@ from .groups import GroupFormPage, GroupsListPage
 from .login_security import LoginSecurityPage
 from .modules import ModuleFormPage, ModulesListPage
 from .shell import TopbarPage
-from .users import UserFormPage, UsersListPage
+from .users import UserFormPage, UserPasswordResetConfirmPage, UsersListPage
 
 __all__ = [
     "AdminAccountFormPage",
@@ -20,5 +20,6 @@ __all__ = [
     "ModulesListPage",
     "TopbarPage",
     "UserFormPage",
+    "UserPasswordResetConfirmPage",
     "UsersListPage",
 ]

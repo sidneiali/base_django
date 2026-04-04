@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
+from core.auth.services import send_password_recovery_email
 from core.htmx import htmx_location, is_htmx_request, render_page
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -85,6 +86,14 @@ def _build_admin_account_form_context(
         "permissions_available": permissions_available,
         "permissions_chosen": permissions_chosen,
     }
+
+
+def _admin_account_password_reset_block_reason(admin_account: User) -> str:
+    """Explica por que a recuperação não pode ser enviada para a conta."""
+
+    if not str(admin_account.email or "").strip():
+        return "A conta precisa ter um e-mail cadastrado para receber a recuperação."
+    return ""
 
 
 @login_required
@@ -233,6 +242,37 @@ def admin_account_delete(request: HttpRequest, pk: int) -> HttpResponse:
         {
             "page_title": (
                 f"Excluir conta administrativa: {admin_account.username}"
+            ),
+            "admin_account": admin_account,
+            "block_reason": block_reason,
+        },
+    )
+
+
+@login_required
+def admin_account_send_password_reset(
+    request: HttpRequest,
+    pk: int,
+) -> HttpResponse:
+    """Confirma e envia um e-mail de recuperação para uma conta administrativa."""
+
+    _ensure_admin_accounts_access(request.user)
+    admin_account = get_object_or_404(_admin_accounts_queryset(), pk=pk)
+    block_reason = _admin_account_password_reset_block_reason(admin_account)
+
+    if request.method == "POST":
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        send_password_recovery_email(request, admin_account)
+        return _redirect_admin_accounts_list(request)
+
+    return render_page(
+        request,
+        "panel/admin_account_password_reset_confirm.html",
+        "panel/partials/admin_account_password_reset_confirm_content.html",
+        {
+            "page_title": (
+                f"Enviar recuperação de senha: {admin_account.username}"
             ),
             "admin_account": admin_account,
             "block_reason": block_reason,

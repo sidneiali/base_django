@@ -117,6 +117,11 @@ class PanelAdminAccountViewTests(TestCase):
         )
         self.assertContains(
             response,
+            'data-teste="admin-account-password-reset-link"',
+            html=False,
+        )
+        self.assertContains(
+            response,
             'data-teste="admin-account-delete-disabled"',
             html=False,
         )
@@ -257,3 +262,77 @@ class PanelAdminAccountViewTests(TestCase):
 
         self.assertEqual(response.status_code, 204)
         self.assertFalse(User.objects.filter(pk=admin_account.pk).exists())
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_admin_account_password_reset_confirmation_and_send_email(self) -> None:
+        """A área administrativa deve confirmar e disparar o e-mail de recuperação."""
+
+        self._login_as_superuser()
+        admin_account = User.objects.create_user(
+            username="admin-recuperavel",
+            email="admin-recuperavel@example.com",
+            password="SenhaSegura@123",
+            is_staff=True,
+        )
+
+        confirm_response = self.client.get(
+            reverse(
+                "panel_admin_account_send_password_reset",
+                args=[admin_account.pk],
+            ),
+        )
+
+        self.assertEqual(confirm_response.status_code, 200)
+        self.assertContains(
+            confirm_response,
+            'data-teste="admin-account-password-reset-confirm-submit"',
+            html=False,
+        )
+        self.assertContains(confirm_response, "admin-recuperavel@example.com")
+
+        send_response = self.client.post(
+            reverse(
+                "panel_admin_account_send_password_reset",
+                args=[admin_account.pk],
+            ),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(send_response.status_code, 204)
+        payload = json.loads(send_response["HX-Location"])
+        self.assertEqual(payload["path"], reverse("panel_admin_accounts_list"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Recuperação de senha", mail.outbox[0].subject)
+        self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
+        self.assertIn("admin-recuperavel@example.com", mail.outbox[0].to)
+
+    def test_admin_account_password_reset_confirmation_is_disabled_without_email(
+        self,
+    ) -> None:
+        """Sem e-mail, a área administrativa deve manter a ação bloqueada."""
+
+        self._login_as_superuser()
+        admin_account = User.objects.create_user(
+            username="admin-sem-email",
+            email="",
+            password="SenhaSegura@123",
+            is_staff=True,
+        )
+
+        response = self.client.get(
+            reverse(
+                "panel_admin_account_send_password_reset",
+                args=[admin_account.pk],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-teste="admin-account-password-reset-disabled-submit"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "A conta precisa ter um e-mail cadastrado para receber a recuperação.",
+        )

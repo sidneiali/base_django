@@ -5,6 +5,7 @@ from .admin_accounts.views import (
     admin_account_create,
     admin_account_deactivate,
     admin_account_delete,
+    admin_account_send_password_reset,
     admin_account_update,
     admin_accounts_list,
 )
@@ -33,6 +34,7 @@ from .users.views import (
     user_create,
     user_deactivate,
     user_delete,
+    user_send_password_reset,
     user_update,
     users_list,
 )
@@ -42,6 +44,7 @@ __all__ = [
     "admin_account_create",
     "admin_account_deactivate",
     "admin_account_delete",
+    "admin_account_send_password_reset",
     "admin_account_update",
     "admin_accounts_list",
     "audit_log_detail",
@@ -65,6 +68,7 @@ __all__ = [
     "user_create",
     "user_deactivate",
     "user_delete",
+    "user_send_password_reset",
     "user_update",
     "users_list",
 ]

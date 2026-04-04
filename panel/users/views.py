@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from core.auth.services import send_password_recovery_email
 from core.htmx import htmx_location, is_htmx_request, render_page
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -25,6 +27,14 @@ def _redirect_users_list(request: HttpRequest) -> HttpResponse:
     if is_htmx_request(request):
         return htmx_location(reverse("panel_users_list"))
     return redirect("panel_users_list")
+
+
+def _user_password_reset_block_reason(user: User) -> str:
+    """Explica por que o disparo de recuperação não pode acontecer."""
+
+    if not str(user.email or "").strip():
+        return "O usuário precisa ter um e-mail cadastrado para receber a recuperação."
+    return ""
 
 
 @login_required
@@ -164,5 +174,31 @@ def user_delete(request: HttpRequest, pk: int) -> HttpResponse:
         {
             "page_title": f"Excluir usuário: {user_obj.username}",
             "user_obj": user_obj,
+        },
+    )
+
+
+@login_required
+@permission_required("auth.change_user", raise_exception=True)
+def user_send_password_reset(request: HttpRequest, pk: int) -> HttpResponse:
+    """Confirma e envia um e-mail de recuperação para um usuário comum."""
+
+    user_obj = get_object_or_404(User, pk=pk, is_superuser=False)
+    block_reason = _user_password_reset_block_reason(user_obj)
+
+    if request.method == "POST":
+        if block_reason:
+            raise PermissionDenied(block_reason)
+        send_password_recovery_email(request, user_obj)
+        return _redirect_users_list(request)
+
+    return render_page(
+        request,
+        "panel/user_password_reset_confirm.html",
+        "panel/partials/user_password_reset_confirm_content.html",
+        {
+            "page_title": f"Enviar recuperação de senha: {user_obj.username}",
+            "user_obj": user_obj,
+            "block_reason": block_reason,
         },
     )

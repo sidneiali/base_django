@@ -36,6 +36,20 @@ class UsersListPage(CrudListPage):
         row = self.row(username)
         return row.find_element(*self.locator_by_testid(testid))
 
+    def open_password_reset_confirm(
+        self,
+        username: str,
+    ) -> "UserPasswordResetConfirmPage":
+        row = self.row(username)
+        reset_link = row.find_element(
+            *self.locator_by_testid("user-password-reset-link")
+        )
+        reset_link.click()
+        self.pause()
+        page = UserPasswordResetConfirmPage(self.test_case)
+        page.wait_until_loaded()
+        return page
+
 
 class UserFormPage(CrudFormPage):
     """Fluxos recorrentes do formulário de usuários."""
@@ -91,6 +105,19 @@ class UserFormPage(CrudFormPage):
         )
 
     def save(self) -> UsersListPage:
+        self.click(self.save_submit_testid)
+        page = UsersListPage(self.test_case)
+        page.wait_until_loaded()
+        return page
+
+
+class UserPasswordResetConfirmPage(CrudFormPage):
+    """Fluxos recorrentes da confirmação de recuperação de senha."""
+
+    page_testid = "user-password-reset-confirm-page"
+    save_submit_testid = "user-password-reset-confirm-submit"
+
+    def submit(self) -> UsersListPage:
         self.click(self.save_submit_testid)
         page = UsersListPage(self.test_case)
         page.wait_until_loaded()

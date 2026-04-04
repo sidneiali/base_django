@@ -95,6 +95,7 @@ class PanelViewTests(TestCase):
         self.assertContains(response, 'data-teste="user-toggle-disabled"', html=False)
         self.assertContains(response, "Inativar")
         self.assertContains(response, "Ativar")
+        self.assertContains(response, 'data-teste="user-password-reset-disabled"', html=False)
         self.assertContains(response, 'data-teste="user-delete-disabled"', html=False)
 
     def test_users_list_renders_enabled_actions_with_management_permissions(self) -> None:
@@ -121,7 +122,69 @@ class PanelViewTests(TestCase):
         self.assertContains(response, 'data-teste="user-edit-link"', html=False)
         self.assertContains(response, 'data-teste="user-deactivate-submit"', html=False)
         self.assertContains(response, 'data-teste="user-activate-submit"', html=False)
+        self.assertContains(response, 'data-teste="user-password-reset-link"', html=False)
         self.assertContains(response, 'data-teste="user-delete-link"', html=False)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_user_password_reset_confirmation_and_send_email(self) -> None:
+        """O painel deve confirmar e disparar o e-mail de recuperação do usuário."""
+
+        self._login_with_permissions("change_user")
+        user_obj = User.objects.create_user(
+            username="recuperavel",
+            email="recuperavel@example.com",
+            password="SenhaSegura@123",
+        )
+
+        confirm_response = self.client.get(
+            reverse("panel_user_send_password_reset", args=[user_obj.pk]),
+        )
+
+        self.assertEqual(confirm_response.status_code, 200)
+        self.assertContains(
+            confirm_response,
+            'data-teste="user-password-reset-confirm-submit"',
+            html=False,
+        )
+        self.assertContains(confirm_response, "recuperavel@example.com")
+
+        send_response = self.client.post(
+            reverse("panel_user_send_password_reset", args=[user_obj.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(send_response.status_code, 204)
+        payload = json.loads(send_response["HX-Location"])
+        self.assertEqual(payload["path"], reverse("panel_users_list"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Recuperação de senha", mail.outbox[0].subject)
+        self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
+        self.assertIn("recuperavel@example.com", mail.outbox[0].to)
+
+    def test_user_password_reset_confirmation_is_disabled_without_email(self) -> None:
+        """Sem e-mail cadastrado, o botão de confirmação deve permanecer desabilitado."""
+
+        self._login_with_permissions("change_user")
+        user_obj = User.objects.create_user(
+            username="sem-email-reset",
+            email="",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.get(
+            reverse("panel_user_send_password_reset", args=[user_obj.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-teste="user-password-reset-disabled-submit"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "O usuário precisa ter um e-mail cadastrado para receber a recuperação.",
+        )
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_user_create_htmx_creates_user_and_sends_first_access_invite(self) -> None:

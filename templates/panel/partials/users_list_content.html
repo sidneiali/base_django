@@ -98,6 +98,25 @@
                                         </button>
                                     {% endif %}
 
+                                    {% if perms.auth.change_user and user_obj.email %}
+                                        <a
+                                            href="{% url 'panel_user_send_password_reset' user_obj.pk %}"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-teste="user-password-reset-link"
+                                        >
+                                            Resetar senha
+                                        </a>
+                                    {% else %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            disabled
+                                            data-teste="user-password-reset-disabled"
+                                        >
+                                            Resetar senha
+                                        </button>
+                                    {% endif %}
+
                                     {% if perms.auth.delete_user %}
                                         <a href="{% url 'panel_user_delete' user_obj.pk %}" class="btn btn-sm btn-outline-danger" data-teste="user-delete-link">
                                             Excluir

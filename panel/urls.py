@@ -7,6 +7,7 @@ from .views import (
                     admin_account_create,
                     admin_account_deactivate,
                     admin_account_delete,
+                    admin_account_send_password_reset,
                     admin_account_update,
                     admin_accounts_list,
                     audit_log_detail,
@@ -30,6 +31,7 @@ from .views import (
                     user_create,
                     user_deactivate,
                     user_delete,
+                    user_send_password_reset,
                     user_update,
                     users_list,
 )
@@ -59,6 +61,11 @@ urlpatterns = [
         "administracao/usuarios/<int:pk>/excluir/",
         admin_account_delete,
         name="panel_admin_account_delete",
+    ),
+    path(
+        "administracao/usuarios/<int:pk>/recuperar-senha/",
+        admin_account_send_password_reset,
+        name="panel_admin_account_send_password_reset",
     ),
     path(
         "administracao/usuarios/<int:pk>/editar/",
@@ -99,6 +106,11 @@ urlpatterns = [
     path("usuarios/<int:pk>/ativar/", user_activate, name="panel_user_activate"),
     path("usuarios/<int:pk>/inativar/", user_deactivate, name="panel_user_deactivate"),
     path("usuarios/<int:pk>/excluir/", user_delete, name="panel_user_delete"),
+    path(
+        "usuarios/<int:pk>/recuperar-senha/",
+        user_send_password_reset,
+        name="panel_user_send_password_reset",
+    ),
     path("usuarios/<int:pk>/editar/", user_update, name="panel_user_update"),
     path("grupos/", groups_list, name="panel_groups_list"),
     path("grupos/novo/", group_create, name="panel_group_create"),

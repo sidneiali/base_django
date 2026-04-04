@@ -160,6 +160,8 @@ O acesso público do shell usa o e-mail da conta como identificador principal no
 
 Quando um usuário novo é criado pelo painel interno, a aplicação envia automaticamente um e-mail de primeiro acesso com o link para definir a senha inicial.
 
+Quando um operador precisa ajudar alguém que já tem conta, o painel também consegue disparar o e-mail padrão de recuperação de senha, sempre com uma confirmação explícita antes do envio.
+
 ## Headers HTTP seguros
 
 O projeto agora publica uma `Content-Security-Policy` explícita fora do admin do Django, mantendo:
@@ -547,7 +549,9 @@ Esse comando mostra a lista atual e pergunta qual modulo deve ser removido.
 O app [`panel`](c:\Users\sidne\OneDrive\Desktop\base_django\panel) oferece uma camada mais amigável para administração:
 
 - usuários comuns podem ser criados e editados sem virar `staff` ou `superuser`
+- operadores também podem reenviar a recuperação de senha para usuários comuns, com tela de confirmação antes do disparo do e-mail
 - superusuários podem gerenciar contas administrativas em `/painel/administracao/usuarios/`, incluindo grupos, permissões diretas, acesso à API e preferências de interface
+- a mesma área administrativa também permite reenviar a recuperação de senha para contas `staff` e `superuser`
 - módulos do dashboard podem ser cadastrados, editados e publicados sem depender do admin
 - a operação do `django-axes` também existe no painel em `/painel/seguranca/login/`
 - módulos canônicos do seed podem ser inativados, mas não podem ser excluídos pelo painel

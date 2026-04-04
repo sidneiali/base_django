@@ -124,3 +124,22 @@ class PanelUsersE2ESmokeTests(PanelE2EBase):
         self.assertFalse(user.groups.filter(name="Grupo Atual E2E").exists())
         self.assertTrue(user.groups.filter(name="Grupo Novo E2E").exists())
         self.assertIn("editar-atualizado@example.com", self._user_row("editar-e2e").text)
+
+    def test_user_password_reset_confirmation_smoke(self) -> None:
+        """O operador deve conseguir confirmar o envio de recuperação pelo shell."""
+
+        self._grant_permissions("view_user", "change_user")
+        users_page = UsersListPage(self)
+        self.factory.create_user(
+            "reset-e2e",
+            email="reset-e2e@example.com",
+        )
+
+        self._login()
+        users_page.open()
+
+        reset_confirm_page = users_page.open_password_reset_confirm("reset-e2e")
+        users_page = reset_confirm_page.submit()
+        users_page.wait_for_table_text("reset-e2e")
+
+        self.assertIn("reset-e2e", users_page.table_text())
