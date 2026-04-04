@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
+from typing import Any, cast
+
+from panel.api.groups import build_groups_ninja_openapi_fragment
 
 from .openapi_components import build_openapi_components
 from .openapi_paths import build_openapi_paths
@@ -36,6 +39,14 @@ def build_openapi_schema(request) -> dict[str, object]:
     """Monta a especificação OpenAPI real da API pública versionada."""
 
     base_url = build_public_base_url(request)
+    components = build_openapi_components()
+    paths = build_openapi_paths(base_url)
+    groups_fragment = build_groups_ninja_openapi_fragment()
+    paths.update(groups_fragment.get("paths", {}))
+    ninja_components = groups_fragment.get("components", {})
+    ninja_schemas = cast(dict[str, Any], ninja_components.get("schemas", {}))
+    if ninja_schemas:
+        components.setdefault("schemas", cast(dict[str, Any], {})).update(ninja_schemas)
     return {
         "openapi": "3.1.0",
         "info": {
@@ -53,8 +64,8 @@ def build_openapi_schema(request) -> dict[str, object]:
             }
         ],
         "security": [{"BearerAuth": []}],
-        "components": build_openapi_components(),
-        "paths": build_openapi_paths(base_url),
+        "components": components,
+        "paths": paths,
     }
 
 

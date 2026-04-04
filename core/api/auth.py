@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 from django.db import OperationalError, ProgrammingError
+from django.http import HttpRequest, HttpResponse
 
 from ..audit import create_audit_log
 from ..models import ApiAccessProfile, ApiResourcePermission, ApiToken, AuditLog
@@ -201,31 +202,67 @@ def log_api_access_denied(
     )
 
 
+def authorize_api_request(
+    request: HttpRequest,
+    *,
+    resource: str,
+    action: str,
+) -> HttpResponse | None:
+    """Autentica e autoriza uma requisição da API para um recurso/ação."""
+
+    api_request = cast(ApiHttpRequest, request)
+    result = authenticate_api_request(api_request)
+    if not result.is_authenticated:
+        log_api_access_denied(
+            api_request,
+            result=result,
+            code=result.code or "api_auth_failed",
+            detail=result.detail or "A autenticação da API falhou.",
+            resource=resource,
+            action=action,
+            status=401,
+        )
+        return api_error_response(
+            result.detail or "A autenticação da API falhou.",
+            code=result.code or "api_auth_failed",
+            status=401,
+            request=api_request,
+        )
+
+    if not user_has_api_permission(result.user, resource, action):
+        log_api_access_denied(
+            api_request,
+            result=result,
+            code="forbidden",
+            detail="Seu token não possui permissão para esta operação.",
+            resource=resource,
+            action=action,
+            status=403,
+        )
+        return api_error_response(
+            "Seu token não possui permissão para esta operação.",
+            code="forbidden",
+            status=403,
+            request=api_request,
+        )
+
+    api_request.user = result.user
+    api_request._cached_user = result.user
+    api_request.api_token = result.token
+    api_request.api_permission_action = action
+
+    if result.token is not None:
+        result.token.mark_used()
+
+    return None
+
+
 def require_api_permission(resource: str):
     """Protege uma view JSON via Bearer token e permissão CRUD do recurso."""
 
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request: ApiHttpRequest, *args: Any, **kwargs: Any):
-            result = authenticate_api_request(request)
-            if not result.is_authenticated:
-                request_method = request.method or ""
-                log_api_access_denied(
-                    request,
-                    result=result,
-                    code=result.code or "api_auth_failed",
-                    detail=result.detail or "A autenticação da API falhou.",
-                    resource=resource,
-                    action=get_api_action_for_method(request_method),
-                    status=401,
-                )
-                return api_error_response(
-                    result.detail or "A autenticação da API falhou.",
-                    code=result.code or "api_auth_failed",
-                    status=401,
-                    request=request,
-                )
-
             action = get_api_action_for_method(request.method or "")
             if action is None:
                 return api_error_response(
@@ -236,30 +273,13 @@ def require_api_permission(resource: str):
                     extra_error={"allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE"]},
                 )
 
-            if not user_has_api_permission(result.user, resource, action):
-                log_api_access_denied(
-                    request,
-                    result=result,
-                    code="forbidden",
-                    detail="Seu token não possui permissão para esta operação.",
-                    resource=resource,
-                    action=action,
-                    status=403,
-                )
-                return api_error_response(
-                    "Seu token não possui permissão para esta operação.",
-                    code="forbidden",
-                    status=403,
-                    request=request,
-                )
-
-            request.user = result.user
-            request._cached_user = result.user
-            request.api_token = result.token
-            request.api_permission_action = action
-
-            if result.token is not None:
-                result.token.mark_used()
+            error_response = authorize_api_request(
+                request,
+                resource=resource,
+                action=action,
+            )
+            if error_response is not None:
+                return error_response
 
             return view_func(request, *args, **kwargs)
 
