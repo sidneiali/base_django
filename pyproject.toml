@@ -16,6 +16,8 @@ dependencies = [
     "django-csp>=4.0,<5.0",
     "psycopg[binary]>=3.2,<4.0",
     "django-ninja>=1.6,<2.0",
+    "whitenoise>=6.12,<7.0",
+    "sentry-sdk[django]>=2.57,<3.0",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +26,7 @@ dev = [
     "factory_boy>=3.3,<4.0",
     "mypy>=1.11",
     "pytest>=8.0",
+    "pytest-cov>=7.1,<8.0",
     "pytest-django>=4.8",
     "ruff>=0.6",
     "selenium>=4.0,<5.0",
@@ -37,7 +40,7 @@ namespaces = false
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
-addopts = "-ra -m \"not e2e\""
+addopts = "-ra --cov=core --cov=panel --cov-report=term --no-cov-on-fail -m \"not e2e\""
 markers = [
     "e2e: smoke tests com Selenium e navegador real, executados separadamente da suite principal",
 ]
@@ -64,3 +67,18 @@ ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.coverage.run]
+branch = true
+source = ["core", "panel"]
+omit = [
+    "*/migrations/*",
+    "config/settings/*",
+    "config/asgi.py",
+    "config/wsgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

@@ -1,17 +1,15 @@
-"""Mapa principal de URLs do projeto.
-
-Centraliza as rotas do admin, autenticacao, dashboard, painel de gestao
-e o handler customizado para erro 403.
-"""
+"""Mapa principal de URLs do projeto."""
 
 from core.auth.views import PublicLoginView
 from core.forms import PasswordRecoveryConfirmForm, PasswordRecoveryForm
-from core.views import api_openapi, forbidden_view
+from core.views import api_openapi, forbidden_view, not_found_view, server_error_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+handler404 = not_found_view
 handler403 = forbidden_view
+handler500 = server_error_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),

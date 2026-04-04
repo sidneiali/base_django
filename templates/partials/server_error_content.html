@@ -1,0 +1,24 @@
+<div data-page-title="500 - Erro interno">
+    {% url "dashboard" as dashboard_url %}
+    {% url "login" as login_url %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h1 class="mb-3">500</h1>
+                    <p class="text-secondary">
+                        Ocorreu um erro inesperado ao processar sua solicitação.
+                    </p>
+                    {% with is_authenticated=request.user.is_authenticated %}
+                        <a
+                            href="{% if is_authenticated and dashboard_url %}{{ dashboard_url }}{% elif login_url %}{{ login_url }}{% else %}/{% endif %}"
+                            class="btn btn-primary"
+                        >
+                            {% if is_authenticated and dashboard_url %}Voltar ao início{% elif login_url %}Ir para o login{% else %}Voltar ao início{% endif %}
+                        </a>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

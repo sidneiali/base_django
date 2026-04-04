@@ -35,6 +35,14 @@ DATABASES = base_settings.build_database_config(
         "DATABASE_HOST",
     ),
 )
+MIDDLEWARE = base_settings.insert_middleware_after(
+    list(base_settings.MIDDLEWARE),
+    anchor="django.middleware.security.SecurityMiddleware",
+    middleware="whitenoise.middleware.WhiteNoiseMiddleware",
+)
+STORAGES = base_settings.build_storage_settings(
+    staticfiles_backend="whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
 STATIC_ROOT = base_settings.env_str(
     "STATIC_ROOT",
     str(base_settings.BASE_DIR / "staticfiles"),
@@ -48,4 +56,16 @@ APP_FORCE_HTTPS = base_settings.env_bool("APP_FORCE_HTTPS", True)
 globals().update(base_settings.build_https_settings(APP_FORCE_HTTPS))
 globals().update(
     base_settings.build_content_security_policy(force_https=APP_FORCE_HTTPS)
+)
+LOGGING = base_settings.build_logging_config(
+    level=base_settings.env_str("APP_LOG_LEVEL", "INFO").upper(),
+    json_logs=base_settings.env_bool("APP_LOG_JSON", True),
+    log_file=base_settings.env_str("APP_LOG_FILE"),
+)
+base_settings.initialize_sentry(
+    dsn=base_settings.env_str("SENTRY_DSN"),
+    environment=base_settings.env_str("SENTRY_ENVIRONMENT", "production"),
+    traces_sample_rate=base_settings.env_float("SENTRY_TRACES_SAMPLE_RATE", 0.0),
+    profiles_sample_rate=base_settings.env_float("SENTRY_PROFILES_SAMPLE_RATE", 0.0),
+    send_default_pii=base_settings.env_bool("SENTRY_SEND_DEFAULT_PII", True),
 )

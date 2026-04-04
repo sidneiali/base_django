@@ -29,10 +29,17 @@ __all__ = [
 ]
 
 
+def _get_request_user(request: HttpRequest):
+    """Retorna o usuário do request com fallback seguro."""
+
+    return getattr(request, "user", None)
+
+
 def get_request_modules(request: HttpRequest) -> ModuleNavigationGroups:
     """Retorna todos os módulos ativos da navegação com cache por request."""
 
-    if not request.user.is_authenticated:
+    user = _get_request_user(request)
+    if not getattr(user, "is_authenticated", False):
         return {}
 
     cached_modules = cast(
@@ -42,7 +49,7 @@ def get_request_modules(request: HttpRequest) -> ModuleNavigationGroups:
     if cached_modules is not None:
         return cached_modules
 
-    modules = build_modules_for_user(request.user)
+    modules = build_modules_for_user(user)
     setattr(request, "_cached_navigation_modules", modules)
     return modules
 
@@ -65,7 +72,8 @@ def get_request_dashboard_modules(request: HttpRequest) -> ModuleNavigationGroup
 def get_request_topbar_shortcuts(request: HttpRequest) -> TopbarShortcutGroups:
     """Retorna atalhos do topo com cache por request."""
 
-    if not request.user.is_authenticated:
+    user = _get_request_user(request)
+    if not getattr(user, "is_authenticated", False):
         return {}
 
     cached_shortcuts = cast(
@@ -75,6 +83,6 @@ def get_request_topbar_shortcuts(request: HttpRequest) -> TopbarShortcutGroups:
     if cached_shortcuts is not None:
         return cached_shortcuts
 
-    shortcuts = build_topbar_shortcuts_for_user(request.user)
+    shortcuts = build_topbar_shortcuts_for_user(user)
     setattr(request, "_cached_topbar_shortcuts", shortcuts)
     return shortcuts

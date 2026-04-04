@@ -20,4 +20,4 @@ def sidebar_modules(request):
 def user_interface_preferences(request):
     """Injeta preferencias globais do shell para o usuario autenticado."""
 
-    return get_user_interface_preference_values(request.user)
+    return get_user_interface_preference_values(getattr(request, "user", None))

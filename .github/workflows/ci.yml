@@ -40,7 +40,7 @@ jobs:
         env:
           E2E_EDGE_BINARY: ${{ steps.setup-edge.outputs.edge-path }}
           E2E_HEADLESS: "1"
-        run: uv run pytest -m e2e
+        run: uv run pytest -m e2e --no-cov
 
       - name: Django check
         run: uv run python manage.py check

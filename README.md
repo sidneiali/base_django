@@ -18,6 +18,8 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 - django-axes
 - django-cors-headers
 - django-csp
+- WhiteNoise
+- Sentry SDK
 - SQLite em desenvolvimento
 - PostgreSQL em produção
 - GitHub Actions para CI
@@ -76,6 +78,8 @@ Fluxo sugerido para validar a base logo no primeiro dia:
 6. validar shell autenticado com `uv run pytest -m e2e`
 
 Se a tarefa tocar topbar, auditoria HTML, HTMX, downloads no shell ou seletores `data-teste`, trate `uv run pytest -m e2e` como parte do fluxo normal.
+
+Se você só quiser uma passada rápida sem coverage local, use `uv run pytest --no-cov`.
 
 ## Recuperação de senha e e-mail
 
@@ -242,6 +246,32 @@ uv run python manage.py collectstatic --noinput
 ```
 
 5. subir a aplicação via servidor WSGI/ASGI da sua infraestrutura
+
+O ambiente de produção agora usa WhiteNoise para servir os estáticos diretamente pelo Django, com backend `CompressedManifestStaticFilesStorage` para cache-busting por hash.
+
+## Logging e monitoramento
+
+O projeto agora suporta logging estruturado com `request_id`, rota, método e ator corrente no contexto da requisição. Em desenvolvimento, o default continua legível no terminal; em produção, o default passa a ser estruturado.
+
+Variáveis mais úteis:
+
+- `APP_LOG_LEVEL=INFO`
+- `APP_LOG_JSON=False` em desenvolvimento e `True` por padrão em produção
+- `APP_LOG_FILE=` para duplicar a saída em arquivo
+
+O Sentry também pode ser ligado de forma opcional:
+
+- `SENTRY_DSN=...`
+- `SENTRY_ENVIRONMENT=production`
+- `SENTRY_TRACES_SAMPLE_RATE=0.0`
+- `SENTRY_PROFILES_SAMPLE_RATE=0.0`
+- `SENTRY_SEND_DEFAULT_PII=False`
+
+Quando `SENTRY_DSN` estiver vazio, nada é inicializado.
+
+## Páginas de erro
+
+Além do handler `403`, o projeto agora também publica páginas próprias para `404` e `500`, mantendo o mesmo comportamento de página completa ou partial HTMX conforme o tipo da navegação.
 
 ## Healthcheck operacional
 

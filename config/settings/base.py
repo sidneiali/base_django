@@ -34,6 +34,19 @@ def env_int(name: str, default: int) -> int:
         return default
 
 
+def env_float(name: str, default: float) -> float:
+    """Converte variavel de ambiente decimal com fallback seguro."""
+
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def env_list(name: str, default: list[str] | None = None) -> list[str]:
     """Converte lista CSV da variavel de ambiente em lista Python."""
 
@@ -47,6 +60,129 @@ def env_str(name: str, default: str = "") -> str:
     """Retorna uma variavel de ambiente textual com fallback simples."""
 
     return os.getenv(name, default)
+
+
+def insert_middleware_after(
+    middleware_stack: list[str],
+    *,
+    anchor: str,
+    middleware: str,
+) -> list[str]:
+    """Insere um middleware logo após outro, sem duplicar entradas."""
+
+    stack = list(middleware_stack)
+    if middleware in stack:
+        return stack
+
+    try:
+        index = stack.index(anchor) + 1
+    except ValueError:
+        return [middleware, *stack]
+
+    return [*stack[:index], middleware, *stack[index:]]
+
+
+def build_storage_settings(
+    *,
+    default_backend: str = "django.core.files.storage.FileSystemStorage",
+    staticfiles_backend: str = "django.contrib.staticfiles.storage.StaticFilesStorage",
+) -> dict[str, dict[str, str]]:
+    """Monta a configuração padrão de storage do projeto."""
+
+    return {
+        "default": {"BACKEND": default_backend},
+        "staticfiles": {"BACKEND": staticfiles_backend},
+    }
+
+
+def build_logging_config(
+    *,
+    level: str,
+    json_logs: bool,
+    log_file: str = "",
+) -> dict[str, object]:
+    """Monta uma configuração de logging com contexto estruturado da requisição."""
+
+    formatter_name = "structured" if json_logs else "human"
+    handlers: dict[str, dict[str, object]] = {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": level,
+            "filters": ["request_context"],
+            "formatter": formatter_name,
+        }
+    }
+    root_handlers = ["console"]
+
+    if log_file.strip():
+        handlers["file"] = {
+            "class": "logging.FileHandler",
+            "filename": log_file,
+            "encoding": "utf-8",
+            "level": level,
+            "filters": ["request_context"],
+            "formatter": formatter_name,
+        }
+        root_handlers.append("file")
+
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "filters": {
+            "request_context": {
+                "()": "core.logging.RequestContextFilter",
+            }
+        },
+        "formatters": {
+            "human": {
+                "format": (
+                    "%(asctime)s %(levelname)s %(name)s "
+                    "[request_id=%(request_id)s] %(message)s"
+                )
+            },
+            "structured": {
+                "()": "core.logging.StructuredLogFormatter",
+            },
+        },
+        "handlers": handlers,
+        "root": {
+            "handlers": root_handlers,
+            "level": level,
+        },
+        "loggers": {
+            "django.server": {
+                "handlers": root_handlers,
+                "level": level,
+                "propagate": False,
+            }
+        },
+    }
+
+
+def initialize_sentry(
+    *,
+    dsn: str,
+    environment: str,
+    traces_sample_rate: float,
+    profiles_sample_rate: float,
+    send_default_pii: bool,
+) -> None:
+    """Inicializa o Sentry quando um DSN válido estiver configurado."""
+
+    if not dsn.strip():
+        return
+
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=dsn,
+        environment=environment,
+        traces_sample_rate=traces_sample_rate,
+        profiles_sample_rate=profiles_sample_rate,
+        send_default_pii=send_default_pii,
+        integrations=[DjangoIntegration()],
+    )
 
 
 def build_database_config(
@@ -266,6 +402,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+STORAGES = build_storage_settings()
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
