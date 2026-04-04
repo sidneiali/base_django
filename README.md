@@ -2,7 +2,7 @@
 
 Base de sistema em Django com:
 
-- autenticação por login
+- autenticação por login com e-mail
 - dashboard orientado a módulos
 - controle de acesso por permissões do Django
 - painel interno para gestão de usuários, grupos, módulos e auditoria
@@ -144,6 +144,17 @@ Variáveis mais importantes:
 - `AXES_RESET_ON_SUCCESS=True`
 
 Quando o IP ultrapassa o limite configurado, a própria tela de login responde com `429` e mantém o layout normal, exibindo o aviso de bloqueio temporário.
+
+O acesso público do shell usa o e-mail da conta como identificador principal no formulário de login.
+
+## Sessão inativa
+
+O painel agora permite configurar a duração máxima de sessão inativa:
+
+- por usuário, na tela de usuários
+- por grupo, na tela de grupos
+
+Quando houver mais de uma regra aplicável para o mesmo operador, a aplicação usa o menor valor configurado entre usuário e grupos.
 
 ## Deploy de produção
 

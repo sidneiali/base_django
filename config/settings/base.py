@@ -144,6 +144,7 @@ MIDDLEWARE = [
     'core.middleware.RequestIdMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.SessionIdleTimeoutMiddleware',
     'core.middleware.ApiTokenAuthenticationMiddleware',
     'core.middleware.AuditContextMiddleware',
     'core.middleware.ApiRateLimitMiddleware',
@@ -154,7 +155,7 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
-    "django.contrib.auth.backends.ModelBackend",
+    "core.auth.backends.EmailOrUsernameModelBackend",
 ]
 
 ROOT_URLCONF = 'config.urls'

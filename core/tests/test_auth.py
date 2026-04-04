@@ -28,9 +28,12 @@ class LoginFlowTests(TestCase):
         self.assertContains(response, "Entrar na sua conta")
         self.assertContains(response, "Esqueci minha senha")
         self.assertContains(response, "Sessão autenticada")
+        self.assertContains(response, "E-mail")
 
-    def test_successful_login_redirects_to_dashboard_and_creates_audit_entry(self):
-        """Login válido deve autenticar o usuário e registrar auditoria."""
+    def test_successful_login_by_email_redirects_to_dashboard_and_creates_audit_entry(
+        self,
+    ):
+        """Login válido por e-mail deve autenticar o usuário e registrar auditoria."""
 
         user = User.objects.create_user(
             username="lucas",
@@ -41,7 +44,7 @@ class LoginFlowTests(TestCase):
 
         response = self.client.post(
             reverse("login"),
-            {"username": "lucas", "password": "SenhaSegura@123"},
+            {"username": "lucas@example.com", "password": "SenhaSegura@123"},
         )
 
         self.assertRedirects(response, reverse("dashboard"))
@@ -66,17 +69,43 @@ class LoginFlowTests(TestCase):
 
         response = self.client.post(
             reverse("login"),
-            {"username": "ana", "password": "SenhaIncorreta@123"},
+            {"username": "ana@example.com", "password": "SenhaIncorreta@123"},
         )
 
         self.assertEqual(response.status_code, 200)
 
         failed_log = AuditLog.objects.get(action=AuditLog.ACTION_LOGIN_FAILED)
         self.assertEqual(failed_log.object_id, str(user.pk))
-        self.assertEqual(failed_log.actor_identifier, "ana")
+        self.assertEqual(failed_log.actor_identifier, "ana@example.com")
         self.assertEqual(failed_log.metadata.get("event"), "user_login_failed")
-        self.assertEqual(failed_log.metadata["credentials"]["username"], "ana")
+        self.assertEqual(
+            failed_log.metadata["credentials"]["username"],
+            "ana@example.com",
+        )
         self.assertNotIn("password", failed_log.metadata["credentials"])
+
+    def test_duplicate_email_does_not_authenticate_ambiguously(self):
+        """Quando houver mais de um usuário com o mesmo e-mail, o login deve falhar."""
+
+        User.objects.create_user(
+            username="duplicado-1",
+            email="duplicado@example.com",
+            password="SenhaSegura@123",
+        )
+        User.objects.create_user(
+            username="duplicado-2",
+            email="duplicado@example.com",
+            password="SenhaSegura@123",
+        )
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "duplicado@example.com", "password": "SenhaSegura@123"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Por favor, entre com um e-mail e senha corretos.")
+        self.assertNotIn("_auth_user_id", self.client.session)
 
 
 @override_settings(
@@ -110,15 +139,15 @@ class LoginLockoutTests(TestCase):
 
         first_response = self.client.post(
             reverse("login"),
-            {"username": "travado", "password": "errada"},
+            {"username": "travado@example.com", "password": "errada"},
         )
         second_response = self.client.post(
             reverse("login"),
-            {"username": "travado", "password": "errada"},
+            {"username": "travado@example.com", "password": "errada"},
         )
         locked_response = self.client.post(
             reverse("login"),
-            {"username": "travado", "password": "SenhaSegura@123"},
+            {"username": "travado@example.com", "password": "SenhaSegura@123"},
         )
 
         self.assertEqual(first_response.status_code, 200)

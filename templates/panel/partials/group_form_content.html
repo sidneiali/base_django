@@ -19,6 +19,19 @@
                 </div>
 
                 <div class="col-12">
+                    <label class="form-label" for="{{ form.session_idle_timeout_minutes.id_for_label }}">
+                        {{ form.session_idle_timeout_minutes.label }}
+                    </label>
+                    {{ form.session_idle_timeout_minutes }}
+                    {% if form.session_idle_timeout_minutes.help_text %}
+                        <small class="form-hint">{{ form.session_idle_timeout_minutes.help_text }}</small>
+                    {% endif %}
+                    {% if form.session_idle_timeout_minutes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.session_idle_timeout_minutes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-12">
                     <label class="form-label">{{ form.permissions.label }}</label>
 
                     <div class="d-flex gap-2 align-items-stretch dual-list-wrapper" data-dual-list>

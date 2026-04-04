@@ -2,6 +2,11 @@
 
 from typing import cast
 
+from core.models import GroupInterfacePreference, UserInterfacePreference
+from core.preferences import (
+    get_group_interface_preference,
+    save_group_interface_preference,
+)
 from django import forms
 from django.contrib.auth.models import Group, Permission
 from django.db.models import Model
@@ -88,6 +93,27 @@ class PanelGroupForm(forms.ModelForm):
             },
         ),
     )
+    session_idle_timeout_minutes = forms.IntegerField(
+        label="Sessão inativa do grupo (minutos)",
+        required=False,
+        min_value=UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES,
+        max_value=UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "min": str(UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES),
+                "max": str(UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES),
+                "step": "5",
+                "data-teste": "group-session-idle-timeout",
+            }
+        ),
+        help_text=(
+            "Opcional. Use um valor entre "
+            f"{UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES} e "
+            f"{UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES} minutos. "
+            "Se o usuário também tiver valor próprio, vale o menor tempo configurado."
+        ),
+    )
 
     class Meta:
         model = Group
@@ -111,3 +137,33 @@ class PanelGroupForm(forms.ModelForm):
         if name in PROTECTED_GROUP_NAMES:
             raise forms.ValidationError("Esse grupo é protegido.")
         return name
+
+    def __init__(self, *args, **kwargs):
+        """Preenche a configuracao de sessao do grupo quando houver valor salvo."""
+
+        super().__init__(*args, **kwargs)
+        if self.is_bound:
+            return
+
+        preference = self._get_group_preference()
+        self.fields["session_idle_timeout_minutes"].initial = (
+            preference.session_idle_timeout_minutes
+        )
+
+    def _get_group_preference(self) -> GroupInterfacePreference:
+        """Retorna a preferencia persistida ou um objeto default em memoria."""
+
+        return get_group_interface_preference(self.instance)
+
+    def save(self, commit: bool = True) -> Group:
+        """Salva o grupo e sua politica opcional de sessao inativa."""
+
+        group = super().save(commit=commit)
+        if commit:
+            save_group_interface_preference(
+                group,
+                session_idle_timeout_minutes=self.cleaned_data[
+                    "session_idle_timeout_minutes"
+                ],
+            )
+        return group

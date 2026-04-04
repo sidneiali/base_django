@@ -8,20 +8,30 @@ from django.contrib.auth.forms import (
 
 
 class LoginForm(AuthenticationForm):
-    """Formulario de login com widgets alinhados ao visual do projeto."""
+    """Formulario de login por e-mail com widgets alinhados ao projeto."""
+
+    error_messages = {
+        "invalid_login": (
+            "Por favor, entre com um e-mail e senha corretos. "
+            "Note que ambos diferenciam maiúsculas de minúsculas."
+        ),
+        "inactive": "Esta conta está inativa.",
+    }
 
     def __init__(self, *args, **kwargs):
         """Aplica labels e atributos de exibicao aos campos padrao."""
 
         super().__init__(*args, **kwargs)
 
-        self.fields["username"].label = "Usuário"
+        self.fields["username"].label = "E-mail"
         self.fields["username"].widget.attrs.update(
             {
                 "class": "form-control form-control-lg",
-                "placeholder": "Digite seu usuário",
+                "placeholder": "Digite seu e-mail",
                 "autofocus": True,
                 "spellcheck": "false",
+                "autocomplete": "email",
+                "inputmode": "email",
                 "data-teste": "login-username",
             }
         )

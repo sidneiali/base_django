@@ -174,6 +174,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
     factory: PanelE2EDataFactory
     audit_factory: AuditTestDataFactory
     username = "e2e-user"
+    email = "e2e-user@example.com"
     password = "SenhaSegura@123"
     headless = False
     slow_mo_seconds = 0.0
@@ -233,7 +234,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
         User.objects.filter(username=self.username).delete()
         User.objects.create_user(
             username=self.username,
-            email="e2e-user@example.com",
+            email=self.email,
             password=self.password,
         )
         Module.objects.filter(slug__startswith="e2e-").delete()
@@ -336,7 +337,7 @@ class PanelE2EBase(StaticLiveServerTestCase):
             )
         )
         username_input.clear()
-        username_input.send_keys(self.username)
+        username_input.send_keys(self.email)
         password_input.clear()
         password_input.send_keys(self.password)
 

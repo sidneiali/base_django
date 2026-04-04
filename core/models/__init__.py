@@ -3,13 +3,14 @@
 from .api import ApiAccessProfile, ApiResourcePermission, ApiToken
 from .audit import AuditLog
 from .modules import Module
-from .ui import UserInterfacePreference
+from .ui import GroupInterfacePreference, UserInterfacePreference
 
 __all__ = [
     "ApiAccessProfile",
     "ApiResourcePermission",
     "ApiToken",
     "AuditLog",
+    "GroupInterfacePreference",
     "Module",
     "UserInterfacePreference",
 ]

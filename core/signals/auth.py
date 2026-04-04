@@ -7,6 +7,7 @@ from django.contrib.auth.signals import (
     user_logged_out,
     user_login_failed,
 )
+from django.db.models import Q
 from django.dispatch import receiver
 
 from ..audit import build_instance_snapshot, create_audit_log
@@ -59,7 +60,9 @@ def log_failed_login(sender, credentials, request, **kwargs):
     target_user = None
 
     if identifier:
-        target_user = User._default_manager.filter(username=identifier).first()
+        target_user = User._default_manager.filter(
+            Q(username__iexact=identifier) | Q(email__iexact=identifier)
+        ).first()
 
     create_audit_log(
         AuditLog.ACTION_LOGIN_FAILED,

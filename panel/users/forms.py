@@ -64,6 +64,27 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
             f"{UserInterfacePreference.MAX_AUTO_REFRESH_INTERVAL}s."
         ),
     )
+    session_idle_timeout_minutes = forms.IntegerField(
+        label="Sessão inativa (minutos)",
+        required=False,
+        min_value=UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES,
+        max_value=UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "min": str(UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES),
+                "max": str(UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES),
+                "step": "5",
+                "data-teste": "user-session-idle-timeout",
+            }
+        ),
+        help_text=(
+            "Opcional. Use um valor entre "
+            f"{UserInterfacePreference.MIN_SESSION_IDLE_TIMEOUT_MINUTES} e "
+            f"{UserInterfacePreference.MAX_SESSION_IDLE_TIMEOUT_MINUTES} minutos. "
+            "Se houver regra em grupos, vale o menor tempo configurado."
+        ),
+    )
 
     class Meta:
         model = User
@@ -128,6 +149,9 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
         preference = self._get_ui_preference()
         self.fields["auto_refresh_enabled"].initial = preference.auto_refresh_enabled
         self.fields["auto_refresh_interval"].initial = preference.auto_refresh_interval
+        self.fields["session_idle_timeout_minutes"].initial = (
+            preference.session_idle_timeout_minutes
+        )
 
     def clean(self) -> dict[str, object]:
         """Exige senha na criacao e permite troca opcional na edicao."""
@@ -166,6 +190,9 @@ class PanelUserForm(ApiAccessFormMixin, forms.ModelForm):
                 user,
                 auto_refresh_enabled=self.cleaned_data["auto_refresh_enabled"],
                 auto_refresh_interval=self.cleaned_data["auto_refresh_interval"],
+                session_idle_timeout_minutes=self.cleaned_data[
+                    "session_idle_timeout_minutes"
+                ],
             )
             self.save_api_access_settings(user)
 
