@@ -13,6 +13,7 @@ from django.urls import NoReverseMatch, reverse
 
 from ..constants import BLOCKED_PERMISSION_APP_LABELS
 from ..groups.forms import traduz_app_label, traduz_model_name, traduz_permissao
+from .services import save_panel_module
 
 
 class PermissionChoiceField(forms.ModelChoiceField):
@@ -179,15 +180,4 @@ class PanelModuleForm(forms.ModelForm):
 
         module = super().save(commit=False)
         permission = cast(Permission | None, self.cleaned_data.get("permission"))
-
-        if permission is None:
-            module.app_label = ""
-            module.permission_codename = ""
-        else:
-            module.app_label = permission.content_type.app_label
-            module.permission_codename = permission.codename
-
-        if commit:
-            module.save()
-
-        return module
+        return save_panel_module(module, permission=permission, commit=commit)

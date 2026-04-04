@@ -2,150 +2,196 @@
 
 from __future__ import annotations
 
-from core.htmx import htmx_location, is_htmx_request, render_page
 from core.models import Module
-from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic.detail import SingleObjectMixin
 
+from ..mixins import (
+    PanelLoginRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelPermissionRequiredMixin,
+    PanelSuccessRedirectMixin,
+)
 from .forms import PanelModuleForm
+from .services import (
+    ModuleDeletionBlockedError,
+    delete_panel_module,
+    set_module_active_state,
+)
 
 
-def _redirect_modules_list(request: HttpRequest) -> HttpResponse:
-    """Redireciona para a listagem, respeitando navegação HTMX quando ativa."""
-
-    if is_htmx_request(request):
-        return htmx_location(reverse("panel_modules_list"))
-    return redirect("panel_modules_list")
-
-
-@login_required
-@permission_required("core.view_module", raise_exception=True)
-def modules_list(request):
+class ModuleListView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    ListView,
+):
     """Lista módulos do dashboard com busca textual simples."""
 
-    query = request.GET.get("q", "").strip()
-    modules = Module.objects.order_by("menu_group", "order", "name")
+    model = Module
+    context_object_name = "modules"
+    permission_required = "core.view_module"
+    page_title = "Módulos"
+    template_name = "panel/modules_list.html"
+    partial_template_name = "panel/partials/modules_list_content.html"
 
-    if query:
-        modules = modules.filter(
-            Q(name__icontains=query)
-            | Q(slug__icontains=query)
-            | Q(description__icontains=query)
-            | Q(url_name__icontains=query)
-            | Q(menu_group__icontains=query)
-        )
+    def get_query(self) -> str:
+        """Normaliza o termo de busca textual da listagem."""
 
-    return render_page(
-        request,
-        "panel/modules_list.html",
-        "panel/partials/modules_list_content.html",
-        {
-            "page_title": "Módulos",
-            "modules": modules,
-            "query": query,
-        },
-    )
+        return self.request.GET.get("q", "").strip()
+
+    def get_queryset(self):
+        """Filtra a listagem por campos operacionais do módulo."""
+
+        modules = Module.objects.order_by("menu_group", "order", "name")
+        query = self.get_query()
+
+        if query:
+            modules = modules.filter(
+                Q(name__icontains=query)
+                | Q(slug__icontains=query)
+                | Q(description__icontains=query)
+                | Q(url_name__icontains=query)
+                | Q(menu_group__icontains=query)
+            )
+
+        return modules
+
+    def get_context_data(self, **kwargs):
+        """Expõe o termo de busca para o formulário HTMX da listagem."""
+
+        context = super().get_context_data(**kwargs)
+        context["query"] = self.get_query()
+        return context
 
 
-@login_required
-@permission_required("core.add_module", raise_exception=True)
-def module_create(request):
+class ModuleFormViewMixin(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+):
+    """Base compartilhada entre criação e edição HTML de módulos."""
+
+    def form_valid(self, form: PanelModuleForm) -> HttpResponse:
+        """Persiste o módulo e devolve o redirect adequado ao shell."""
+
+        form.save()
+        return self.redirect_to_success_url()
+
+
+class ModuleCreateView(ModuleFormViewMixin, CreateView):
     """Cria um módulo novo para o dashboard do shell autenticado."""
 
-    form = PanelModuleForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        if is_htmx_request(request):
-            return htmx_location(reverse("panel_modules_list"))
-        return redirect("panel_modules_list")
-
-    return render_page(
-        request,
-        "panel/module_form.html",
-        "panel/partials/module_form_content.html",
-        {
-            "page_title": "Novo módulo",
-            "form": form,
-        },
-    )
+    model = Module
+    form_class = PanelModuleForm
+    permission_required = "core.add_module"
+    page_title = "Novo módulo"
+    template_name = "panel/module_form.html"
+    partial_template_name = "panel/partials/module_form_content.html"
+    success_url = reverse_lazy("panel_modules_list")
 
 
-@login_required
-@permission_required("core.change_module", raise_exception=True)
-def module_update(request, pk: int):
+class ModuleUpdateView(ModuleFormViewMixin, UpdateView):
     """Edita um módulo existente do dashboard."""
 
-    module = get_object_or_404(Module, pk=pk)
-    form = PanelModuleForm(request.POST or None, instance=module)
+    model = Module
+    form_class = PanelModuleForm
+    permission_required = "core.change_module"
+    template_name = "panel/module_form.html"
+    partial_template_name = "panel/partials/module_form_content.html"
+    success_url = reverse_lazy("panel_modules_list")
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        return _redirect_modules_list(request)
+    def get_page_title(self) -> str:
+        """Monta o título contextual da edição atual."""
 
-    return render_page(
-        request,
-        "panel/module_form.html",
-        "panel/partials/module_form_content.html",
-        {
-            "page_title": f"Editar módulo: {module.name}",
-            "form": form,
-            "module": module,
-        },
-    )
+        return f"Editar módulo: {self.object.name}"
 
 
-@login_required
-@permission_required("core.change_module", raise_exception=True)
-@require_POST
-def module_activate(request: HttpRequest, pk: int) -> HttpResponse:
+class ModuleStateUpdateView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelSuccessRedirectMixin,
+    SingleObjectMixin,
+    View,
+):
+    """Base compartilhada para ativar ou inativar módulos via POST."""
+
+    model = Module
+    permission_required = "core.change_module"
+    success_url = reverse_lazy("panel_modules_list")
+    active_state = True
+    http_method_names = ["post"]
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Atualiza o estado ativo do módulo e volta para a listagem."""
+
+        self.object = self.get_object()
+        set_module_active_state(self.object, is_active=self.active_state)
+        return self.redirect_to_success_url()
+
+
+class ModuleActivateView(ModuleStateUpdateView):
     """Ativa um módulo existente do dashboard."""
 
-    module = get_object_or_404(Module, pk=pk)
-    if not module.is_active:
-        module.is_active = True
-        module.save(update_fields=["is_active"])
-    return _redirect_modules_list(request)
+    active_state = True
 
 
-@login_required
-@permission_required("core.change_module", raise_exception=True)
-@require_POST
-def module_deactivate(request: HttpRequest, pk: int) -> HttpResponse:
+class ModuleDeactivateView(ModuleStateUpdateView):
     """Inativa um módulo existente do dashboard."""
 
-    module = get_object_or_404(Module, pk=pk)
-    if module.is_active:
-        module.is_active = False
-        module.save(update_fields=["is_active"])
-    return _redirect_modules_list(request)
+    active_state = False
 
 
-@login_required
-@permission_required("core.delete_module", raise_exception=True)
-def module_delete(request: HttpRequest, pk: int) -> HttpResponse:
+class ModuleDeleteView(
+    PanelLoginRequiredMixin,
+    PanelPermissionRequiredMixin,
+    PanelPageTemplateMixin,
+    PanelSuccessRedirectMixin,
+    DeleteView,
+):
     """Confirma e executa a exclusão segura de um módulo do dashboard."""
 
-    module = get_object_or_404(Module, pk=pk)
-    block_reason = module.delete_block_reason
+    model = Module
+    context_object_name = "module"
+    permission_required = "core.delete_module"
+    template_name = "panel/module_delete_confirm.html"
+    partial_template_name = "panel/partials/module_delete_confirm_content.html"
+    success_url = reverse_lazy("panel_modules_list")
 
-    if request.method == "POST" and not block_reason:
-        module.delete()
-        return _redirect_modules_list(request)
+    def get_page_title(self) -> str:
+        """Monta o título contextual da confirmação de exclusão."""
 
-    status = 400 if request.method == "POST" and block_reason else 200
-    return render_page(
-        request,
-        "panel/module_delete_confirm.html",
-        "panel/partials/module_delete_confirm_content.html",
-        {
-            "page_title": f"Excluir módulo: {module.name}",
-            "module": module,
-            "delete_block_reason": block_reason,
-        },
-        status=status,
-    )
+        return f"Excluir módulo: {self.object.name}"
+
+    def get_context_data(self, **kwargs):
+        """Expõe o motivo de bloqueio quando a exclusão não é permitida."""
+
+        context = super().get_context_data(**kwargs)
+        context["delete_block_reason"] = self.object.delete_block_reason
+        return context
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        """Tenta excluir o módulo, rerenderizando a tela se houver bloqueio."""
+
+        self.object = self.get_object()
+
+        try:
+            delete_panel_module(self.object)
+        except ModuleDeletionBlockedError:
+            context = self.get_context_data(object=self.object)
+            return self.render_to_response(context, status=400)
+
+        return self.redirect_to_success_url()
+
+
+modules_list = ModuleListView.as_view()
+module_create = ModuleCreateView.as_view()
+module_update = ModuleUpdateView.as_view()
+module_activate = ModuleActivateView.as_view()
+module_deactivate = ModuleDeactivateView.as_view()
+module_delete = ModuleDeleteView.as_view()
