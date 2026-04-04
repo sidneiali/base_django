@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from core.models import ApiResourcePermission, Module
 from django.contrib.auth.models import Permission
@@ -65,13 +66,16 @@ class PanelModulesApiTests(PanelApiTokenMixin, TestCase):
 
         response = self.client.get(
             reverse("api_panel_modules_collection"),
-            {
-                "search": "auditoria",
-                "permission_id": permission.pk,
-                "is_active": "false",
-                "ordering": "-name",
-                "page_size": 1,
-            },
+            cast(
+                dict[str, str | int],
+                {
+                    "search": "auditoria",
+                    "permission_id": permission.pk,
+                    "is_active": "false",
+                    "ordering": "-name",
+                    "page_size": 1,
+                },
+            ),
             HTTP_AUTHORIZATION=f"Bearer {raw_token}",
         )
 
@@ -265,7 +269,9 @@ class PanelModulesApiTests(PanelApiTokenMixin, TestCase):
         self.assertEqual(active_response.status_code, 400)
         self.assertEqual(active_response.json()["error"]["code"], "delete_not_allowed")
         self.assertEqual(canonical_response.status_code, 400)
-        self.assertEqual(canonical_response.json()["error"]["code"], "delete_not_allowed")
+        self.assertEqual(
+            canonical_response.json()["error"]["code"], "delete_not_allowed"
+        )
 
     def test_versioned_modules_collection_alias_works(self) -> None:
         """A rota versionada também deve responder para módulos do painel."""

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from core.models import ApiToken
 from django.contrib.auth import get_user_model
@@ -68,7 +69,7 @@ class PanelUsersApiTests(PanelApiTokenMixin, TestCase):
         self.assertEqual(payload["meta"]["pagination"]["total_items"], 2)
         self.assertEqual(payload["meta"]["ordering"], "username")
 
-        token = ApiToken.objects.get(user=api_user)
+        token = ApiToken.objects.get(user_id=api_user.pk)
         self.assertIsNotNone(token.last_used_at)
 
     def test_versioned_users_collection_alias_works(self) -> None:
@@ -105,12 +106,15 @@ class PanelUsersApiTests(PanelApiTokenMixin, TestCase):
 
         response = self.client.get(
             reverse("api_panel_users_collection"),
-            {
-                "is_active": "true",
-                "group_id": group.pk,
-                "ordering": "-username",
-                "page_size": 1,
-            },
+            cast(
+                dict[str, str | int],
+                {
+                    "is_active": "true",
+                    "group_id": group.pk,
+                    "ordering": "-username",
+                    "page_size": 1,
+                },
+            ),
             HTTP_AUTHORIZATION=f"Bearer {raw_token}",
         )
 
@@ -181,7 +185,9 @@ class PanelUsersApiTests(PanelApiTokenMixin, TestCase):
         )
 
         self.assertEqual(update_response.status_code, 200)
-        self.assertEqual(update_response.json()["data"]["email"], "alterado@example.com")
+        self.assertEqual(
+            update_response.json()["data"]["email"], "alterado@example.com"
+        )
         target.refresh_from_db()
         self.assertEqual(target.email, "alterado@example.com")
 

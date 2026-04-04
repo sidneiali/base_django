@@ -48,7 +48,9 @@ class PanelAuthE2ESmokeTests(PanelE2EBase):
         topbar.open_shortcuts()
         audit_link = topbar.shortcut("audit")
         self.assertTrue(
-            audit_link.get_attribute("href").endswith(reverse("panel_audit_logs_list"))
+            (audit_link.get_attribute("href") or "").endswith(
+                reverse("panel_audit_logs_list")
+            )
         )
         audit_link.click()
         self._pause_for_demo()

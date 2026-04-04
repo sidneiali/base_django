@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from core.models import ApiResourcePermission
 from django.contrib.auth.models import Group, Permission
@@ -45,12 +46,15 @@ class PanelGroupsApiTests(PanelApiTokenMixin, TestCase):
 
         response = self.client.get(
             reverse("api_panel_groups_collection"),
-            {
-                "search": "clien",
-                "permission_id": permission.pk,
-                "ordering": "-name",
-                "page_size": 1,
-            },
+            cast(
+                dict[str, str | int],
+                {
+                    "search": "clien",
+                    "permission_id": permission.pk,
+                    "ordering": "-name",
+                    "page_size": 1,
+                },
+            ),
             HTTP_AUTHORIZATION=f"Bearer {raw_token}",
         )
 
