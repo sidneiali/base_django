@@ -116,6 +116,64 @@ class ObservabilitySettingsBuilderTests(SimpleTestCase):
             "django.core.files.storage.FileSystemStorage",
         )
 
+    def test_build_storage_settings_accepts_default_options(self) -> None:
+        """Storages de mídia externa devem conseguir carregar opções próprias."""
+
+        storages = base_settings.build_storage_settings(
+            default_backend="storages.backends.s3.S3Storage",
+            default_options={"bucket_name": "media-bucket"},
+        )
+
+        self.assertEqual(
+            storages["default"]["BACKEND"],
+            "storages.backends.s3.S3Storage",
+        )
+        self.assertEqual(
+            storages["default"]["OPTIONS"],
+            {"bucket_name": "media-bucket"},
+        )
+
+    def test_build_s3_storage_options_omits_empty_values(self) -> None:
+        """O helper de S3 deve incluir apenas as opções relevantes."""
+
+        options = base_settings.build_s3_storage_options(
+            bucket_name="media-bucket",
+            location="media",
+            custom_domain="",
+            endpoint_url="",
+            region_name="sa-east-1",
+            file_overwrite=False,
+            querystring_auth=True,
+        )
+
+        self.assertEqual(options["bucket_name"], "media-bucket")
+        self.assertEqual(options["location"], "media")
+        self.assertEqual(options["region_name"], "sa-east-1")
+        self.assertNotIn("custom_domain", options)
+        self.assertNotIn("endpoint_url", options)
+
+    def test_build_celery_settings_materializes_expected_namespace(self) -> None:
+        """O helper do Celery deve devolver o namespace usado pelo runtime."""
+
+        celery_settings = base_settings.build_celery_settings(
+            broker_url="redis://127.0.0.1:6379/0",
+            result_backend="redis://127.0.0.1:6379/1",
+            task_always_eager=True,
+            task_eager_propagates=True,
+        )
+
+        self.assertEqual(
+            celery_settings["CELERY_BROKER_URL"],
+            "redis://127.0.0.1:6379/0",
+        )
+        self.assertEqual(
+            celery_settings["CELERY_RESULT_BACKEND"],
+            "redis://127.0.0.1:6379/1",
+        )
+        self.assertEqual(celery_settings["CELERY_TASK_ALWAYS_EAGER"], True)
+        self.assertEqual(celery_settings["CELERY_TASK_EAGER_PROPAGATES"], True)
+        self.assertEqual(celery_settings["CELERY_ACCEPT_CONTENT"], ["json"])
+
     def test_build_logging_config_adds_optional_file_handler(self) -> None:
         """Quando houver arquivo configurado, o handler deve ser materializado."""
 

@@ -85,13 +85,74 @@ def insert_middleware_after(
 def build_storage_settings(
     *,
     default_backend: str = "django.core.files.storage.FileSystemStorage",
+    default_options: dict[str, object] | None = None,
     staticfiles_backend: str = "django.contrib.staticfiles.storage.StaticFilesStorage",
-) -> dict[str, dict[str, str]]:
+    staticfiles_options: dict[str, object] | None = None,
+) -> dict[str, dict[str, object]]:
     """Monta a configuração padrão de storage do projeto."""
 
-    return {
+    storages: dict[str, dict[str, object]] = {
         "default": {"BACKEND": default_backend},
         "staticfiles": {"BACKEND": staticfiles_backend},
+    }
+    if default_options:
+        storages["default"]["OPTIONS"] = default_options
+    if staticfiles_options:
+        storages["staticfiles"]["OPTIONS"] = staticfiles_options
+    return storages
+
+
+def build_s3_storage_options(
+    *,
+    bucket_name: str,
+    location: str = "",
+    custom_domain: str = "",
+    endpoint_url: str = "",
+    region_name: str = "",
+    file_overwrite: bool,
+    querystring_auth: bool,
+) -> dict[str, object]:
+    """Monta as opções do backend S3 no formato de `STORAGES` do Django."""
+
+    options: dict[str, object] = {
+        "bucket_name": bucket_name,
+        "default_acl": None,
+        "file_overwrite": file_overwrite,
+        "querystring_auth": querystring_auth,
+    }
+    if location:
+        options["location"] = location
+    if custom_domain:
+        options["custom_domain"] = custom_domain
+    if endpoint_url:
+        options["endpoint_url"] = endpoint_url
+    if region_name:
+        options["region_name"] = region_name
+    return options
+
+
+def build_celery_settings(
+    *,
+    broker_url: str,
+    result_backend: str,
+    task_always_eager: bool,
+    task_eager_propagates: bool,
+) -> dict[str, object]:
+    """Monta as configurações base do Celery para o projeto."""
+
+    backend = result_backend.strip() or broker_url
+    return {
+        "CELERY_BROKER_URL": broker_url,
+        "CELERY_RESULT_BACKEND": backend,
+        "CELERY_ACCEPT_CONTENT": ["json"],
+        "CELERY_TASK_SERIALIZER": "json",
+        "CELERY_RESULT_SERIALIZER": "json",
+        "CELERY_TIMEZONE": TIME_ZONE,
+        "CELERY_TASK_TRACK_STARTED": True,
+        "CELERY_TASK_ALWAYS_EAGER": task_always_eager,
+        "CELERY_TASK_EAGER_PROPAGATES": task_eager_propagates,
+        "CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP": True,
+        "CELERY_WORKER_HIJACK_ROOT_LOGGER": False,
     }
 
 

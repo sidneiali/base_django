@@ -40,9 +40,33 @@ MIDDLEWARE = base_settings.insert_middleware_after(
     anchor="django.middleware.security.SecurityMiddleware",
     middleware="whitenoise.middleware.WhiteNoiseMiddleware",
 )
-STORAGES = base_settings.build_storage_settings(
-    staticfiles_backend="whitenoise.storage.CompressedManifestStaticFilesStorage"
-)
+USE_S3_STORAGE = base_settings.env_bool("USE_S3_STORAGE", False)
+if USE_S3_STORAGE:
+    bucket_name = base_settings.env_str("AWS_STORAGE_BUCKET_NAME")
+    if not bucket_name:
+        raise ImproperlyConfigured(
+            "AWS_STORAGE_BUCKET_NAME deve ser definido quando USE_S3_STORAGE=True.",
+        )
+    STORAGES = base_settings.build_storage_settings(
+        default_backend="storages.backends.s3.S3Storage",
+        default_options=base_settings.build_s3_storage_options(
+            bucket_name=bucket_name,
+            location=base_settings.env_str("AWS_MEDIA_LOCATION", "media"),
+            custom_domain=base_settings.env_str("AWS_S3_CUSTOM_DOMAIN"),
+            endpoint_url=base_settings.env_str("AWS_S3_ENDPOINT_URL"),
+            region_name=base_settings.env_str("AWS_S3_REGION_NAME"),
+            file_overwrite=base_settings.env_bool("AWS_S3_FILE_OVERWRITE", False),
+            querystring_auth=base_settings.env_bool(
+                "AWS_S3_QUERYSTRING_AUTH",
+                True,
+            ),
+        ),
+        staticfiles_backend="whitenoise.storage.CompressedManifestStaticFilesStorage",
+    )
+else:
+    STORAGES = base_settings.build_storage_settings(
+        staticfiles_backend="whitenoise.storage.CompressedManifestStaticFilesStorage"
+    )
 STATIC_ROOT = base_settings.env_str(
     "STATIC_ROOT",
     str(base_settings.BASE_DIR / "staticfiles"),
@@ -50,6 +74,23 @@ STATIC_ROOT = base_settings.env_str(
 EMAIL_BACKEND = base_settings.env_str(
     "EMAIL_BACKEND",
     "django.core.mail.backends.smtp.EmailBackend",
+)
+globals().update(
+    base_settings.build_celery_settings(
+        broker_url=base_settings.env_str(
+            "CELERY_BROKER_URL",
+            "redis://127.0.0.1:6379/0",
+        ),
+        result_backend=base_settings.env_str(
+            "CELERY_RESULT_BACKEND",
+            "redis://127.0.0.1:6379/1",
+        ),
+        task_always_eager=base_settings.env_bool("CELERY_TASK_ALWAYS_EAGER", False),
+        task_eager_propagates=base_settings.env_bool(
+            "CELERY_TASK_EAGER_PROPAGATES",
+            False,
+        ),
+    )
 )
 
 APP_FORCE_HTTPS = base_settings.env_bool("APP_FORCE_HTTPS", True)

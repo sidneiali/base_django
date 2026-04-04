@@ -1,10 +1,13 @@
 """Formulários do fluxo público de autenticação."""
 
+from django.conf import settings
 from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordResetForm,
     SetPasswordForm,
 )
+
+from .services import queue_password_recovery_email
 
 
 class LoginForm(AuthenticationForm):
@@ -61,6 +64,42 @@ class PasswordRecoveryForm(PasswordResetForm):
                 "autocomplete": "email",
             }
         )
+
+    def save(
+        self,
+        domain_override=None,
+        subject_template_name="registration/password_reset_subject.txt",
+        email_template_name="registration/password_reset_email.html",
+        use_https=False,
+        token_generator=None,
+        from_email=None,
+        request=None,
+        html_email_template_name=None,
+        extra_email_context=None,
+    ):
+        """Enfileira a recuperação de senha sem bloquear a resposta HTTP."""
+
+        del subject_template_name
+        del email_template_name
+        del token_generator
+        del html_email_template_name
+        del extra_email_context
+
+        if request is None and not domain_override:
+            raise ValueError(
+                "PasswordRecoveryForm.save() precisa de request ou domain_override."
+            )
+
+        protocol = "https" if use_https or (request and request.is_secure()) else "http"
+        domain = domain_override or request.get_host()
+
+        for user in self.get_users(self.cleaned_data["email"]):
+            queue_password_recovery_email(
+                user=user,
+                protocol=protocol,
+                domain=domain,
+                from_email=from_email or settings.DEFAULT_FROM_EMAIL,
+            )
 
 
 class PasswordRecoveryConfirmForm(SetPasswordForm):

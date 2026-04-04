@@ -1,6 +1,7 @@
 """Testes dos fluxos públicos de autenticação."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from axes.utils import reset  # type: ignore[import-untyped]
 from django.contrib.auth import get_user_model
@@ -208,6 +209,26 @@ class PasswordRecoveryTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Recuperação de senha", mail.outbox[0].subject)
         self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    def test_password_reset_request_enqueues_background_task(self):
+        """Com eager desligado, o formulário deve delegar o envio ao Celery."""
+
+        User.objects.create_user(
+            username="fila-publica",
+            email="fila-publica@example.com",
+            password="SenhaSegura@123",
+        )
+
+        with patch("core.auth.tasks.send_password_recovery_email_task.delay") as delay:
+            response = self.client.post(
+                reverse("password_reset"),
+                {"email": "fila-publica@example.com"},
+            )
+
+        self.assertRedirects(response, reverse("password_reset_done"))
+        delay.assert_called_once()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_password_reset_confirm_changes_password(self):
         """O token valido deve redefinir a senha e registrar o evento."""

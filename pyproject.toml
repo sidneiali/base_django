@@ -18,6 +18,8 @@ dependencies = [
     "django-ninja>=1.6,<2.0",
     "whitenoise>=6.12,<7.0",
     "sentry-sdk[django]>=2.57,<3.0",
+    "celery[redis]>=5.6,<6.0",
+    "django-storages[s3]>=1.14,<2.0",
 ]
 
 [project.optional-dependencies]

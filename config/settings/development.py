@@ -24,6 +24,23 @@ EMAIL_BACKEND = base_settings.env_str(
     "EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend",
 )
+globals().update(
+    base_settings.build_celery_settings(
+        broker_url=base_settings.env_str(
+            "CELERY_BROKER_URL",
+            "redis://127.0.0.1:6379/0",
+        ),
+        result_backend=base_settings.env_str(
+            "CELERY_RESULT_BACKEND",
+            "redis://127.0.0.1:6379/0",
+        ),
+        task_always_eager=base_settings.env_bool("CELERY_TASK_ALWAYS_EAGER", True),
+        task_eager_propagates=base_settings.env_bool(
+            "CELERY_TASK_EAGER_PROPAGATES",
+            True,
+        ),
+    )
+)
 
 APP_FORCE_HTTPS = base_settings.env_bool("APP_FORCE_HTTPS", False)
 globals().update(base_settings.build_https_settings(APP_FORCE_HTTPS))

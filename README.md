@@ -18,8 +18,11 @@ O projeto foi pensado como ponto de partida para sistemas administrativos em que
 - django-axes
 - django-cors-headers
 - django-csp
+- Celery
+- Redis
 - WhiteNoise
 - Sentry SDK
+- django-storages com boto3
 - SQLite em desenvolvimento
 - PostgreSQL em produção
 - GitHub Actions para CI
@@ -80,6 +83,12 @@ Fluxo sugerido para validar a base logo no primeiro dia:
 Se a tarefa tocar topbar, auditoria HTML, HTMX, downloads no shell ou seletores `data-teste`, trate `uv run pytest -m e2e` como parte do fluxo normal.
 
 Se você só quiser uma passada rápida sem coverage local, use `uv run pytest --no-cov`.
+
+Quando quiser exercitar tarefas assíncronas com worker real, desligue o eager e suba o worker:
+
+```bash
+uv run celery -A config worker -l INFO
+```
 
 ## Recuperação de senha e e-mail
 
@@ -272,6 +281,21 @@ Quando `SENTRY_DSN` estiver vazio, nada é inicializado.
 ## Páginas de erro
 
 Além do handler `403`, o projeto agora também publica páginas próprias para `404` e `500`, mantendo o mesmo comportamento de página completa ou partial HTMX conforme o tipo da navegação.
+
+## Background jobs e storage
+
+O projeto agora nasce com Celery integrado ao Django e autodiscovery de `tasks.py`, usando o namespace `CELERY_` nas settings. Em desenvolvimento, o default segue em `CELERY_TASK_ALWAYS_EAGER=True`, então o shell local e os testes continuam simples; quando você quiser um worker real, basta desligar o eager e apontar `CELERY_BROKER_URL` e `CELERY_RESULT_BACKEND` para o Redis.
+
+Neste primeiro corte, a recuperação de senha já sai por task assíncrona, tanto no fluxo público quanto no disparo assistido pelo painel. O convite de primeiro acesso continua síncrono por enquanto para preservar o comportamento transacional da criação de usuários.
+
+Para mídia futura, produção também pode trocar o storage padrão para S3 compatível usando `django-storages`, mantendo WhiteNoise apenas para estáticos. O toggle é explícito:
+
+- `USE_S3_STORAGE=True`
+- `AWS_STORAGE_BUCKET_NAME=...`
+- `AWS_MEDIA_LOCATION=media`
+- `AWS_S3_REGION_NAME=...`
+- `AWS_S3_ENDPOINT_URL=...`
+- `AWS_S3_CUSTOM_DOMAIN=...`
 
 ## Healthcheck operacional
 

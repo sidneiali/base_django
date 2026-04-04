@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, Group, Permission
@@ -182,6 +183,32 @@ class PanelViewTests(TestCase):
         self.assertIn("Recuperação de senha", mail.outbox[0].subject)
         self.assertIn("/recuperar-senha/confirmar/", mail.outbox[0].body)
         self.assertIn("recuperavel@example.com", mail.outbox[0].to)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        CELERY_TASK_ALWAYS_EAGER=False,
+    )
+    def test_user_password_reset_confirmation_enqueues_background_task(self) -> None:
+        """Com eager desligado, o painel deve enfileirar a recuperação."""
+
+        self._login_with_permissions("change_user")
+        user_obj = User.objects.create_user(
+            username="fila-painel",
+            email="fila-painel@example.com",
+            password="SenhaSegura@123",
+        )
+
+        with patch("core.auth.tasks.send_password_recovery_email_task.delay") as delay:
+            send_response = self.client.post(
+                reverse("panel_user_send_password_reset", args=[user_obj.pk]),
+                HTTP_HX_REQUEST="true",
+            )
+
+        self.assertEqual(send_response.status_code, 204)
+        payload = json.loads(send_response["HX-Location"])
+        self.assertEqual(payload["path"], reverse("panel_users_list"))
+        delay.assert_called_once()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_user_password_reset_confirmation_is_disabled_without_email(self) -> None:
         """Sem e-mail cadastrado, o botão de confirmação deve permanecer desabilitado."""
