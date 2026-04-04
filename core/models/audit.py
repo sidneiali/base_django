@@ -58,6 +58,17 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["content_type", "object_id"],
+                name="core_audit_ct_obj_idx",
+            ),
+            models.Index(
+                fields=["actor", "created_at"],
+                name="core_audit_actor_created_idx",
+            ),
+            models.Index(fields=["action"], name="core_audit_action_idx"),
+        ]
         verbose_name = "Log de auditoria"
         verbose_name_plural = "Logs de auditoria"
 
