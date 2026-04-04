@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core import navigation
@@ -191,6 +191,11 @@ class SidebarNavigationTests(TestCase):
         )
         self.assertContains(
             response,
+            'data-topbar-shortcut="login-security"',
+            html=False,
+        )
+        self.assertContains(
+            response,
             'data-topbar-shortcut="audit"',
             html=False,
         )
@@ -207,6 +212,7 @@ class SidebarNavigationTests(TestCase):
         self.assertContains(response, reverse("panel_users_list"))
         self.assertContains(response, reverse("panel_modules_list"))
         self.assertContains(response, reverse("panel_groups_list"))
+        self.assertContains(response, reverse("panel_login_security_list"))
         self.assertContains(response, reverse("panel_audit_logs_list"))
         self.assertContains(response, reverse("api_docs"))
         self.assertContains(response, reverse("admin:auth_user_changelist"))
@@ -221,6 +227,7 @@ class SidebarNavigationTests(TestCase):
         )
         user.user_permissions.add(
             Permission.objects.get(codename="view_module"),
+            Permission.objects.get(codename="view_accessattempt"),
             Permission.objects.get(codename="view_auditlog"),
         )
         self.client.force_login(user)
@@ -238,6 +245,11 @@ class SidebarNavigationTests(TestCase):
             'data-topbar-shortcut="audit"',
             html=False,
         )
+        self.assertContains(
+            response,
+            'data-topbar-shortcut="login-security"',
+            html=False,
+        )
         self.assertNotContains(
             response,
             'data-topbar-shortcut="users"',
@@ -246,6 +258,26 @@ class SidebarNavigationTests(TestCase):
         self.assertNotContains(
             response,
             'data-topbar-shortcut="groups"',
+            html=False,
+        )
+
+    @override_settings(ENABLE_DJANGO_ADMIN=False)
+    def test_topbar_hides_admin_shortcut_when_admin_is_disabled(self):
+        """O shell não deve sugerir o admin quando ele estiver desativado."""
+
+        user = User.objects.create_superuser(
+            username="admin-off",
+            email="admin-off@example.com",
+            password="SenhaSegura@123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response,
+            'data-topbar-shortcut="admin-users"',
             html=False,
         )
 

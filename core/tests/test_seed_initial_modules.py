@@ -70,10 +70,11 @@ class SeedInitialModulesCommandTests(TestCase):
 
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 5)
+        self.assertEqual(Module.objects.count(), 6)
         self.assertTrue(Module.objects.filter(slug="modulos").exists())
         self.assertTrue(Module.objects.filter(slug="usuarios").exists())
         self.assertTrue(Module.objects.filter(slug="grupos").exists())
+        self.assertTrue(Module.objects.filter(slug="seguranca-login").exists())
         self.assertTrue(Module.objects.filter(slug="auditoria").exists())
         self.assertTrue(Module.objects.filter(slug="documentacao-api").exists())
         docs_module = Module.objects.get(slug="documentacao-api")
@@ -93,7 +94,7 @@ class SeedInitialModulesCommandTests(TestCase):
         stdout = StringIO()
         call_command("seed_initial_modules", stdout=stdout)
 
-        self.assertEqual(Module.objects.count(), 5)
+        self.assertEqual(Module.objects.count(), 6)
 
         users_module = Module.objects.get(slug="usuarios")
         self.assertEqual(users_module.description, "Gestão de usuários do sistema")
@@ -101,7 +102,13 @@ class SeedInitialModulesCommandTests(TestCase):
         self.assertEqual(users_module.order, 10)
         self.assertTrue(users_module.show_in_dashboard)
         self.assertTrue(users_module.show_in_sidebar)
+        login_security_module = Module.objects.get(slug="seguranca-login")
+        self.assertEqual(login_security_module.url_name, "panel_login_security_list")
+        self.assertEqual(login_security_module.app_label, "axes")
+        self.assertEqual(login_security_module.permission_codename, "view_accessattempt")
+        self.assertEqual(login_security_module.menu_group, "Segurança")
+        self.assertEqual(login_security_module.order, 25)
         docs_module = Module.objects.get(slug="documentacao-api")
         self.assertFalse(docs_module.show_in_dashboard)
         self.assertTrue(docs_module.show_in_sidebar)
-        self.assertIn("0 criado(s), 5 atualizado(s)", stdout.getvalue())
+        self.assertIn("0 criado(s), 6 atualizado(s)", stdout.getvalue())

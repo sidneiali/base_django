@@ -45,6 +45,16 @@ INITIAL_MODULES: dict[str, ModuleDefinition] = {
         "menu_group": "Segurança",
         "order": 30,
     },
+    "seguranca-login": {
+        "name": "Segurança de login",
+        "description": "Tentativas, bloqueios e acessos monitorados pelo django-axes",
+        "icon": "ti ti-shield-lock",
+        "url_name": "panel_login_security_list",
+        "app_label": "axes",
+        "permission_codename": "view_accessattempt",
+        "menu_group": "Segurança",
+        "order": 25,
+    },
     "documentacao-api": {
         "name": "Documentação da API",
         "description": "Referência pública da API, exemplos e coleção Postman",

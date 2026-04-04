@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Final
 
+from django.conf import settings
 from django.urls import reverse
 
 from .types import TopbarShortcutGroups, TopbarShortcutItem
@@ -15,6 +16,13 @@ SHORTCUT_DEFINITIONS: Final[tuple[ShortcutDefinition, ...]] = (
     ("Configurações", "users", "Usuários", "panel_users_list", "auth.view_user"),
     ("Configurações", "modules", "Módulos", "panel_modules_list", "core.view_module"),
     ("Segurança", "groups", "Grupos", "panel_groups_list", "auth.view_group"),
+    (
+        "Segurança",
+        "login-security",
+        "Segurança de login",
+        "panel_login_security_list",
+        "axes.view_accessattempt",
+    ),
     ("Segurança", "audit", "Auditoria", "panel_audit_logs_list", "core.view_auditlog"),
     ("Integrações", "api-docs", "Documentação da API", "api_docs", None),
 )
@@ -42,7 +50,7 @@ def build_topbar_shortcuts_for_user(user: Any) -> TopbarShortcutGroups:
             )
         )
 
-    if user.is_superuser:
+    if user.is_superuser and getattr(settings, "ENABLE_DJANGO_ADMIN", True):
         grouped["Administração"].append(
             TopbarShortcutItem(
                 key="admin-users",

@@ -7,6 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from .audit import AuditListPage
 from .base import BasePageObject
+from .login_security import LoginSecurityPage
 
 
 class TopbarPage(BasePageObject):
@@ -46,3 +47,10 @@ class TopbarPage(BasePageObject):
         audit_link.click()
         self.pause()
         AuditListPage(self.test_case).wait_until_loaded()
+
+    def go_to_login_security(self) -> None:
+        self.open_shortcuts()
+        login_security_link = self.shortcut("login-security")
+        login_security_link.click()
+        self.pause()
+        LoginSecurityPage(self.test_case).wait_until_loaded()

@@ -195,10 +195,19 @@ O painel interno já cobre a operação diária de:
 
 - usuários comuns
 - grupos editáveis
+- segurança de login do `django-axes`
 - módulos
 - auditoria
 
-Neste corte, grupos também ganharam exclusão própria no painel e as listas de grupos e módulos passaram a seguir o mesmo padrão visual de usuários: quando a pessoa não tem permissão de gestão, os botões continuam visíveis, mas desabilitados.
+Neste corte, grupos também ganharam exclusão própria no painel, as listas de grupos e módulos passaram a seguir o mesmo padrão visual de usuários, e a operação do `django-axes` passou a existir no próprio painel em `/painel/seguranca/login/`. Quando a pessoa não tem permissão de gestão, os botões continuam visíveis, mas desabilitados.
+
+Se o ambiente já tinha o banco seedado antes dessa atualização, rode novamente:
+
+```bash
+uv run python manage.py seed_initial_modules
+```
+
+Isso materializa o módulo canônico `Segurança de login` no dashboard e no sidebar.
 
 Para desligar `/admin/` com mais segurança em produção:
 

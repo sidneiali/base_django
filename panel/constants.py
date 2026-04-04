@@ -14,6 +14,7 @@ BLOCKED_PERMISSION_APP_LABELS = {
 
 APP_LABEL_TRANSLATIONS = {
     "auth": "Autenticação",
+    "axes": "Segurança de login",
     "core": "Base",
     "panel": "Configurações",
 }

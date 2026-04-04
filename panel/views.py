@@ -7,6 +7,11 @@ from .audit.views import (
     audit_logs_list,
 )
 from .groups.views import group_create, group_delete, group_update, groups_list
+from .login_security.views import (
+    login_security_cleanup_expired_attempts,
+    login_security_list,
+    login_security_reset_attempt,
+)
 from .modules.views import (
     module_activate,
     module_create,
@@ -33,6 +38,9 @@ __all__ = [
     "group_delete",
     "group_update",
     "groups_list",
+    "login_security_cleanup_expired_attempts",
+    "login_security_list",
+    "login_security_reset_attempt",
     "module_activate",
     "module_create",
     "module_deactivate",

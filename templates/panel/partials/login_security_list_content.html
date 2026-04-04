@@ -1,0 +1,257 @@
+<div data-page-title="Segurança de login" data-teste="login-security-page">
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div>
+                <h3 class="card-title mb-1">Segurança de login</h3>
+                <div class="text-secondary">
+                    Operação do <code>django-axes</code> sem depender do <code>/admin</code>.
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-blue-lt">
+                    Limite: {{ axes_failure_limit }} falha(s)
+                </span>
+                {% if axes_cooloff_minutes %}
+                    <span class="badge bg-azure-lt">
+                        Janela: {{ axes_cooloff_minutes }} min
+                    </span>
+                {% else %}
+                    <span class="badge bg-yellow-lt">
+                        Sem expiração automática
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-body border-top">
+            <div class="d-flex flex-column flex-xl-row gap-3 align-items-xl-end">
+                <form method="get" class="row g-2 align-items-end flex-grow-1" hx-push-url="true" data-teste="login-security-filter-form">
+                    <div class="col-12 col-lg-5">
+                        <label class="form-label" for="id_login_security_query">Pesquisar</label>
+                        <input
+                            id="id_login_security_query"
+                            type="text"
+                            name="q"
+                            value="{{ query }}"
+                            class="form-control"
+                            placeholder="Usuário, IP, caminho ou user agent"
+                            data-teste="login-security-query"
+                        >
+                    </div>
+                    <div class="col-12 col-lg-3">
+                        <label class="form-label" for="id_login_security_locked">Status das tentativas</label>
+                        <select
+                            id="id_login_security_locked"
+                            name="locked"
+                            class="form-select"
+                            data-teste="login-security-locked-filter"
+                        >
+                            <option value="" {% if not locked %}selected{% endif %}>Todas</option>
+                            <option value="yes" {% if locked == "yes" %}selected{% endif %}>Somente bloqueadas</option>
+                            <option value="no" {% if locked == "no" %}selected{% endif %}>Somente abertas</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-primary" data-teste="login-security-filter-submit">
+                            Filtrar
+                        </button>
+                    </div>
+                </form>
+
+                <div class="flex-shrink-0">
+                    {% if can_manage_attempts %}
+                        <form method="post" action="{% url 'panel_login_security_cleanup_expired_attempts' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ current_path }}">
+                            <button type="submit" class="btn btn-warning" data-teste="login-security-cleanup-submit">
+                                Limpar expiradas
+                            </button>
+                        </form>
+                    {% else %}
+                        <button type="button" class="btn btn-warning" disabled data-teste="login-security-cleanup-disabled">
+                            Limpar expiradas
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if can_view_attempts %}
+        <div class="card mb-3" data-teste="login-security-attempts-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Tentativas ativas</h3>
+                <div class="text-secondary small">
+                    Mostrando {{ attempt_rows|length }} de {{ attempt_count }}
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table" data-teste="login-security-attempts-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário / IP</th>
+                            <th>Caminho</th>
+                            <th>Falhas</th>
+                            <th>Status</th>
+                            <th>Última tentativa</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in attempt_rows %}
+                            <tr data-teste="login-security-attempt-row" data-attempt-id="{{ row.attempt.pk }}">
+                                <td>
+                                    <div class="fw-semibold">{{ row.attempt.username|default:"-" }}</div>
+                                    <div class="text-secondary small"><code>{{ row.attempt.ip_address|default:"-" }}</code></div>
+                                </td>
+                                <td>
+                                    <div>{{ row.attempt.path_info }}</div>
+                                    <details class="mt-2">
+                                        <summary class="small text-secondary">Detalhes</summary>
+                                        <div class="small text-secondary mt-2 text-break">
+                                            <div><strong>User-Agent:</strong> {{ row.attempt.user_agent|default:"-" }}</div>
+                                            <div><strong>Accept:</strong> {{ row.attempt.http_accept|default:"-" }}</div>
+                                            <div><strong>GET:</strong> <code>{{ row.attempt.get_data|default:"-" }}</code></div>
+                                            <div><strong>POST:</strong> <code>{{ row.attempt.post_data|default:"-" }}</code></div>
+                                        </div>
+                                    </details>
+                                </td>
+                                <td>{{ row.attempt.failures_since_start }}</td>
+                                <td>
+                                    <span class="badge {{ row.status_badge_class }}">{{ row.status_label }}</span>
+                                    {% if row.expires_at %}
+                                        <div class="text-secondary small mt-1">
+                                            Expira em {{ row.expires_at|date:"d/m/Y H:i:s" }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.attempt.attempt_time|date:"d/m/Y H:i:s" }}</td>
+                                <td class="text-end">
+                                    {% if can_manage_attempts %}
+                                        <form method="post" action="{% url 'panel_login_security_reset_attempt' row.attempt.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ current_path }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-teste="login-security-attempt-reset-submit">
+                                                Desbloquear
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled data-teste="login-security-attempt-reset-disabled">
+                                            Desbloquear
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-secondary">
+                                    Nenhuma tentativa encontrada.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if can_view_failures %}
+        <div class="card mb-3" data-teste="login-security-failures-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Falhas recentes</h3>
+                <div class="text-secondary small">
+                    Mostrando {{ failure_logs|length }} de {{ failure_log_count }}
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table" data-teste="login-security-failures-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário / IP</th>
+                            <th>Caminho</th>
+                            <th>Status</th>
+                            <th>Momento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for failure in failure_logs %}
+                            <tr data-teste="login-security-failure-row">
+                                <td>
+                                    <div class="fw-semibold">{{ failure.username|default:"-" }}</div>
+                                    <div class="text-secondary small"><code>{{ failure.ip_address|default:"-" }}</code></div>
+                                </td>
+                                <td>
+                                    <div>{{ failure.path_info }}</div>
+                                    <div class="text-secondary small text-break">{{ failure.user_agent|default:"-" }}</div>
+                                </td>
+                                <td>
+                                    {% if failure.locked_out %}
+                                        <span class="badge bg-danger-lt">Bloqueado</span>
+                                    {% else %}
+                                        <span class="badge bg-yellow-lt">Falhou</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ failure.attempt_time|date:"d/m/Y H:i:s" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary">
+                                    Nenhuma falha encontrada.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if can_view_access_logs %}
+        <div class="card" data-teste="login-security-access-logs-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Acessos recentes</h3>
+                <div class="text-secondary small">
+                    Mostrando {{ access_logs|length }} de {{ access_log_count }}
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table" data-teste="login-security-access-logs-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário / IP</th>
+                            <th>Caminho</th>
+                            <th>Login</th>
+                            <th>Logout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for access_log in access_logs %}
+                            <tr data-teste="login-security-access-log-row">
+                                <td>
+                                    <div class="fw-semibold">{{ access_log.username|default:"-" }}</div>
+                                    <div class="text-secondary small"><code>{{ access_log.ip_address|default:"-" }}</code></div>
+                                </td>
+                                <td>
+                                    <div>{{ access_log.path_info }}</div>
+                                    <div class="text-secondary small text-break">{{ access_log.user_agent|default:"-" }}</div>
+                                </td>
+                                <td>{{ access_log.attempt_time|date:"d/m/Y H:i:s" }}</td>
+                                <td>{{ access_log.logout_time|date:"d/m/Y H:i:s"|default:"-" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary">
+                                    Nenhum acesso encontrado.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
